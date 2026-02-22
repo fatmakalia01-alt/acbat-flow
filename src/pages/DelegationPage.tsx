@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
     Table, TableBody, TableCell, TableHead, TableHeader, TableRow
@@ -62,7 +62,7 @@ const DelegationPage = () => {
         queryFn: async () => {
             const { data } = await supabase
                 .from("profiles")
-                .select("id, full_name, email")
+                .select("id, full_name")
                 .order("full_name");
             return data ?? [];
         },
@@ -126,7 +126,7 @@ const DelegationPage = () => {
 
     const getUserName = (id: string) => {
         const u = (users as any[]).find((u) => u.id === id);
-        return u ? u.full_name || u.email : id.slice(0, 8) + "…";
+        return u ? u.full_name : id.slice(0, 8) + "…";
     };
 
     const getRoleLabel = (role: string) =>
@@ -313,6 +313,9 @@ const DelegationPage = () => {
                             <UserCheck className="h-5 w-5 text-primary" />
                             Nouvelle délégation
                         </DialogTitle>
+                        <DialogDescription>
+                            Configurez une délégation temporaire de vos responsabilités à un autre collaborateur.
+                        </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4">
                         <div>
@@ -326,7 +329,7 @@ const DelegationPage = () => {
                                         .filter((u) => u.id !== user?.id)
                                         .map((u) => (
                                             <SelectItem key={u.id} value={u.id}>
-                                                {u.full_name || u.email}
+                                                {u.full_name}
                                             </SelectItem>
                                         ))}
                                 </SelectContent>
