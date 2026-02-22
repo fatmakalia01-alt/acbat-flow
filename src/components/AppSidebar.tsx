@@ -25,6 +25,8 @@ const menuItems = [
   { icon: HeadphonesIcon, label: "SAV", path: "/sav", roles: ["manager", "responsable_sav"] },
   { icon: Bell, label: "Notifications", path: "/notifications", roles: [] }, // visible to all
   { icon: UserCheck, label: "Délégations", path: "/delegations", roles: ["manager", "directeur_exploitation"] },
+  { icon: Users, label: "Fournisseurs", path: "/suppliers", roles: ["manager", "responsable_achat", "directeur_exploitation"] },
+  { icon: Package, label: "Mouvements Stock", path: "/stock-movements", roles: ["manager", "responsable_logistique", "directeur_exploitation"] },
   { icon: Settings, label: "Utilisateurs", path: "/users", roles: ["manager"] },
 ];
 
