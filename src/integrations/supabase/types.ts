@@ -220,6 +220,11 @@ export type Database = {
           tech_notes: string | null
           technician_id: string | null
           updated_at: string
+          carrier_name: string | null
+          tracking_number: string | null
+          vehicle_plate: string | null
+          transport_cost: number | null
+          carrier_type: string | null
         }
         Insert: {
           actual_date?: string | null
@@ -1113,6 +1118,7 @@ export type Database = {
       | "responsable_sav"
       | "responsable_comptabilite"
       | "client"
+      | "livraison"
       invoice_status:
       | "brouillon"
       | "emise"
@@ -1310,6 +1316,7 @@ export const Constants = {
         "responsable_sav",
         "responsable_comptabilite",
         "client",
+        "livraison",
       ],
       invoice_status: [
         "brouillon",
