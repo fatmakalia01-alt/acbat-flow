@@ -113,7 +113,7 @@ const InsightIcon = ({ type }: { type: "success" | "warning" | "info" }) => {
 
 // ── Main Page ─────────────────────────────────────
 const AnalyticsPage = () => {
-    const [period] = useState<"6m" | "12m">("12m");
+    const [period, setPeriod] = useState<"6m" | "12m">("12m");
 
     const { data: orders = [] } = useQuery({
         queryKey: ["analytics-orders"],
@@ -149,8 +149,15 @@ const AnalyticsPage = () => {
         const thisYear = now.getFullYear();
         const lastMonth = thisMonth === 0 ? 11 : thisMonth - 1;
         const lastYear = thisMonth === 0 ? thisYear - 1 : thisYear;
+        const monthsBack = period === "6m" ? 6 : 12;
 
-        const validOrders = (orders as any[]).filter((o) => o.status !== "cancelled");
+        // Cut-off date for the selected period
+        const cutoff = new Date(thisYear, thisMonth - (monthsBack - 1), 1);
+
+        // French DB status values: "annulee" is cancelled
+        const validOrders = (orders as any[]).filter(
+            (o) => o.status !== "annulee" && new Date(o.created_at) >= cutoff
+        );
         const totalCA = validOrders.reduce((s: number, o: any) => s + (o.total_ttc || 0), 0);
         const thisMonthCA = validOrders
             .filter((o: any) => {
@@ -167,9 +174,9 @@ const AnalyticsPage = () => {
 
         const caGrowth = lastMonthCA > 0 ? ((thisMonthCA - lastMonthCA) / lastMonthCA) * 100 : 0;
 
-        // Monthly CA for chart (last 12 months)
+        // Monthly CA for chart (last N months)
         const monthlyData: Record<string, number> = {};
-        for (let i = 11; i >= 0; i--) {
+        for (let i = monthsBack - 1; i >= 0; i--) {
             const d = new Date(thisYear, thisMonth - i, 1);
             const key = `${MONTHS_FR[d.getMonth()]} ${d.getFullYear()}`;
             monthlyData[key] = 0;
@@ -187,40 +194,45 @@ const AnalyticsPage = () => {
         const lowEntry = Object.entries(monthlyData).sort((a, b) => a[1] - b[1])[0];
         const lowMonth = lowEntry ? lowEntry[0] : "";
 
-        // Status distribution
+        // Status distribution (all orders in period)
+        const periodOrders = (orders as any[]).filter((o) => new Date(o.created_at) >= cutoff);
         const statusCount: Record<string, number> = {};
-        (orders as any[]).forEach((o: any) => {
+        periodOrders.forEach((o: any) => {
             statusCount[o.status] = (statusCount[o.status] || 0) + 1;
         });
         const statusChart = Object.entries(statusCount).map(([name, value]) => ({ name, value }));
 
-        // Conversion
+        // Conversion — French DB: "accepte" is the accepted status
         const quotesTotal = (quotes as any[]).length;
-        const quotesConverted = (quotes as any[]).filter((q: any) => q.status === "accepted").length;
+        const quotesConverted = (quotes as any[]).filter((q: any) => q.status === "accepte").length;
         const conversionRate = calcConversionRate(quotesConverted, quotesTotal);
 
-        const pendingOrders = (orders as any[]).filter((o: any) => o.status === "pending").length;
-        const canceledOrders = (orders as any[]).filter((o: any) => o.status === "cancelled").length;
+        // French DB: "en_validation" ~ pending, "annulee" ~ cancelled
+        const pendingOrders = periodOrders.filter((o: any) => o.status === "en_validation").length;
+        const canceledOrders = periodOrders.filter((o: any) => o.status === "annulee").length;
 
         return {
             totalCA, thisMonthCA, caGrowth,
-            orderCount: orders.length,
+            orderCount: periodOrders.length,
             clientCount: clients.length,
             quotesTotal, quotesConverted, conversionRate,
             monthlyChart, statusChart,
             topMonth, lowMonth,
             pendingOrders, canceledOrders,
         };
-    }, [orders, clients, quotes]);
+    }, [orders, clients, quotes, period]);
 
     const insights = useMemo(
         () => generateInsights(metrics),
         [metrics]
     );
 
+    // French DB order status labels
     const statuses: Record<string, string> = {
-        pending: "En attente", confirmed: "Confirmée", delivered: "Livrée",
-        cancelled: "Annulée", processing: "En traitement",
+        brouillon: "Brouillon", en_validation: "En validation", validee: "Validée",
+        en_commande_fournisseur: "Cmd fournisseur", en_reception: "Réception",
+        en_preparation: "Préparation", en_livraison: "Livraison", livree: "Livrée",
+        en_facturation: "Facturation", payee: "Payée", cloturee: "Clôturée", annulee: "Annulée",
     };
 
     return (
@@ -231,9 +243,25 @@ const AnalyticsPage = () => {
                     <h1 className="text-2xl font-display font-bold text-foreground">Analytics</h1>
                     <p className="text-muted-foreground text-sm">Tableau de bord analytique avec insights IA</p>
                 </div>
-                <Badge variant="outline" className="gap-1.5 text-xs">
-                    <ArrowUpRight className="h-3 w-3" /> Données en temps réel
-                </Badge>
+                <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1 text-xs border rounded-lg overflow-hidden">
+                        {(["6m", "12m"] as const).map((p) => (
+                            <button
+                                key={p}
+                                onClick={() => setPeriod(p)}
+                                className={`px-3 py-1.5 transition-colors ${period === p
+                                        ? "bg-primary text-primary-foreground font-medium"
+                                        : "text-muted-foreground hover:bg-muted"
+                                    }`}
+                            >
+                                {p === "6m" ? "6 mois" : "12 mois"}
+                            </button>
+                        ))}
+                    </div>
+                    <Badge variant="outline" className="gap-1.5 text-xs">
+                        <ArrowUpRight className="h-3 w-3" /> Données en temps réel
+                    </Badge>
+                </div>
             </div>
 
             {/* KPI Cards */}
