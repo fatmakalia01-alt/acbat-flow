@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText, CreditCard, BarChart3 } from "lucide-react";
+import { FileText, CreditCard, BarChart3, AlertCircle } from "lucide-react";
 import InvoicesTab from "@/components/accounting/InvoicesTab";
 import PaymentsTab from "@/components/accounting/PaymentsTab";
 import ReportsTab from "@/components/accounting/ReportsTab";
+import RecouvrementTab from "@/components/accounting/RecouvrementTab";
 
 const AccountingPage = () => {
   const [tab, setTab] = useState("invoices");
@@ -20,10 +21,12 @@ const AccountingPage = () => {
           <TabsTrigger value="invoices" className="gap-2"><FileText className="h-4 w-4" /> Factures</TabsTrigger>
           <TabsTrigger value="payments" className="gap-2"><CreditCard className="h-4 w-4" /> Paiements</TabsTrigger>
           <TabsTrigger value="reports" className="gap-2"><BarChart3 className="h-4 w-4" /> Rapports</TabsTrigger>
+          <TabsTrigger value="recouvrement" className="gap-2"><AlertCircle className="h-4 w-4 text-red-500" /> Recouvrement</TabsTrigger>
         </TabsList>
         <TabsContent value="invoices"><InvoicesTab /></TabsContent>
         <TabsContent value="payments"><PaymentsTab /></TabsContent>
         <TabsContent value="reports"><ReportsTab /></TabsContent>
+        <TabsContent value="recouvrement"><RecouvrementTab /></TabsContent>
       </Tabs>
     </div>
   );
