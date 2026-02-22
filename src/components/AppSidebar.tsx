@@ -6,13 +6,15 @@ import { cn } from "@/lib/utils";
 import acbatLogo from "@/assets/acbat-logo.jpeg";
 import {
   LayoutDashboard, Users, ShoppingCart, Package, Truck, Wrench, FileText,
-  CreditCard, HeadphonesIcon, Bell, Settings, LogOut, ChevronLeft, ChevronRight
+  CreditCard, HeadphonesIcon, Bell, Settings, LogOut, ChevronLeft, ChevronRight,
+  BarChart3, UserCheck
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 
 const menuItems = [
   { icon: LayoutDashboard, label: "Tableau de bord", path: "/dashboard", roles: ["manager", "directeur_exploitation"] },
+  { icon: BarChart3, label: "Analytics", path: "/analytics", roles: ["manager", "directeur_exploitation"] },
   { icon: ShoppingCart, label: "Commandes", path: "/orders", roles: ["manager", "directeur_exploitation", "responsable_commercial", "commercial"] },
   { icon: Users, label: "Clients", path: "/clients", roles: ["manager", "directeur_exploitation", "responsable_commercial", "commercial"] },
   { icon: Package, label: "Produits & Stock", path: "/products", roles: ["manager", "responsable_achat", "responsable_logistique"] },
@@ -22,6 +24,7 @@ const menuItems = [
   { icon: CreditCard, label: "Comptabilité", path: "/accounting", roles: ["manager", "directeur_exploitation", "responsable_comptabilite"] },
   { icon: HeadphonesIcon, label: "SAV", path: "/sav", roles: ["manager", "responsable_sav"] },
   { icon: Bell, label: "Notifications", path: "/notifications", roles: [] }, // visible to all
+  { icon: UserCheck, label: "Délégations", path: "/delegations", roles: ["manager", "directeur_exploitation"] },
   { icon: Settings, label: "Utilisateurs", path: "/users", roles: ["manager"] },
 ];
 
