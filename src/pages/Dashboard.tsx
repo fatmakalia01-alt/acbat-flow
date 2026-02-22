@@ -13,7 +13,7 @@ import {
   ShoppingCart, Users, TrendingUp, AlertTriangle,
   UserCheck, UserX, Shield
 } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -187,6 +187,9 @@ const Dashboard = () => {
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Activer le mode absence</DialogTitle>
+                  <DialogDescription>
+                    Configurez le transfert de vos validations durant votre absence.
+                  </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
                   <p className="text-sm text-muted-foreground">
