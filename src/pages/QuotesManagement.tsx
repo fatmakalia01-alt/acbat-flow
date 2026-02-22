@@ -11,10 +11,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Search, Eye, FileText } from "lucide-react";
+import { Plus, Search, Eye, FileText, Download } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Constants } from "@/integrations/supabase/types";
+import OrderPDF from "@/components/OrderPDF";
+import { PDFDownloadLink } from "@react-pdf/renderer";
 
 const statusLabels: Record<string, string> = {
   brouillon: "Brouillon", en_validation: "En validation",
@@ -37,13 +39,14 @@ const QuotesManagement = () => {
   const [selectedQuote, setSelectedQuote] = useState<any>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [newQuote, setNewQuote] = useState({ client_id: "", valid_until: "" });
+  const [newItem, setNewItem] = useState({ product_id: "", quantity: 1 });
 
   const { data: quotes = [], isLoading } = useQuery({
     queryKey: ["quotes"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("quotes")
-        .select("*, clients(full_name, company_name)")
+        .select("*, clients(full_name, company_name, address, phone)")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
@@ -51,7 +54,7 @@ const QuotesManagement = () => {
   });
 
   const { data: clients = [] } = useQuery({
-    queryKey: ["clients-list"],
+    queryKey: ["clients"],
     queryFn: async () => {
       const { data, error } = await supabase.from("clients").select("id, full_name, company_name").order("full_name");
       if (error) throw error;
@@ -59,37 +62,103 @@ const QuotesManagement = () => {
     },
   });
 
-  const { data: quoteItems = [] } = useQuery({
-    queryKey: ["quote-items", selectedQuote?.id],
-    enabled: !!selectedQuote,
+  const { data: products = [] } = useQuery({
+    queryKey: ["products"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("quote_items").select("*, products(name)").eq("quote_id", selectedQuote.id);
+      const { data, error } = await supabase.from("products").select("*").order("name");
       if (error) throw error;
       return data;
     },
   });
 
+  const { data: quoteItems = [], refetch: refetchItems } = useQuery({
+    queryKey: ["quote-items", selectedQuote?.id],
+    queryFn: async () => {
+      if (!selectedQuote) return [];
+      const { data, error } = await supabase
+        .from("quote_items")
+        .select("*, products(name, unit)")
+        .eq("quote_id", selectedQuote.id);
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!selectedQuote,
+  });
+
+  const updateQuoteTotals = async (quoteId: string) => {
+    const { data: items } = await supabase.from("quote_items").select("total_ht, total_ttc").eq("quote_id", quoteId);
+    if (!items) return;
+    const total_ht = items.reduce((sum, item) => sum + (Number(item.total_ht) || 0), 0);
+    const total_ttc = items.reduce((sum, item) => sum + (Number(item.total_ttc) || 0), 0);
+    const tva_amount = total_ttc - total_ht;
+    await supabase.from("quotes").update({ total_ht, total_ttc, tva_amount }).eq("id", quoteId);
+    queryClient.invalidateQueries({ queryKey: ["quotes"] });
+  };
+
+  const addItem = useMutation({
+    mutationFn: async () => {
+      if (!selectedQuote || !newItem.product_id) return;
+      const product = products.find(p => p.id === newItem.product_id);
+      if (!product) return;
+      const total_ht = Number(product.base_price) * newItem.quantity;
+      const total_ttc = total_ht * (1 + (Number(product.tva_rate) || 19) / 100);
+      const { error } = await supabase.from("quote_items").insert({
+        quote_id: selectedQuote.id,
+        product_id: newItem.product_id,
+        description: product.name,
+        quantity: newItem.quantity,
+        unit_price_ht: product.base_price,
+        tva_rate: product.tva_rate || 19,
+        total_ht,
+        total_ttc,
+      });
+      if (error) throw error;
+      await updateQuoteTotals(selectedQuote.id);
+    },
+    onSuccess: () => {
+      refetchItems();
+      setNewItem({ product_id: "", quantity: 1 });
+      toast({ title: "Article ajouté au devis" });
+    },
+    onError: (e: any) => toast({ title: "Erreur", description: e.message, variant: "destructive" }),
+  });
+
+  const deleteItem = useMutation({
+    mutationFn: async (itemId: string) => {
+      const { error } = await supabase.from("quote_items").delete().eq("id", itemId);
+      if (error) throw error;
+      if (selectedQuote) await updateQuoteTotals(selectedQuote.id);
+    },
+    onSuccess: () => {
+      refetchItems();
+      toast({ title: "Article supprimé" });
+    },
+  });
+
   const createQuote = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from("quotes").insert({
+      const { data, error } = await supabase.from("quotes").insert({
         client_id: newQuote.client_id,
         valid_until: newQuote.valid_until || null,
         created_by: user?.id,
-      });
+      }).select().single();
       if (error) throw error;
+      return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["quotes"] });
       setDialogOpen(false);
       setNewQuote({ client_id: "", valid_until: "" });
-      toast({ title: "Devis créé" });
+      setSelectedQuote(data);
+      setDetailOpen(true);
+      toast({ title: "Devis créé avec succès" });
     },
     onError: (e: any) => toast({ title: "Erreur", description: e.message, variant: "destructive" }),
   });
 
   const updateStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      const { error } = await supabase.from("quotes").update({ status: status as any }).eq("id", id);
+      const { error } = await supabase.from("quotes").update({ status }).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -203,8 +272,21 @@ const QuotesManagement = () => {
       {/* Detail dialog */}
       <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
         <DialogContent className="max-w-2xl">
-          <DialogHeader>
+          <DialogHeader className="flex flex-row items-center justify-between">
             <DialogTitle className="flex items-center gap-2"><FileText className="h-5 w-5" /> Devis {selectedQuote?.reference}</DialogTitle>
+            {selectedQuote && quoteItems.length > 0 && (
+              <PDFDownloadLink
+                document={<OrderPDF order={selectedQuote} items={quoteItems} type="devis" />}
+                fileName={`Devis_${selectedQuote.reference}.pdf`}
+              >
+                {({ loading }) => (
+                  <Button variant="outline" size="sm" disabled={loading} className="gap-2">
+                    <Download className="h-4 w-4" />
+                    {loading ? "Génération..." : "Télécharger Devis"}
+                  </Button>
+                )}
+              </PDFDownloadLink>
+            )}
           </DialogHeader>
           {selectedQuote && (
             <div className="space-y-4">
@@ -224,31 +306,75 @@ const QuotesManagement = () => {
                 </div>
                 <div><span className="text-muted-foreground">Validité:</span> {selectedQuote.valid_until ? format(new Date(selectedQuote.valid_until), "dd/MM/yyyy") : "—"}</div>
               </div>
-              {quoteItems.length > 0 && (
-                <div>
-                  <h4 className="font-medium mb-2">Lignes du devis</h4>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Description</TableHead>
-                        <TableHead>Qté</TableHead>
-                        <TableHead>PU HT</TableHead>
-                        <TableHead>Total TTC</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
+              <div className="border rounded-lg p-4 space-y-4">
+                <h4 className="font-medium flex items-center gap-2 border-b pb-2">
+                  <FileText className="h-4 w-4" /> Articles du devis
+                </h4>
+
+                <div className="space-y-2">
+                  {quoteItems.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-2">Aucun article dans ce devis.</p>
+                  ) : (
+                    <div className="space-y-1">
                       {quoteItems.map((item: any) => (
-                        <TableRow key={item.id}>
-                          <TableCell>{item.description}</TableCell>
-                          <TableCell>{item.quantity}</TableCell>
-                          <TableCell>{item.unit_price_ht?.toLocaleString("fr-TN")} TND</TableCell>
-                          <TableCell>{item.total_ttc?.toLocaleString("fr-TN")} TND</TableCell>
-                        </TableRow>
+                        <div key={item.id} className="flex items-center justify-between text-sm py-1 border-b last:border-0">
+                          <div className="flex-1">
+                            <span className="font-medium">{item.products?.name || item.description}</span>
+                            <span className="text-muted-foreground ml-2">x{item.quantity} {item.products?.unit}</span>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <span>{(item.total_ttc || 0).toLocaleString("fr-TN")} TND</span>
+                            <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => deleteItem.mutate(item.id)}>
+                              <Plus className="h-3 w-3 rotate-45" />
+                            </Button>
+                          </div>
+                        </div>
                       ))}
-                    </TableBody>
-                  </Table>
+                    </div>
+                  )}
                 </div>
-              )}
+
+                <div className="grid grid-cols-12 gap-2 pt-2 border-t">
+                  <div className="col-span-7">
+                    <Select value={newItem.product_id} onValueChange={v => setNewItem(p => ({ ...p, product_id: v }))}>
+                      <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Choisir un produit" /></SelectTrigger>
+                      <SelectContent>
+                        {products.map((p: any) => (
+                          <SelectItem key={p.id} value={p.id}>
+                            {p.name} ({(p.base_price || 0).toLocaleString()} TND)
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="col-span-3">
+                    <Input
+                      type="number"
+                      min="1"
+                      value={newItem.quantity}
+                      onChange={e => setNewItem(p => ({ ...p, quantity: parseInt(e.target.value) || 1 }))}
+                      className="h-8 text-xs"
+                      placeholder="Qté"
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <Button
+                      size="sm"
+                      className="h-8 w-full text-xs"
+                      onClick={() => addItem.mutate()}
+                      disabled={!newItem.product_id || addItem.isPending}
+                    >
+                      Ajouter
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="pt-2 flex flex-col items-end text-sm space-y-1 border-t">
+                  <div className="flex justify-between w-48"><span className="text-muted-foreground">Total HT:</span> <span>{(selectedQuote.total_ht || 0).toLocaleString("fr-TN")} TND</span></div>
+                  <div className="flex justify-between w-48"><span className="text-muted-foreground">TVA:</span> <span>{(selectedQuote.tva_amount || 0).toLocaleString("fr-TN")} TND</span></div>
+                  <div className="flex justify-between w-48 font-bold text-lg"><span className="text-foreground">Total TTC:</span> <span>{(selectedQuote.total_ttc || 0).toLocaleString("fr-TN")} TND</span></div>
+                </div>
+              </div>
             </div>
           )}
         </DialogContent>
