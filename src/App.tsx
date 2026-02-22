@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import ProtectedRoute from "@/components/ProtectedRoute";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import ClientPortal from "./pages/ClientPortal";
@@ -12,6 +13,11 @@ import OrdersManagement from "./pages/OrdersManagement";
 import ClientsManagement from "./pages/ClientsManagement";
 import QuotesManagement from "./pages/QuotesManagement";
 import AccountingPage from "./pages/AccountingPage";
+import ProductsPage from "./pages/ProductsPage";
+import LogisticsPage from "./pages/LogisticsPage";
+import TechnicalPage from "./pages/TechnicalPage";
+import SavPage from "./pages/SavPage";
+import NotificationsPage from "./pages/NotificationsPage";
 import AppLayout from "./components/AppLayout";
 import NotFound from "./pages/NotFound";
 
@@ -35,13 +41,66 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             <Route path="/" element={<AppLayout />}>
               <Route index element={<HomeRedirect />} />
-              <Route path="dashboard" element={<Dashboard />} />
-              <Route path="users" element={<UsersManagement />} />
-              <Route path="orders" element={<OrdersManagement />} />
-              <Route path="clients" element={<ClientsManagement />} />
-              <Route path="quotes" element={<QuotesManagement />} />
-              <Route path="accounting" element={<AccountingPage />} />
-              <Route path="my-orders" element={<ClientPortal />} />
+              <Route path="dashboard" element={
+                <ProtectedRoute roles={["manager", "directeur_exploitation"]}>
+                  <Dashboard />
+                </ProtectedRoute>
+              } />
+              <Route path="orders" element={
+                <ProtectedRoute roles={["manager", "directeur_exploitation", "responsable_commercial", "commercial"]}>
+                  <OrdersManagement />
+                </ProtectedRoute>
+              } />
+              <Route path="clients" element={
+                <ProtectedRoute roles={["manager", "directeur_exploitation", "responsable_commercial", "commercial"]}>
+                  <ClientsManagement />
+                </ProtectedRoute>
+              } />
+              <Route path="quotes" element={
+                <ProtectedRoute roles={["manager", "responsable_commercial", "commercial"]}>
+                  <QuotesManagement />
+                </ProtectedRoute>
+              } />
+              <Route path="accounting" element={
+                <ProtectedRoute roles={["manager", "directeur_exploitation", "responsable_comptabilite"]}>
+                  <AccountingPage />
+                </ProtectedRoute>
+              } />
+              <Route path="products" element={
+                <ProtectedRoute roles={["manager", "responsable_achat", "responsable_logistique"]}>
+                  <ProductsPage />
+                </ProtectedRoute>
+              } />
+              <Route path="logistics" element={
+                <ProtectedRoute roles={["manager", "responsable_logistique", "responsable_achat"]}>
+                  <LogisticsPage />
+                </ProtectedRoute>
+              } />
+              <Route path="technical" element={
+                <ProtectedRoute roles={["manager", "responsable_technique", "technicien_montage"]}>
+                  <TechnicalPage />
+                </ProtectedRoute>
+              } />
+              <Route path="sav" element={
+                <ProtectedRoute roles={["manager", "responsable_sav"]}>
+                  <SavPage />
+                </ProtectedRoute>
+              } />
+              <Route path="notifications" element={
+                <ProtectedRoute>
+                  <NotificationsPage />
+                </ProtectedRoute>
+              } />
+              <Route path="users" element={
+                <ProtectedRoute roles={["manager"]}>
+                  <UsersManagement />
+                </ProtectedRoute>
+              } />
+              <Route path="my-orders" element={
+                <ProtectedRoute roles={["client"]}>
+                  <ClientPortal />
+                </ProtectedRoute>
+              } />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
