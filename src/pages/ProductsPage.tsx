@@ -22,17 +22,29 @@ const ProductsPage = () => {
     const [movingStock, setMovingStock] = useState<any>(null);
     const [movementForm, setMovementForm] = useState({ quantity: "1", type: "adjustment", reason: "" });
 
+    const [brandDialogOpen, setBrandDialogOpen] = useState(false);
+    const [newBrand, setNewBrand] = useState({ name: "", description: "" });
+
     const emptyForm = {
-        name: "", description: "", sku: "", price_ht: "", tva_rate: "19",
+        name: "", description: "", sku: "", price_ht: "", tva_rate: "19", brand_id: "",
     };
     const [form, setForm] = useState(emptyForm);
+
+    const { data: brands = [] } = useQuery({
+        queryKey: ["brands"],
+        queryFn: async () => {
+            const { data, error } = await supabase.from("brands").select("*").order("name");
+            if (error) throw error;
+            return data;
+        },
+    });
 
     const { data: products = [], isLoading } = useQuery({
         queryKey: ["products"],
         queryFn: async () => {
             const { data, error } = await supabase
                 .from("products")
-                .select("*, stock(quantity, min_quantity, location), product_categories(name)")
+                .select("*, stock(quantity, min_quantity, location), product_categories(name), brands(name)")
                 .order("name");
             if (error) throw error;
             return data;
@@ -48,6 +60,7 @@ const ProductsPage = () => {
                 sku: form.sku || null,
                 price_ht: parseFloat(form.price_ht) || 0,
                 tva_rate: parseFloat(form.tva_rate) || 19,
+                brand_id: form.brand_id || null,
             };
             if (editing) {
                 const { error } = await supabase.from("products").update(payload).eq("id", editing.id);
@@ -64,6 +77,20 @@ const ProductsPage = () => {
             setForm(emptyForm);
             setEditing(null);
             toast({ title: editing ? "Produit modifié" : "Produit créé" });
+        },
+        onError: (e: any) => toast({ title: "Erreur", description: e.message, variant: "destructive" }),
+    });
+
+    const createBrand = useMutation({
+        mutationFn: async () => {
+            const { error } = await supabase.from("brands").insert(newBrand);
+            if (error) throw error;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["brands"] });
+            setBrandDialogOpen(false);
+            setNewBrand({ name: "", description: "" });
+            toast({ title: "Marque ajoutée" });
         },
         onError: (e: any) => toast({ title: "Erreur", description: e.message, variant: "destructive" }),
     });
@@ -97,6 +124,7 @@ const ProductsPage = () => {
             name: p.name || "", description: p.description || "",
             sku: p.sku || "", price_ht: p.price_ht?.toString() || "",
             tva_rate: p.tva_rate?.toString() || "19",
+            brand_id: p.brand_id || "",
         });
         setDialogOpen(true);
     };
@@ -117,9 +145,14 @@ const ProductsPage = () => {
                     <h1 className="text-2xl font-display font-bold text-foreground">Produits & Stock</h1>
                     <p className="text-muted-foreground text-sm">{products.length} produit(s)</p>
                 </div>
-                <Button onClick={() => { setEditing(null); setForm(emptyForm); setDialogOpen(true); }}>
-                    <Plus className="h-4 w-4 mr-2" /> Nouveau produit
-                </Button>
+                <div className="flex gap-2">
+                    <Button variant="outline" onClick={() => setBrandDialogOpen(true)}>
+                        Gérer les marques
+                    </Button>
+                    <Button onClick={() => { setEditing(null); setForm(emptyForm); setDialogOpen(true); }}>
+                        <Plus className="h-4 w-4 mr-2" /> Nouveau produit
+                    </Button>
+                </div>
             </div>
 
             {lowStock.length > 0 && (
@@ -201,6 +234,7 @@ const ProductsPage = () => {
                                 return (
                                     <TableRow key={p.id}>
                                         <TableCell>
+                                            <div className="font-medium text-primary">{p.brands?.name}</div>
                                             <div className="font-medium">{p.name}</div>
                                             {p.description && <div className="text-xs text-muted-foreground line-clamp-1">{p.description}</div>}
                                         </TableCell>
@@ -239,6 +273,18 @@ const ProductsPage = () => {
                     <DialogHeader><DialogTitle>{editing ? "Modifier" : "Nouveau produit"}</DialogTitle></DialogHeader>
                     <div className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
+                            <div className="col-span-2">
+                                <Label>Marque</Label>
+                                <Select value={form.brand_id} onValueChange={v => setForm(p => ({ ...p, brand_id: v }))}>
+                                    <SelectTrigger><SelectValue placeholder="Sélectionner une marque" /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="none">Aucune</SelectItem>
+                                        {brands.map((b: any) => (
+                                            <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
                             <div className="col-span-2">
                                 <Label>Nom du produit *</Label>
                                 <Input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} />
@@ -305,6 +351,36 @@ const ProductsPage = () => {
                             disabled={recordMovement.isPending} className="w-full">
                             Enregistrer le mouvement
                         </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={brandDialogOpen} onOpenChange={setBrandDialogOpen}>
+                <DialogContent>
+                    <DialogHeader><DialogTitle>Gérer les marques</DialogTitle></DialogHeader>
+                    <div className="space-y-4">
+                        <div className="space-y-2">
+                            {brands.map((b: any) => (
+                                <div key={b.id} className="flex items-center justify-between p-2 border rounded-lg">
+                                    <span className="font-medium">{b.name}</span>
+                                    <span className="text-xs text-muted-foreground">{b.description?.substring(0, 30)}...</span>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="pt-4 border-t space-y-3">
+                            <h4 className="text-sm font-bold">Ajouter une marque</h4>
+                            <div>
+                                <Label>Nom</Label>
+                                <Input value={newBrand.name} onChange={e => setNewBrand(p => ({ ...p, name: e.target.value }))} />
+                            </div>
+                            <div>
+                                <Label>Description</Label>
+                                <Input value={newBrand.description} onChange={e => setNewBrand(p => ({ ...p, description: e.target.value }))} />
+                            </div>
+                            <Button onClick={() => createBrand.mutate()} disabled={!newBrand.name || createBrand.isPending} className="w-full">
+                                Ajouter la marque
+                            </Button>
+                        </div>
                     </div>
                 </DialogContent>
             </Dialog>
