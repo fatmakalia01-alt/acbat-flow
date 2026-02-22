@@ -2,16 +2,18 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Truck, MapPin, Camera, CheckCircle, Package, ExternalLink, Navigation } from "lucide-react";
+import {
+    Truck, MapPin, Camera, CheckCircle, ExternalLink,
+    Navigation, Phone, PenTool, Image as ImageIcon, AlertCircle
+} from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 
@@ -28,6 +30,7 @@ const DeliveryPage = () => {
     const queryClient = useQueryClient();
     const [selectedDelivery, setSelectedDelivery] = useState<any>(null);
     const [detailOpen, setDetailOpen] = useState(false);
+    const [podData, setPodData] = useState({ photo_before: false, photo_after: false, signed: false });
 
     const [transportForm, setTransportForm] = useState({
         carrier_name: "",
@@ -43,7 +46,7 @@ const DeliveryPage = () => {
             const { data, error } = await supabase
                 .from("deliveries")
                 .select("*, client_orders(reference, clients(*))")
-                .or(`technician_id.eq.${user?.id},status.eq.planifiee`) // Show assigned to me OR unassigned planned
+                .or(`technician_id.eq.${user?.id},status.eq.planifiee`)
                 .order("scheduled_date", { ascending: true });
             if (error) throw error;
             return data;
@@ -76,17 +79,36 @@ const DeliveryPage = () => {
             transport_cost: String(d.transport_cost || 0),
             carrier_type: d.carrier_type || "interne"
         });
+        setPodData({
+            photo_before: !!d.photo_before_url,
+            photo_after: !!d.photo_after_url,
+            signed: !!d.pv_signed
+        });
         setDetailOpen(true);
     };
 
     const handleUpdateStatus = (status: string) => {
-        const payload: any = { status };
+        if (status === "livree" && !podData.signed) {
+            toast({ title: "Action requise", description: "Veuillez faire signer le PV de livraison avant de valider.", variant: "destructive" });
+            return;
+        }
+
+        const payload: any = {
+            status,
+            ...transportForm,
+            transport_cost: Number(transportForm.transport_cost),
+            pv_signed: podData.signed
+        };
         if (status === "livree") payload.actual_date = new Date().toISOString().split("T")[0];
-        updateDelivery.mutate({ ...payload, ...transportForm, transport_cost: Number(transportForm.transport_cost) });
+        updateDelivery.mutate(payload);
     };
 
     const openInMaps = (lat: number, lng: number) => {
         window.open(`https://www.google.com/maps/search/?api=1&query=${lat},${lng}`, "_blank");
+    };
+
+    const handleCall = (phone: string) => {
+        window.location.href = `tel:${phone}`;
     };
 
     const stats = {
@@ -96,21 +118,21 @@ const DeliveryPage = () => {
     };
 
     return (
-        <div className="p-4 md:p-6 space-y-6 max-w-5xl mx-auto">
+        <div className="p-4 md:p-6 space-y-6 max-w-5xl mx-auto pb-24 md:pb-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-display font-bold text-foreground">Espace Livraison</h1>
                     <p className="text-muted-foreground text-sm">Gérez vos expéditions et suivis de transport</p>
                 </div>
                 <div className="flex gap-2">
-                    <Badge variant="outline" className="px-3 py-1">{stats.today} Aujourd'hui</Badge>
+                    <Badge variant="outline" className="px-3 py-1 border-primary/20 bg-primary/5">{stats.today} Aujourd'hui</Badge>
                     <Badge variant="secondary" className="px-3 py-1 font-bold">{stats.pending} En attente</Badge>
                 </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {isLoading ? (
-                    <div className="col-span-full py-20 text-center text-muted-foreground">Chargement des livraisons...</div>
+                    <div className="col-span-full py-20 text-center text-muted-foreground animate-pulse">Chargement des livraisons...</div>
                 ) : deliveries.length === 0 ? (
                     <Card className="col-span-full py-20 bg-muted/30 border-dashed">
                         <CardContent className="flex flex-col items-center justify-center space-y-2">
@@ -119,30 +141,33 @@ const DeliveryPage = () => {
                         </CardContent>
                     </Card>
                 ) : deliveries.map((d: any) => (
-                    <Card key={d.id} className="shadow-sm hover:shadow-md transition-shadow cursor-pointer border-l-4 border-l-primary" onClick={() => openDetails(d)}>
+                    <Card key={d.id} className="group shadow-sm hover:shadow-md transition-all cursor-pointer border-l-4 border-l-primary overflow-hidden" onClick={() => openDetails(d)}>
                         <CardContent className="p-4 space-y-3">
                             <div className="flex justify-between items-start">
                                 <div className="space-y-1">
                                     <p className="font-mono text-xs font-bold text-primary">{d.client_orders?.reference}</p>
-                                    <p className="font-bold text-sm truncate max-w-[180px]">{d.client_orders?.clients?.full_name}</p>
+                                    <p className="font-bold text-base truncate max-w-[180px]">{d.client_orders?.clients?.full_name}</p>
                                 </div>
                                 <Badge className={statusColors[d.status] || ""}>{d.status}</Badge>
                             </div>
 
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                <MapPin className="h-3 w-3" />
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <MapPin className="h-4 w-4 text-primary/70" />
                                 <span className="truncate">{d.client_orders?.clients?.city || "Adresse non fournie"}</span>
                             </div>
 
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground bg-secondary/50 p-2 rounded">
                                 <Navigation className="h-3 w-3" />
-                                <span>Prévu pour : {d.scheduled_date ? format(new Date(d.scheduled_date), "dd MMMM", { locale: fr }) : "Non planifiée"}</span>
+                                <span>Prévu le : {d.scheduled_date ? format(new Date(d.scheduled_date), "dd MMMM", { locale: fr }) : "À planifier"}</span>
                             </div>
 
-                            <div className="pt-2 flex justify-between items-center bg-muted/30 -mx-4 -mb-4 p-3 rounded-b-lg">
-                                <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">{d.carrier_type || 'interne'}</span>
-                                <Button size="sm" variant="ghost" className="h-7 text-xs gap-1">
-                                    <ExternalLink className="h-3 w-3" /> Détails
+                            <div className="pt-2 flex justify-between items-center group-hover:bg-primary/5 -mx-4 -mb-4 px-4 py-3 border-t">
+                                <div className="flex gap-2">
+                                    {d.pv_signed && <PenTool className="h-4 w-4 text-emerald-600" title="Signé" />}
+                                    {d.photo_after_url && <ImageIcon className="h-4 w-4 text-emerald-600" title="Photo POD" />}
+                                </div>
+                                <Button size="sm" variant="ghost" className="h-8 text-xs font-bold text-primary uppercase tracking-wider">
+                                    Ouvrir mission
                                 </Button>
                             </div>
                         </CardContent>
@@ -151,68 +176,108 @@ const DeliveryPage = () => {
             </div>
 
             <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
-                <DialogContent className="max-w-md">
-                    <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2">
-                            <Truck className="h-5 w-5" /> Livraison {selectedDelivery?.client_orders?.reference}
+                <DialogContent className="max-w-md p-0 overflow-hidden">
+                    <DialogHeader className="p-6 pb-0">
+                        <DialogTitle className="flex items-center gap-2 text-xl">
+                            <Truck className="h-6 w-6 text-primary" /> Livraison {selectedDelivery?.client_orders?.reference}
                         </DialogTitle>
-                        <DialogDescription>
-                            Détails de l'expédition et mise à jour du transport pour cette commande.
-                        </DialogDescription>
+                        <DialogDescription>Détails de l'expédition et justificatifs de livraison.</DialogDescription>
                     </DialogHeader>
 
                     {selectedDelivery && (
-                        <div className="space-y-6 py-2">
-                            <div className="bg-muted p-3 rounded-lg space-y-1">
-                                <p className="text-xs font-medium text-muted-foreground uppercase">Client</p>
-                                <p className="font-bold">{selectedDelivery.client_orders?.clients?.full_name}</p>
-                                <p className="text-sm">{selectedDelivery.client_orders?.clients?.address}, {selectedDelivery.client_orders?.clients?.city}</p>
-                                {selectedDelivery.client_orders?.clients?.latitude && (
-                                    <Button variant="link" className="p-0 h-auto text-primary text-xs" onClick={() => openInMaps(selectedDelivery.client_orders?.clients?.latitude, selectedDelivery.client_orders?.clients?.longitude)}>
-                                        <MapPin className="h-3 w-3 mr-1" /> Ouvrir dans Maps
-                                    </Button>
-                                )}
+                        <div className="p-6 space-y-6 max-h-[80vh] overflow-y-auto">
+                            {/* Client Summary */}
+                            <div className="bg-primary/5 p-4 rounded-xl space-y-3 border border-primary/10">
+                                <div className="flex justify-between items-start">
+                                    <div className="space-y-1">
+                                        <p className="text-[10px] font-bold text-primary uppercase tracking-widest">Destinataire</p>
+                                        <p className="font-bold text-lg">{selectedDelivery.client_orders?.clients?.full_name}</p>
+                                        <p className="text-sm text-muted-foreground leading-relaxed">
+                                            {selectedDelivery.client_orders?.clients?.address}<br />
+                                            {selectedDelivery.client_orders?.clients?.postal_code} {selectedDelivery.client_orders?.clients?.city}
+                                        </p>
+                                    </div>
+                                    <div className="flex flex-col gap-2">
+                                        {selectedDelivery.client_orders?.clients?.phone && (
+                                            <Button size="icon" className="rounded-full h-10 w-10 bg-emerald-600 hover:bg-emerald-700" onClick={() => handleCall(selectedDelivery.client_orders?.clients?.phone)}>
+                                                <Phone className="h-5 w-5" />
+                                            </Button>
+                                        )}
+                                        {selectedDelivery.client_orders?.clients?.latitude && (
+                                            <Button size="icon" variant="outline" className="rounded-full h-10 w-10" onClick={() => openInMaps(selectedDelivery.client_orders?.clients?.latitude, selectedDelivery.client_orders?.clients?.longitude)}>
+                                                <Navigation className="h-5 w-5" />
+                                            </Button>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
 
+                            {/* Proof of Delivery (POD) Section */}
                             <div className="space-y-4">
-                                <h4 className="font-bold text-sm border-b pb-1">Détails du Transport</h4>
+                                <h4 className="font-bold text-sm flex items-center gap-2 uppercase tracking-wide">
+                                    <Camera className="h-4 w-4 text-primary" /> Justificatifs (POD)
+                                </h4>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <Button
+                                        variant={podData.photo_before ? "secondary" : "outline"}
+                                        className={`h-24 flex-col gap-2 border-dashed ${podData.photo_before ? 'border-emerald-500' : ''}`}
+                                        onClick={() => setPodData(p => ({ ...p, photo_before: true }))}
+                                    >
+                                        {podData.photo_before ? <CheckCircle className="h-6 w-6 text-emerald-600" /> : <Camera className="h-6 w-6" />}
+                                        <span className="text-[10px] uppercase font-bold">Photo Montage</span>
+                                    </Button>
+                                    <Button
+                                        variant={podData.photo_after ? "secondary" : "outline"}
+                                        className={`h-24 flex-col gap-2 border-dashed ${podData.photo_after ? 'border-emerald-500' : ''}`}
+                                        onClick={() => setPodData(p => ({ ...p, photo_after: true }))}
+                                    >
+                                        {podData.photo_after ? <CheckCircle className="h-6 w-6 text-emerald-600" /> : <Camera className="h-6 w-6" />}
+                                        <span className="text-[10px] uppercase font-bold">Photo Finale</span>
+                                    </Button>
+                                    <Button
+                                        variant={podData.signed ? "secondary" : "outline"}
+                                        className={`h-20 col-span-2 flex-col gap-2 border-dashed ${podData.signed ? 'border-emerald-500' : ''}`}
+                                        onClick={() => setPodData(p => ({ ...p, signed: true }))}
+                                    >
+                                        <div className="flex items-center gap-2">
+                                            {podData.signed ? <CheckCircle className="h-5 w-5 text-emerald-600" /> : <PenTool className="h-5 w-5" />}
+                                            <span className="text-xs font-bold uppercase">Signature Client PV</span>
+                                        </div>
+                                        {podData.signed && <span className="text-[10px] text-muted-foreground italic">Signé sur terminal le {format(new Date(), "dd/MM à HH:mm")}</span>}
+                                    </Button>
+                                </div>
+                            </div>
+
+                            {/* Transport Details (Optional for Driver) */}
+                            <div className="space-y-4">
+                                <h4 className="font-bold text-sm flex items-center gap-2 uppercase tracking-wide">
+                                    <Truck className="h-4 w-4 text-primary" /> Détails Transport
+                                </h4>
                                 <div className="grid grid-cols-2 gap-3">
                                     <div className="space-y-1.5">
-                                        <Label htmlFor="carrier_type" className="text-xs">Type</Label>
-                                        <Select value={transportForm.carrier_type} onValueChange={v => setTransportForm(p => ({ ...p, carrier_type: v }))}>
-                                            <SelectTrigger id="carrier_type" className="h-9 text-xs"><SelectValue /></SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="interne">Interne</SelectItem>
-                                                <SelectItem value="externe">Externe (Transporteur)</SelectItem>
-                                            </SelectContent>
-                                        </Select>
+                                        <Label htmlFor="vehicle_plate" className="text-[10px] uppercase font-bold text-muted-foreground">Véhicule (Matricule)</Label>
+                                        <Input id="vehicle_plate" className="h-10 text-xs" value={transportForm.vehicle_plate} onChange={e => setTransportForm(p => ({ ...p, vehicle_plate: e.target.value }))} placeholder="XX-XXX-XX" />
                                     </div>
                                     <div className="space-y-1.5">
-                                        <Label htmlFor="carrier_name" className="text-xs">Transporteur / Véhicule</Label>
-                                        <Input id="carrier_name" className="h-9 text-xs" value={transportForm.carrier_name} onChange={e => setTransportForm(p => ({ ...p, carrier_name: e.target.value }))} placeholder="Ex: Van 01 ou DHL" />
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <Label htmlFor="vehicle_plate" className="text-xs">Plaque / Matricule</Label>
-                                        <Input id="vehicle_plate" className="h-9 text-xs" value={transportForm.vehicle_plate} onChange={e => setTransportForm(p => ({ ...p, vehicle_plate: e.target.value }))} placeholder="XX-XXX-XX" />
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <Label htmlFor="transport_cost" className="text-xs">Coût Transport (TND)</Label>
-                                        <Input id="transport_cost" type="number" className="h-9 text-xs" value={transportForm.transport_cost} onChange={e => setTransportForm(p => ({ ...p, transport_cost: e.target.value }))} />
+                                        <Label htmlFor="transport_cost" className="text-[10px] uppercase font-bold text-muted-foreground">Frais (TND)</Label>
+                                        <Input id="transport_cost" type="number" className="h-10 text-xs" value={transportForm.transport_cost} onChange={e => setTransportForm(p => ({ ...p, transport_cost: e.target.value }))} />
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="flex flex-col gap-2">
-                                <h4 className="font-bold text-sm border-b pb-1">Mise à jour statut</h4>
-                                <div className="grid grid-cols-2 gap-2">
-                                    <Button variant="outline" className="h-10 text-xs border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100" onClick={() => handleUpdateStatus("en_route")}>
-                                        <Navigation className="h-4 w-4 mr-2" /> En route
+                            {/* Action Status */}
+                            <div className="pt-4 border-t space-y-3">
+                                <div className="grid grid-cols-2 gap-3">
+                                    <Button variant="outline" className="h-12 text-xs border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 font-bold uppercase tracking-wider" onClick={() => handleUpdateStatus("en_route")}>
+                                        <Navigation className="h-4 w-4 mr-2" /> Démarrer Route
                                     </Button>
-                                    <Button className="h-10 text-xs bg-emerald-600 hover:bg-emerald-700" onClick={() => handleUpdateStatus("livree")}>
-                                        <CheckCircle className="h-4 w-4 mr-2" /> Confirmé / Livré
+                                    <Button className="h-12 text-xs bg-emerald-600 hover:bg-emerald-700 font-bold uppercase tracking-wider" onClick={() => handleUpdateStatus("livree")}>
+                                        <CheckCircle className="h-4 w-4 mr-2" /> Valider Livraison
                                     </Button>
                                 </div>
-                                <Button variant="ghost" size="sm" className="text-xs text-destructive mt-1" onClick={() => handleUpdateStatus("echouee")}>Échec de livraison</Button>
+                                <Button variant="ghost" size="sm" className="w-full text-xs text-destructive flex items-center gap-2" onClick={() => handleUpdateStatus("echouee")}>
+                                    <AlertCircle className="h-4 w-4" /> Signaler un incident / échec
+                                </Button>
                             </div>
                         </div>
                     )}
