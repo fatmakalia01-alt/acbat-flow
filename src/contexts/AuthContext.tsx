@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 
 type AppRole = 'manager' | 'directeur_exploitation' | 'responsable_achat' | 'responsable_logistique' |
   'responsable_commercial' | 'commercial' | 'responsable_technique' | 'technicien_montage' |
-  'responsable_sav' | 'responsable_comptabilite' | 'client' | 'livraison';
+  'responsable_sav' | 'responsable_comptabilite' | 'client' | 'livraison' | 'responsable_showroom';
 
 interface Profile {
   id: string;
