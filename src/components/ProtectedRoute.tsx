@@ -3,7 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 
 type AppRole = 'manager' | 'directeur_exploitation' | 'responsable_achat' | 'responsable_logistique' |
   'responsable_commercial' | 'commercial' | 'responsable_technique' | 'technicien_montage' |
-  'responsable_sav' | 'responsable_comptabilite' | 'client';
+  'responsable_sav' | 'responsable_comptabilite' | 'client' | 'livraison';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
