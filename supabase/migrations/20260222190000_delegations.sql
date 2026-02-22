@@ -3,7 +3,8 @@
 -- Created: 2026-02-22
 -- ============================================
 
-CREATE TABLE IF NOT EXISTS public.delegations (
+DROP TABLE IF EXISTS public.delegations CASCADE;
+CREATE TABLE public.delegations (
   id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   from_user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   to_user_id   uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
