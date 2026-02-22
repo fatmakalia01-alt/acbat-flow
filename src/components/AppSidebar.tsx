@@ -19,6 +19,7 @@ const menuItems = [
   { icon: Users, label: "Clients", path: "/clients", roles: ["manager", "directeur_exploitation", "responsable_commercial", "commercial"] },
   { icon: Package, label: "Produits & Stock", path: "/products", roles: ["manager", "responsable_achat", "responsable_logistique"] },
   { icon: Truck, label: "Logistique", path: "/logistics", roles: ["manager", "responsable_logistique", "responsable_achat"] },
+  { icon: Package, label: "Livraisons", path: "/delivery", roles: ["manager", "responsable_logistique", "livraison"] },
   { icon: Wrench, label: "Technique", path: "/technical", roles: ["manager", "responsable_technique", "technicien_montage"] },
   { icon: FileText, label: "Devis", path: "/quotes", roles: ["manager", "responsable_commercial", "commercial"] },
   { icon: CreditCard, label: "Comptabilité", path: "/accounting", roles: ["manager", "directeur_exploitation", "responsable_comptabilite"] },
