@@ -2,24 +2,26 @@ import { describe, it, expect } from "vitest";
 import { formatCurrency, formatDate, formatPercent, formatNumber } from "@/lib/formatters";
 
 describe("formatCurrency", () => {
+    const normalize = (s: string) => s.replace(/\s/g, " ").replace(/\u00a0/g, " ").replace(/\u202f/g, " ");
+
     it("formats zero correctly", () => {
-        expect(formatCurrency(0)).toBe("0,00 €");
+        expect(normalize(formatCurrency(0))).toBe("0,00 €");
     });
 
     it("formats a positive integer", () => {
-        expect(formatCurrency(1000)).toBe("1 000,00 €");
+        expect(normalize(formatCurrency(1000))).toBe("1 000,00 €");
     });
 
     it("formats a decimal value", () => {
-        expect(formatCurrency(1234.5)).toBe("1 234,50 €");
+        expect(normalize(formatCurrency(1234.5))).toBe("1 234,50 €");
     });
 
     it("formats a negative value", () => {
-        expect(formatCurrency(-500)).toBe("-500,00 €");
+        expect(normalize(formatCurrency(-500))).toBe("-500,00 €");
     });
 
     it("rounds to 2 decimal places", () => {
-        expect(formatCurrency(9.999)).toBe("10,00 €");
+        expect(normalize(formatCurrency(9.999))).toBe("10,00 €");
     });
 });
 
