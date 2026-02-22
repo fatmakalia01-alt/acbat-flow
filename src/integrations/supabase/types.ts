@@ -165,34 +165,40 @@ export type Database = {
       }
       delegations: {
         Row: {
-          active: boolean | null
           created_at: string
-          delegatee_id: string
-          delegator_id: string
-          ended_at: string | null
+          end_date: string | null
+          from_user_id: string
           id: string
           reason: string | null
-          started_at: string
+          role: string
+          start_date: string
+          status: string
+          to_user_id: string
+          updated_at: string
         }
         Insert: {
-          active?: boolean | null
           created_at?: string
-          delegatee_id: string
-          delegator_id: string
-          ended_at?: string | null
+          end_date?: string | null
+          from_user_id: string
           id?: string
           reason?: string | null
-          started_at?: string
+          role: string
+          start_date?: string
+          status?: string
+          to_user_id: string
+          updated_at?: string
         }
         Update: {
-          active?: boolean | null
           created_at?: string
-          delegatee_id?: string
-          delegator_id?: string
-          ended_at?: string | null
+          end_date?: string | null
+          from_user_id?: string
           id?: string
           reason?: string | null
-          started_at?: string
+          role?: string
+          start_date?: string
+          status?: string
+          to_user_id?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -1023,73 +1029,73 @@ export type Database = {
     Enums: {
       alert_level: "jaune" | "rouge" | "bleue" | "rouge_clignotant"
       app_role:
-        | "manager"
-        | "directeur_exploitation"
-        | "responsable_achat"
-        | "responsable_logistique"
-        | "responsable_commercial"
-        | "commercial"
-        | "responsable_technique"
-        | "technicien_montage"
-        | "responsable_sav"
-        | "responsable_comptabilite"
-        | "client"
+      | "manager"
+      | "directeur_exploitation"
+      | "responsable_achat"
+      | "responsable_logistique"
+      | "responsable_commercial"
+      | "commercial"
+      | "responsable_technique"
+      | "technicien_montage"
+      | "responsable_sav"
+      | "responsable_comptabilite"
+      | "client"
       invoice_status:
-        | "brouillon"
-        | "emise"
-        | "payee_partiel"
-        | "payee"
-        | "impayee"
-        | "annulee"
+      | "brouillon"
+      | "emise"
+      | "payee_partiel"
+      | "payee"
+      | "impayee"
+      | "annulee"
       notification_type:
-        | "info"
-        | "alerte_delai"
-        | "depassement"
-        | "transition"
-        | "urgente"
+      | "info"
+      | "alerte_delai"
+      | "depassement"
+      | "transition"
+      | "urgente"
       order_status:
-        | "brouillon"
-        | "en_validation"
-        | "validee"
-        | "en_commande_fournisseur"
-        | "en_reception"
-        | "en_preparation"
-        | "en_livraison"
-        | "livree"
-        | "en_facturation"
-        | "payee"
-        | "cloturee"
-        | "annulee"
+      | "brouillon"
+      | "en_validation"
+      | "validee"
+      | "en_commande_fournisseur"
+      | "en_reception"
+      | "en_preparation"
+      | "en_livraison"
+      | "livree"
+      | "en_facturation"
+      | "payee"
+      | "cloturee"
+      | "annulee"
       payment_method:
-        | "especes"
-        | "cheque"
-        | "virement"
-        | "carte_bancaire"
-        | "traite_bancaire"
+      | "especes"
+      | "cheque"
+      | "virement"
+      | "carte_bancaire"
+      | "traite_bancaire"
       payment_status: "en_attente" | "confirme" | "rejete"
       quote_status:
-        | "brouillon"
-        | "en_validation"
-        | "accepte"
-        | "refuse"
-        | "expire"
+      | "brouillon"
+      | "en_validation"
+      | "accepte"
+      | "refuse"
+      | "expire"
       sav_status: "ouvert" | "en_cours" | "resolu" | "ferme"
       workflow_step_name:
-        | "creation_commande"
-        | "validation_commerciale"
-        | "commande_fournisseur"
-        | "reception_marchandises"
-        | "preparation_technique"
-        | "livraison_installation"
-        | "validation_client"
-        | "facturation_paiement"
-        | "cloture_archivage"
+      | "creation_commande"
+      | "validation_commerciale"
+      | "commande_fournisseur"
+      | "reception_marchandises"
+      | "preparation_technique"
+      | "livraison_installation"
+      | "validation_client"
+      | "facturation_paiement"
+      | "cloture_archivage"
       workflow_step_status:
-        | "pending"
-        | "in_progress"
-        | "completed"
-        | "delayed"
-        | "blocked"
+      | "pending"
+      | "in_progress"
+      | "completed"
+      | "delayed"
+      | "blocked"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1103,116 +1109,116 @@ type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
-    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    | { schema: keyof DatabaseWithoutInternals },
+  | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+  | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+  ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+    DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+  : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+    DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
-    ? R
-    : never
+  ? R
+  : never
   : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
-        Row: infer R
-      }
-      ? R
-      : never
-    : never
+    DefaultSchema["Views"])
+  ? (DefaultSchema["Tables"] &
+    DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+      Row: infer R
+    }
+  ? R
+  : never
+  : never
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
+  | keyof DefaultSchema["Tables"]
+  | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+  ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+  : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Insert: infer I
-    }
-    ? I
-    : never
+    Insert: infer I
+  }
+  ? I
+  : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Insert: infer I
-      }
-      ? I
-      : never
-    : never
+  ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+    Insert: infer I
+  }
+  ? I
+  : never
+  : never
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
+  | keyof DefaultSchema["Tables"]
+  | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+  ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+  : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Update: infer U
-    }
-    ? U
-    : never
+    Update: infer U
+  }
+  ? U
+  : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Update: infer U
-      }
-      ? U
-      : never
-    : never
+  ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+    Update: infer U
+  }
+  ? U
+  : never
+  : never
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema["Enums"]
-    | { schema: keyof DatabaseWithoutInternals },
+  | keyof DefaultSchema["Enums"]
+  | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+  ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+  : never = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
-    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
-    : never
+  ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+  : never
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof DatabaseWithoutInternals },
+  | keyof DefaultSchema["CompositeTypes"]
+  | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+  ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+  : never = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
-    : never
+  ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+  : never
 
 export const Constants = {
   public: {
