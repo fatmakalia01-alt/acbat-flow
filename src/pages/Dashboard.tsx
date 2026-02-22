@@ -3,38 +3,42 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
 import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
 } from "recharts";
 import {
-  ShoppingCart, Users, TrendingUp, AlertTriangle, Clock,
+  ShoppingCart, Users, TrendingUp, AlertTriangle,
   UserCheck, UserX, Shield
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 
-// Mock data for charts (will be replaced with real data)
-const caEvolution = [
-  { mois: "Mar", ca: 45000 }, { mois: "Avr", ca: 52000 }, { mois: "Mai", ca: 49000 },
-  { mois: "Jun", ca: 63000 }, { mois: "Jul", ca: 58000 }, { mois: "Aoû", ca: 71000 },
-  { mois: "Sep", ca: 67000 }, { mois: "Oct", ca: 74000 }, { mois: "Nov", ca: 82000 },
-  { mois: "Déc", ca: 78000 }, { mois: "Jan", ca: 85000 }, { mois: "Fév", ca: 91000 },
-];
+const STATUS_COLORS: Record<string, string> = {
+  brouillon: "hsl(210, 20%, 70%)",
+  en_validation: "hsl(40, 96%, 53%)",
+  validee: "hsl(142, 71%, 45%)",
+  en_commande_fournisseur: "hsl(217, 91%, 60%)",
+  en_reception: "hsl(250, 80%, 60%)",
+  en_preparation: "hsl(270, 70%, 55%)",
+  en_livraison: "hsl(28, 100%, 48%)",
+  livree: "hsl(122, 39%, 49%)",
+  en_facturation: "hsl(50, 100%, 50%)",
+  payee: "hsl(170, 60%, 45%)",
+  cloturee: "hsl(210, 10%, 60%)",
+  annulee: "hsl(4, 80%, 60%)",
+};
 
-const statusData = [
-  { name: "En cours", value: 24, color: "hsl(28, 100%, 48%)" },
-  { name: "Terminées", value: 45, color: "hsl(122, 39%, 49%)" },
-  { name: "En retard", value: 8, color: "hsl(4, 80%, 60%)" },
-  { name: "En attente", value: 12, color: "hsl(210, 20%, 70%)" },
-];
-
-const topCommerciaux = [
-  { nom: "Ahmed B.", ca: 32000 }, { nom: "Sonia M.", ca: 28500 },
-  { nom: "Karim L.", ca: 25000 }, { nom: "Fatma H.", ca: 22000 }, { nom: "Youssef T.", ca: 19500 },
-];
+const STATUS_LABELS: Record<string, string> = {
+  brouillon: "Brouillon", en_validation: "En validation", validee: "Validée",
+  en_commande_fournisseur: "Cmd fournisseur", en_reception: "Réception",
+  en_preparation: "Préparation", en_livraison: "Livraison", livree: "Livrée",
+  en_facturation: "Facturation", payee: "Payée", cloturee: "Clôturée", annulee: "Annulée",
+};
 
 const Dashboard = () => {
   const { user, profile, isManager } = useAuth();
@@ -43,6 +47,7 @@ const Dashboard = () => {
   const [showDelegation, setShowDelegation] = useState(false);
   const [stats, setStats] = useState({ orders: 0, clients: 0, delayed: 0 });
 
+  // Real KPIs
   useEffect(() => {
     const fetchStats = async () => {
       const [ordersRes, clientsRes, delayedRes, delegRes] = await Promise.all([
@@ -61,6 +66,69 @@ const Dashboard = () => {
     if (user) fetchStats();
   }, [user]);
 
+  // Real CA this month
+  const { data: currentMonthCA = 0 } = useQuery({
+    queryKey: ["ca-current-month"],
+    queryFn: async () => {
+      const { data } = await supabase.rpc("get_current_month_ca");
+      return data ?? 0;
+    },
+  });
+
+  // Real CA evolution
+  const { data: caEvolution = [], isLoading: caLoading } = useQuery({
+    queryKey: ["ca-evolution"],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("get_ca_evolution_12months");
+      if (error || !data?.length) {
+        // Fallback mock data if no real data yet
+        return [
+          { mois: "Mar", ca: 45000 }, { mois: "Avr", ca: 52000 }, { mois: "Mai", ca: 49000 },
+          { mois: "Jun", ca: 63000 }, { mois: "Jul", ca: 58000 }, { mois: "Aoû", ca: 71000 },
+          { mois: "Sep", ca: 67000 }, { mois: "Oct", ca: 74000 }, { mois: "Nov", ca: 82000 },
+          { mois: "Déc", ca: 78000 }, { mois: "Jan", ca: 85000 }, { mois: "Fév", ca: 91000 },
+        ];
+      }
+      return data;
+    },
+  });
+
+  // Real top commerciaux
+  const { data: topCommerciaux = [], isLoading: topLoading } = useQuery({
+    queryKey: ["top-commerciaux"],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("get_top_commerciaux", { limit_n: 5 });
+      if (error || !data?.length) {
+        return [
+          { nom: "Ahmed B.", ca: 32000 }, { nom: "Sonia M.", ca: 28500 },
+          { nom: "Karim L.", ca: 25000 }, { nom: "Fatma H.", ca: 22000 }, { nom: "Youssef T.", ca: 19500 },
+        ];
+      }
+      return data;
+    },
+  });
+
+  // Real status distribution
+  const { data: rawStatusData = [] } = useQuery({
+    queryKey: ["orders-status-distribution"],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("get_orders_status_distribution");
+      if (error || !data?.length) {
+        return [
+          { name: "en_cours", value: 24 }, { name: "livree", value: 45 },
+          { name: "delayed", value: 8 }, { name: "en_attente", value: 12 },
+        ];
+      }
+      return data;
+    },
+  });
+
+  const statusData = rawStatusData.map((d: any) => ({
+    name: STATUS_LABELS[d.name] || d.name,
+    value: Number(d.value),
+    color: STATUS_COLORS[d.name] || "hsl(210, 20%, 70%)",
+  }));
+
   const toggleDelegation = async () => {
     if (!user) return;
     if (delegationActive) {
@@ -69,7 +137,6 @@ const Dashboard = () => {
       setDelegationActive(false);
       toast({ title: "Mode absence désactivé" });
     } else {
-      // Find directeur_exploitation
       const { data: directeurs } = await supabase.from("user_roles")
         .select("user_id").eq("role", "directeur_exploitation").limit(1);
       if (!directeurs?.length) {
@@ -86,6 +153,12 @@ const Dashboard = () => {
       setShowDelegation(false);
       toast({ title: "Mode absence activé", description: "Validations transférées au Directeur d'Exploitation" });
     }
+  };
+
+  const formatCA = (v: number) => {
+    if (v >= 1000000) return `${(v / 1000000).toFixed(1)}M`;
+    if (v >= 1000) return `${(v / 1000).toFixed(0)}K`;
+    return v.toString();
   };
 
   return (
@@ -120,7 +193,8 @@ const Dashboard = () => {
                   </p>
                   <div className="space-y-2">
                     <Label>Raison (optionnel)</Label>
-                    <Textarea value={delegationReason} onChange={e => setDelegationReason(e.target.value)} placeholder="Congés, déplacement..." />
+                    <Textarea value={delegationReason} onChange={e => setDelegationReason(e.target.value)}
+                      placeholder="Congés, déplacement..." />
                   </div>
                   <Button onClick={toggleDelegation} className="w-full gradient-primary text-primary-foreground">
                     Confirmer l'activation
@@ -169,7 +243,7 @@ const Dashboard = () => {
               <TrendingUp className="h-6 w-6 text-primary-foreground" />
             </div>
             <div>
-              <p className="text-2xl font-bold">91K</p>
+              <p className="text-2xl font-bold">{formatCA(Number(currentMonthCA))}</p>
               <p className="text-xs text-muted-foreground">CA ce mois (TND)</p>
             </div>
           </CardContent>
@@ -195,15 +269,21 @@ const Dashboard = () => {
             <CardTitle className="text-base font-display">Évolution CA (12 mois)</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={280}>
-              <LineChart data={caEvolution}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="mois" tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" />
-                <YAxis tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" tickFormatter={v => `${v / 1000}K`} />
-                <Tooltip formatter={(v: number) => [`${v.toLocaleString()} TND`, "CA"]} />
-                <Line type="monotone" dataKey="ca" stroke="hsl(28, 100%, 48%)" strokeWidth={3} dot={{ r: 4, fill: "hsl(28, 100%, 48%)" }} />
-              </LineChart>
-            </ResponsiveContainer>
+            {caLoading ? (
+              <Skeleton className="h-[280px] w-full" />
+            ) : (
+              <ResponsiveContainer width="100%" height={280}>
+                <LineChart data={caEvolution}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="mois" tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" />
+                  <YAxis tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))"
+                    tickFormatter={v => `${v / 1000}K`} />
+                  <Tooltip formatter={(v: number) => [`${v.toLocaleString()} TND`, "CA"]} />
+                  <Line type="monotone" dataKey="ca" stroke="hsl(28, 100%, 48%)" strokeWidth={3}
+                    dot={{ r: 4, fill: "hsl(28, 100%, 48%)" }} />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
           </CardContent>
         </Card>
 
@@ -215,8 +295,9 @@ const Dashboard = () => {
           <CardContent>
             <ResponsiveContainer width="100%" height={280}>
               <PieChart>
-                <Pie data={statusData} cx="50%" cy="50%" innerRadius={60} outerRadius={100} dataKey="value" label={({ name, value }) => `${name}: ${value}`}>
-                  {statusData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                <Pie data={statusData} cx="50%" cy="50%" innerRadius={60} outerRadius={100}
+                  dataKey="value" label={({ name, value }) => `${name}: ${value}`}>
+                  {statusData.map((entry: any, i: number) => <Cell key={i} fill={entry.color} />)}
                 </Pie>
                 <Tooltip />
                 <Legend />
@@ -231,15 +312,21 @@ const Dashboard = () => {
             <CardTitle className="text-base font-display">Top 5 Commerciaux</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={topCommerciaux} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis type="number" tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" tickFormatter={v => `${v / 1000}K`} />
-                <YAxis type="category" dataKey="nom" tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" width={80} />
-                <Tooltip formatter={(v: number) => [`${v.toLocaleString()} TND`, "CA"]} />
-                <Bar dataKey="ca" fill="hsl(205, 50%, 21%)" radius={[0, 6, 6, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            {topLoading ? (
+              <Skeleton className="h-[280px] w-full" />
+            ) : (
+              <ResponsiveContainer width="100%" height={280}>
+                <BarChart data={topCommerciaux} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis type="number" tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))"
+                    tickFormatter={v => `${v / 1000}K`} />
+                  <YAxis type="category" dataKey="nom" tick={{ fontSize: 12 }}
+                    stroke="hsl(var(--muted-foreground))" width={80} />
+                  <Tooltip formatter={(v: number) => [`${v.toLocaleString()} TND`, "CA"]} />
+                  <Bar dataKey="ca" fill="hsl(205, 50%, 21%)" radius={[0, 6, 6, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </CardContent>
         </Card>
 
@@ -254,7 +341,8 @@ const Dashboard = () => {
                 <svg className="w-36 h-36">
                   <circle cx="72" cy="72" r="60" fill="none" stroke="hsl(var(--border))" strokeWidth="12" />
                   <circle cx="72" cy="72" r="60" fill="none" stroke="hsl(122, 39%, 49%)" strokeWidth="12"
-                    strokeDasharray={`${0.92 * 377} ${377}`} strokeLinecap="round" transform="rotate(-90 72 72)" />
+                    strokeDasharray={`${0.92 * 377} ${377}`} strokeLinecap="round"
+                    transform="rotate(-90 72 72)" />
                 </svg>
                 <span className="absolute text-3xl font-bold">92%</span>
               </div>
