@@ -10,7 +10,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Search, Pencil, Package, AlertTriangle } from "lucide-react";
+import { Plus, Search, Pencil, Package, AlertTriangle, ArrowLeftRight } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const ProductsPage = () => {
     const { toast } = useToast();
@@ -18,6 +19,8 @@ const ProductsPage = () => {
     const [search, setSearch] = useState("");
     const [dialogOpen, setDialogOpen] = useState(false);
     const [editing, setEditing] = useState<any>(null);
+    const [movingStock, setMovingStock] = useState<any>(null);
+    const [movementForm, setMovementForm] = useState({ quantity: "1", type: "adjustment", reason: "" });
 
     const emptyForm = {
         name: "", description: "", sku: "", price_ht: "", tva_rate: "19",
@@ -37,6 +40,7 @@ const ProductsPage = () => {
     });
 
     const upsertProduct = useMutation({
+        // ... existing mutationFn logic ...
         mutationFn: async () => {
             const payload = {
                 name: form.name,
@@ -51,7 +55,6 @@ const ProductsPage = () => {
             } else {
                 const { data, error } = await supabase.from("products").insert(payload).select("id").single();
                 if (error) throw error;
-                // Create stock entry
                 await supabase.from("stock").insert({ product_id: data.id, quantity: 0, min_quantity: 5 });
             }
         },
@@ -61,6 +64,29 @@ const ProductsPage = () => {
             setForm(emptyForm);
             setEditing(null);
             toast({ title: editing ? "Produit modifié" : "Produit créé" });
+        },
+        onError: (e: any) => toast({ title: "Erreur", description: e.message, variant: "destructive" }),
+    });
+
+    const recordMovement = useMutation({
+        mutationFn: async () => {
+            if (!movingStock) return;
+            const qty = parseInt(movementForm.quantity) || 0;
+            const finalQty = movementForm.type === "out" ? -Math.abs(qty) : (movementForm.type === "in" ? Math.abs(qty) : qty);
+            const { error } = await supabase.from("stock_movements").insert({
+                product_id: movingStock.id,
+                quantity: finalQty,
+                type: movementForm.type as any,
+                reason: movementForm.reason || null,
+            });
+            if (error) throw error;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["products"] });
+            queryClient.invalidateQueries({ queryKey: ["stock-movements"] });
+            setMovingStock(null);
+            setMovementForm({ quantity: "1", type: "adjustment", reason: "" });
+            toast({ title: "Mouvement enregistré" });
         },
         onError: (e: any) => toast({ title: "Erreur", description: e.message, variant: "destructive" }),
     });
@@ -191,9 +217,14 @@ const ProductsPage = () => {
                                             </Badge>
                                         </TableCell>
                                         <TableCell>
-                                            <Button variant="ghost" size="icon" onClick={() => openEdit(p)}>
-                                                <Pencil className="h-4 w-4" />
-                                            </Button>
+                                            <div className="flex items-center gap-1">
+                                                <Button variant="ghost" size="icon" onClick={() => openEdit(p)}>
+                                                    <Pencil className="h-4 w-4" />
+                                                </Button>
+                                                <Button variant="ghost" size="icon" onClick={() => setMovingStock(p)}>
+                                                    <ArrowLeftRight className="h-4 w-4 text-blue-600" />
+                                                </Button>
+                                            </div>
                                         </TableCell>
                                     </TableRow>
                                 );
@@ -235,6 +266,44 @@ const ProductsPage = () => {
                         <Button onClick={() => upsertProduct.mutate()}
                             disabled={!form.name || upsertProduct.isPending} className="w-full">
                             {editing ? "Enregistrer" : "Créer"}
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={!!movingStock} onOpenChange={open => !open && setMovingStock(null)}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Mouvement de stock — {movingStock?.name}</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <Label>Type de mouvement</Label>
+                                <Select value={movementForm.type}
+                                    onValueChange={v => setMovementForm(p => ({ ...p, type: v }))}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="in">Entrée (+)</SelectItem>
+                                        <SelectItem value="out">Sortie (-)</SelectItem>
+                                        <SelectItem value="adjustment">Ajustement inventaire</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div>
+                                <Label>Quantité</Label>
+                                <Input type="number" value={movementForm.quantity}
+                                    onChange={e => setMovementForm(p => ({ ...p, quantity: e.target.value }))} />
+                            </div>
+                        </div>
+                        <div>
+                            <Label>Raison / Commentaire</Label>
+                            <Input placeholder="Réception, Vente, Casse..." value={movementForm.reason}
+                                onChange={e => setMovementForm(p => ({ ...p, reason: e.target.value }))} />
+                        </div>
+                        <Button onClick={() => recordMovement.mutate()}
+                            disabled={recordMovement.isPending} className="w-full">
+                            Enregistrer le mouvement
                         </Button>
                     </div>
                 </DialogContent>
