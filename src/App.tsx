@@ -11,6 +11,7 @@ import UsersManagement from "./pages/UsersManagement";
 import OrdersManagement from "./pages/OrdersManagement";
 import ClientsManagement from "./pages/ClientsManagement";
 import QuotesManagement from "./pages/QuotesManagement";
+import AccountingPage from "./pages/AccountingPage";
 import AppLayout from "./components/AppLayout";
 import NotFound from "./pages/NotFound";
 
@@ -39,6 +40,7 @@ const App = () => (
               <Route path="orders" element={<OrdersManagement />} />
               <Route path="clients" element={<ClientsManagement />} />
               <Route path="quotes" element={<QuotesManagement />} />
+              <Route path="accounting" element={<AccountingPage />} />
               <Route path="my-orders" element={<ClientPortal />} />
             </Route>
             <Route path="*" element={<NotFound />} />
