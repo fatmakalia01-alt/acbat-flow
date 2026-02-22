@@ -20,6 +20,8 @@ import SavPage from "./pages/SavPage";
 import NotificationsPage from "./pages/NotificationsPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
 import DelegationPage from "./pages/DelegationPage";
+import SuppliersPage from "./pages/SuppliersPage";
+import StockMovements from "./pages/StockMovements";
 import AppLayout from "./components/AppLayout";
 import NotFound from "./pages/NotFound";
 
@@ -101,6 +103,16 @@ const App = () => (
               <Route path="delegations" element={
                 <ProtectedRoute roles={["manager", "directeur_exploitation"]}>
                   <DelegationPage />
+                </ProtectedRoute>
+              } />
+              <Route path="suppliers" element={
+                <ProtectedRoute roles={["manager", "responsable_achat", "directeur_exploitation"]}>
+                  <SuppliersPage />
+                </ProtectedRoute>
+              } />
+              <Route path="stock-movements" element={
+                <ProtectedRoute roles={["manager", "responsable_logistique", "directeur_exploitation"]}>
+                  <StockMovements />
                 </ProtectedRoute>
               } />
               <Route path="users" element={
