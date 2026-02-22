@@ -49,7 +49,7 @@ const DeliveryPage = () => {
         queryFn: async () => {
             let query = supabase
                 .from("deliveries")
-                .select("*, client_orders(reference, clients(*))");
+                .select("*, client_orders(reference, clients(*), sites(name))");
 
             if (isLivreur) {
                 // Livreur: only their assigned deliveries OR unassigned planned ones
@@ -160,7 +160,12 @@ const DeliveryPage = () => {
                                     <p className="font-mono text-xs font-bold text-primary">{d.client_orders?.reference}</p>
                                     <p className="font-bold text-base truncate max-w-[180px]">{d.client_orders?.clients?.full_name}</p>
                                 </div>
-                                <Badge className={statusColors[d.status] || ""}>{d.status}</Badge>
+                                <div className="flex flex-col items-end gap-1">
+                                    <Badge className={statusColors[d.status] || ""}>{d.status}</Badge>
+                                    <span className="text-[10px] font-bold text-muted-foreground bg-muted px-1.5 py-0.5 rounded uppercase">
+                                        {d.client_orders?.sites?.name || "Siège"}
+                                    </span>
+                                </div>
                             </div>
 
                             <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -198,11 +203,14 @@ const DeliveryPage = () => {
 
                     {selectedDelivery && (
                         <div className="p-6 space-y-6 max-h-[80vh] overflow-y-auto">
-                            {/* Client Summary */}
+                            {/* Site & Client Summary */}
                             <div className="bg-primary/5 p-4 rounded-xl space-y-3 border border-primary/10">
                                 <div className="flex justify-between items-start">
                                     <div className="space-y-1">
-                                        <p className="text-[10px] font-bold text-primary uppercase tracking-widest">Destinataire</p>
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <p className="text-[10px] font-bold text-primary uppercase tracking-widest">Site: {selectedDelivery.client_orders?.sites?.name || "Siège"}</p>
+                                        </div>
+                                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Destinataire</p>
                                         <p className="font-bold text-lg">{selectedDelivery.client_orders?.clients?.full_name}</p>
                                         <p className="text-sm text-muted-foreground leading-relaxed">
                                             {selectedDelivery.client_orders?.clients?.address}<br />
