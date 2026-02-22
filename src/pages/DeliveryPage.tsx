@@ -163,8 +163,8 @@ const DeliveryPage = () => {
 
                             <div className="pt-2 flex justify-between items-center group-hover:bg-primary/5 -mx-4 -mb-4 px-4 py-3 border-t">
                                 <div className="flex gap-2">
-                                    {d.pv_signed && <PenTool className="h-4 w-4 text-emerald-600" title="Signé" />}
-                                    {d.photo_after_url && <ImageIcon className="h-4 w-4 text-emerald-600" title="Photo POD" />}
+                                    {d.pv_signed && <span title="Signé"><PenTool className="h-4 w-4 text-emerald-600" /></span>}
+                                    {d.photo_after_url && <span title="Photo POD"><ImageIcon className="h-4 w-4 text-emerald-600" /></span>}
                                 </div>
                                 <Button size="sm" variant="ghost" className="h-8 text-xs font-bold text-primary uppercase tracking-wider">
                                     Ouvrir mission
