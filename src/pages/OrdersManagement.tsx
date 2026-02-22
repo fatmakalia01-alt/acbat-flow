@@ -12,11 +12,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Search, Eye, Package } from "lucide-react";
+import { Plus, Search, Eye, Package, FileText, Download } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Constants } from "@/integrations/supabase/types";
 import WorkflowTimeline from "@/components/WorkflowTimeline";
+import OrderPDF from "@/components/OrderPDF";
+import { PDFDownloadLink } from "@react-pdf/renderer";
 
 const statusLabels: Record<string, string> = {
   brouillon: "Brouillon", en_validation: "En validation", validee: "Validée",
@@ -45,6 +47,7 @@ const OrdersManagement = () => {
   const [detailOpen, setDetailOpen] = useState(false);
 
   const [newOrder, setNewOrder] = useState({ client_id: "", notes: "" });
+  const [newItem, setNewItem] = useState({ product_id: "", quantity: 1 });
 
   const { data: orders = [], isLoading } = useQuery({
     queryKey: ["orders"],
@@ -59,7 +62,7 @@ const OrdersManagement = () => {
   });
 
   const { data: clients = [] } = useQuery({
-    queryKey: ["clients-list"],
+    queryKey: ["clients"],
     queryFn: async () => {
       const { data, error } = await supabase.from("clients").select("id, full_name, company_name").order("full_name");
       if (error) throw error;
@@ -67,41 +70,117 @@ const OrdersManagement = () => {
     },
   });
 
-  const { data: workflowSteps = [] } = useQuery({
-    queryKey: ["workflow-steps", selectedOrder?.id],
-    enabled: !!selectedOrder,
+  const { data: products = [] } = useQuery({
+    queryKey: ["products"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("order_workflow_steps")
-        .select("*")
-        .eq("order_id", selectedOrder.id)
-        .order("step_order");
+      const { data, error } = await supabase.from("products").select("*, stock(quantity)").order("name");
       if (error) throw error;
       return data;
     },
   });
 
+  const { data: orderItems = [], refetch: refetchItems } = useQuery({
+    queryKey: ["order-items", selectedOrder?.id],
+    queryFn: async () => {
+      if (!selectedOrder) return [];
+      const { data, error } = await supabase
+        .from("order_items")
+        .select("*, products(name, unit)")
+        .eq("order_id", selectedOrder.id);
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!selectedOrder,
+  });
+
+  const { data: workflowSteps = [] } = useQuery({
+    queryKey: ["workflow-steps", selectedOrder?.id],
+    queryFn: async () => {
+      if (!selectedOrder) return [];
+      const { data, error } = await supabase
+        .from("order_workflow_steps")
+        .select("*")
+        .eq("order_id", selectedOrder.id)
+        .order("step_order", { ascending: true });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!selectedOrder,
+  });
+
+  const updateOrderTotals = async (orderId: string) => {
+    const { data: items } = await supabase.from("order_items").select("total_ht, total_ttc").eq("order_id", orderId);
+    if (!items) return;
+    const total_ht = items.reduce((sum, item) => sum + (Number(item.total_ht) || 0), 0);
+    const total_ttc = items.reduce((sum, item) => sum + (Number(item.total_ttc) || 0), 0);
+    const tva_amount = total_ttc - total_ht;
+    await supabase.from("client_orders").update({ total_ht, total_ttc, tva_amount }).eq("id", orderId);
+    queryClient.invalidateQueries({ queryKey: ["orders"] });
+  };
+
+  const addItem = useMutation({
+    mutationFn: async () => {
+      if (!selectedOrder || !newItem.product_id) return;
+      const product = products.find(p => p.id === newItem.product_id);
+      if (!product) return;
+      const total_ht = Number(product.base_price) * newItem.quantity;
+      const total_ttc = total_ht * (1 + (Number(product.tva_rate) || 19) / 100);
+      const { error } = await supabase.from("order_items").insert({
+        order_id: selectedOrder.id,
+        product_id: newItem.product_id,
+        quantity: newItem.quantity,
+        unit_price_ht: product.base_price,
+        tva_rate: product.tva_rate || 19,
+        total_ht,
+        total_ttc,
+      });
+      if (error) throw error;
+      await updateOrderTotals(selectedOrder.id);
+    },
+    onSuccess: () => {
+      refetchItems();
+      setNewItem({ product_id: "", quantity: 1 });
+      toast({ title: "Article ajouté" });
+    },
+    onError: (e: any) => toast({ title: "Erreur", description: e.message, variant: "destructive" }),
+  });
+
+  const deleteItem = useMutation({
+    mutationFn: async (itemId: string) => {
+      const { error } = await supabase.from("order_items").delete().eq("id", itemId);
+      if (error) throw error;
+      if (selectedOrder) await updateOrderTotals(selectedOrder.id);
+    },
+    onSuccess: () => {
+      refetchItems();
+      toast({ title: "Article supprimé" });
+    },
+  });
+
   const createOrder = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from("client_orders").insert({
+      const { data, error } = await supabase.from("client_orders").insert({
         client_id: newOrder.client_id,
         notes: newOrder.notes || null,
         created_by: user?.id,
-      });
+      }).select().single();
       if (error) throw error;
+      return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["orders"] });
-      setDialogOpen(false);
       setNewOrder({ client_id: "", notes: "" });
-      toast({ title: "Commande créée" });
+      setDialogOpen(false);
+      setSelectedOrder(data);
+      setDetailOpen(true);
+      toast({ title: "Commande créée avec succès" });
     },
     onError: (e: any) => toast({ title: "Erreur", description: e.message, variant: "destructive" }),
   });
 
   const updateStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      const { error } = await supabase.from("client_orders").update({ status: status as any }).eq("id", id);
+      const { error } = await supabase.from("client_orders").update({ status }).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -223,10 +302,23 @@ const OrdersManagement = () => {
 
       <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
         <DialogContent className="max-w-2xl">
-          <DialogHeader>
+          <DialogHeader className="flex flex-row items-center justify-between">
             <DialogTitle className="flex items-center gap-2">
               <Package className="h-5 w-5" /> Commande {selectedOrder?.reference}
             </DialogTitle>
+            {selectedOrder && orderItems.length > 0 && (
+              <PDFDownloadLink
+                document={<OrderPDF order={selectedOrder} items={orderItems} type="facture" />}
+                fileName={`Facture_${selectedOrder.reference}.pdf`}
+              >
+                {({ loading }) => (
+                  <Button variant="outline" size="sm" disabled={loading} className="gap-2">
+                    <Download className="h-4 w-4" />
+                    {loading ? "Génération..." : "Télécharger Facture"}
+                  </Button>
+                )}
+              </PDFDownloadLink>
+            )}
           </DialogHeader>
           {selectedOrder && (
             <div className="space-y-4">
@@ -247,6 +339,77 @@ const OrdersManagement = () => {
                 <div><span className="text-muted-foreground">Créée le:</span> {format(new Date(selectedOrder.created_at), "dd/MM/yyyy HH:mm", { locale: fr })}</div>
               </div>
               {selectedOrder.notes && <div className="text-sm bg-muted p-3 rounded-lg"><span className="font-medium">Notes:</span> {selectedOrder.notes}</div>}
+
+              <div className="border rounded-lg p-4 space-y-4">
+                <h4 className="font-medium flex items-center gap-2 border-b pb-2">
+                  <Package className="h-4 w-4" /> Articles de la commande
+                </h4>
+
+                <div className="space-y-2">
+                  {orderItems.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-2">Aucun article dans cette commande.</p>
+                  ) : (
+                    <div className="space-y-1">
+                      {orderItems.map((item: any) => (
+                        <div key={item.id} className="flex items-center justify-between text-sm py-1 border-b last:border-0">
+                          <div className="flex-1">
+                            <span className="font-medium">{item.products?.name}</span>
+                            <span className="text-muted-foreground ml-2">x{item.quantity} {item.products?.unit}</span>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <span>{(item.total_ttc || 0).toLocaleString("fr-TN")} TND</span>
+                            <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => deleteItem.mutate(item.id)}>
+                              <Plus className="h-3 w-3 rotate-45" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-12 gap-2 pt-2 border-t">
+                  <div className="col-span-7">
+                    <Select value={newItem.product_id} onValueChange={v => setNewItem(p => ({ ...p, product_id: v }))}>
+                      <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Choisir un produit" /></SelectTrigger>
+                      <SelectContent>
+                        {products.map((p: any) => (
+                          <SelectItem key={p.id} value={p.id}>
+                            {p.name} ({(p.base_price || 0).toLocaleString()} TND)
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="col-span-3">
+                    <Input
+                      type="number"
+                      min="1"
+                      value={newItem.quantity}
+                      onChange={e => setNewItem(p => ({ ...p, quantity: parseInt(e.target.value) || 1 }))}
+                      className="h-8 text-xs"
+                      placeholder="Qté"
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <Button
+                      size="sm"
+                      className="h-8 w-full text-xs"
+                      onClick={() => addItem.mutate()}
+                      disabled={!newItem.product_id || addItem.isPending}
+                    >
+                      Ajouter
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="pt-2 flex flex-col items-end text-sm space-y-1 border-t">
+                  <div className="flex justify-between w-48"><span className="text-muted-foreground">Total HT:</span> <span>{(selectedOrder.total_ht || 0).toLocaleString("fr-TN")} TND</span></div>
+                  <div className="flex justify-between w-48"><span className="text-muted-foreground">TVA:</span> <span>{(selectedOrder.tva_amount || 0).toLocaleString("fr-TN")} TND</span></div>
+                  <div className="flex justify-between w-48 font-bold text-lg"><span className="text-foreground">Total TTC:</span> <span>{(selectedOrder.total_ttc || 0).toLocaleString("fr-TN")} TND</span></div>
+                </div>
+              </div>
+
               <div>
                 <h4 className="font-medium mb-3">Workflow de la commande</h4>
                 <WorkflowTimeline steps={workflowSteps} />
