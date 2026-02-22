@@ -23,6 +23,8 @@ import DelegationPage from "./pages/DelegationPage";
 import SuppliersPage from "./pages/SuppliersPage";
 import StockMovements from "./pages/StockMovements";
 import DeliveryPage from "./pages/DeliveryPage";
+import PurchaseOrdersPage from "./pages/PurchaseOrdersPage";
+import JobsitesPage from "./pages/JobsitesPage";
 import AppLayout from "./components/AppLayout";
 import NotFound from "./pages/NotFound";
 
@@ -47,22 +49,22 @@ const App = () => (
             <Route path="/" element={<AppLayout />}>
               <Route index element={<HomeRedirect />} />
               <Route path="dashboard" element={
-                <ProtectedRoute roles={["manager", "directeur_exploitation"]}>
+                <ProtectedRoute roles={["manager", "directeur_exploitation", "responsable_showroom"]}>
                   <Dashboard />
                 </ProtectedRoute>
               } />
               <Route path="orders" element={
-                <ProtectedRoute roles={["manager", "directeur_exploitation", "responsable_commercial", "commercial"]}>
+                <ProtectedRoute roles={["manager", "directeur_exploitation", "responsable_commercial", "commercial", "responsable_showroom"]}>
                   <OrdersManagement />
                 </ProtectedRoute>
               } />
               <Route path="clients" element={
-                <ProtectedRoute roles={["manager", "directeur_exploitation", "responsable_commercial", "commercial"]}>
+                <ProtectedRoute roles={["manager", "directeur_exploitation", "responsable_commercial", "commercial", "responsable_showroom"]}>
                   <ClientsManagement />
                 </ProtectedRoute>
               } />
               <Route path="quotes" element={
-                <ProtectedRoute roles={["manager", "responsable_commercial", "commercial"]}>
+                <ProtectedRoute roles={["manager", "responsable_commercial", "commercial", "responsable_showroom"]}>
                   <QuotesManagement />
                 </ProtectedRoute>
               } />
@@ -76,6 +78,11 @@ const App = () => (
                   <ProductsPage />
                 </ProtectedRoute>
               } />
+              <Route path="purchase-orders" element={
+                <ProtectedRoute roles={["manager", "responsable_achat", "directeur_exploitation"]}>
+                  <PurchaseOrdersPage />
+                </ProtectedRoute>
+              } />
               <Route path="logistics" element={
                 <ProtectedRoute roles={["manager", "responsable_logistique", "responsable_achat"]}>
                   <LogisticsPage />
@@ -84,6 +91,11 @@ const App = () => (
               <Route path="technical" element={
                 <ProtectedRoute roles={["manager", "responsable_technique", "technicien_montage"]}>
                   <TechnicalPage />
+                </ProtectedRoute>
+              } />
+              <Route path="chantiers" element={
+                <ProtectedRoute roles={["manager", "responsable_technique", "directeur_exploitation"]}>
+                  <JobsitesPage />
                 </ProtectedRoute>
               } />
               <Route path="sav" element={
@@ -141,3 +153,4 @@ const App = () => (
 );
 
 export default App;
+
