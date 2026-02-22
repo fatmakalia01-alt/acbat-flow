@@ -16,6 +16,7 @@ import { Plus, Search, Eye, Package } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Constants } from "@/integrations/supabase/types";
+import WorkflowTimeline from "@/components/WorkflowTimeline";
 
 const statusLabels: Record<string, string> = {
   brouillon: "Brouillon", en_validation: "En validation", validee: "Validée",
@@ -247,20 +248,8 @@ const OrdersManagement = () => {
               </div>
               {selectedOrder.notes && <div className="text-sm bg-muted p-3 rounded-lg"><span className="font-medium">Notes:</span> {selectedOrder.notes}</div>}
               <div>
-                <h4 className="font-medium mb-2">Workflow</h4>
-                <div className="space-y-2">
-                  {workflowSteps.map((step: any) => (
-                    <div key={step.id} className="flex items-center gap-3 text-sm">
-                      <div className={`h-3 w-3 rounded-full flex-shrink-0 ${
-                        step.status === "completed" ? "bg-emerald-500" :
-                        step.status === "in_progress" ? "bg-blue-500 animate-pulse" :
-                        step.status === "delayed" ? "bg-red-500" : "bg-muted-foreground/30"
-                      }`} />
-                      <span className="flex-1">{stepLabels[step.step_name] || step.step_name}</span>
-                      <Badge variant="outline" className="text-xs">{step.status}</Badge>
-                    </div>
-                  ))}
-                </div>
+                <h4 className="font-medium mb-3">Workflow de la commande</h4>
+                <WorkflowTimeline steps={workflowSteps} />
               </div>
             </div>
           )}
