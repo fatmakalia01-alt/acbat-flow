@@ -119,8 +119,8 @@ const AnalyticsPage = () => {
         queryKey: ["analytics-orders"],
         queryFn: async () => {
             const { data } = await supabase
-                .from("orders")
-                .select("id, total_amount, status, created_at")
+                .from("client_orders")
+                .select("id, total_ttc, status, created_at")
                 .order("created_at");
             return data ?? [];
         },
@@ -137,7 +137,7 @@ const AnalyticsPage = () => {
     const { data: quotes = [] } = useQuery({
         queryKey: ["analytics-quotes"],
         queryFn: async () => {
-            const { data } = await supabase.from("quotes").select("id, status, total_amount");
+            const { data } = await supabase.from("quotes").select("id, status, total_ttc");
             return data ?? [];
         },
     });
@@ -151,19 +151,19 @@ const AnalyticsPage = () => {
         const lastYear = thisMonth === 0 ? thisYear - 1 : thisYear;
 
         const validOrders = (orders as any[]).filter((o) => o.status !== "cancelled");
-        const totalCA = validOrders.reduce((s: number, o: any) => s + (o.total_amount || 0), 0);
+        const totalCA = validOrders.reduce((s: number, o: any) => s + (o.total_ttc || 0), 0);
         const thisMonthCA = validOrders
             .filter((o: any) => {
                 const d = new Date(o.created_at);
                 return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
             })
-            .reduce((s: number, o: any) => s + (o.total_amount || 0), 0);
+            .reduce((s: number, o: any) => s + (o.total_ttc || 0), 0);
         const lastMonthCA = validOrders
             .filter((o: any) => {
                 const d = new Date(o.created_at);
                 return d.getMonth() === lastMonth && d.getFullYear() === lastYear;
             })
-            .reduce((s: number, o: any) => s + (o.total_amount || 0), 0);
+            .reduce((s: number, o: any) => s + (o.total_ttc || 0), 0);
 
         const caGrowth = lastMonthCA > 0 ? ((thisMonthCA - lastMonthCA) / lastMonthCA) * 100 : 0;
 
@@ -177,7 +177,7 @@ const AnalyticsPage = () => {
         validOrders.forEach((o: any) => {
             const d = new Date(o.created_at);
             const key = `${MONTHS_FR[d.getMonth()]} ${d.getFullYear()}`;
-            if (key in monthlyData) monthlyData[key] += o.total_amount || 0;
+            if (key in monthlyData) monthlyData[key] += o.total_ttc || 0;
         });
         const monthlyChart = Object.entries(monthlyData).map(([month, ca]) => ({ month: month.split(" ")[0], ca }));
 
