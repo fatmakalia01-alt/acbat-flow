@@ -8,6 +8,9 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import ClientPortal from "./pages/ClientPortal";
 import UsersManagement from "./pages/UsersManagement";
+import OrdersManagement from "./pages/OrdersManagement";
+import ClientsManagement from "./pages/ClientsManagement";
+import QuotesManagement from "./pages/QuotesManagement";
 import AppLayout from "./components/AppLayout";
 import NotFound from "./pages/NotFound";
 
@@ -33,6 +36,9 @@ const App = () => (
               <Route index element={<HomeRedirect />} />
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="users" element={<UsersManagement />} />
+              <Route path="orders" element={<OrdersManagement />} />
+              <Route path="clients" element={<ClientsManagement />} />
+              <Route path="quotes" element={<QuotesManagement />} />
               <Route path="my-orders" element={<ClientPortal />} />
             </Route>
             <Route path="*" element={<NotFound />} />
