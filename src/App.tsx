@@ -18,6 +18,8 @@ import LogisticsPage from "./pages/LogisticsPage";
 import TechnicalPage from "./pages/TechnicalPage";
 import SavPage from "./pages/SavPage";
 import NotificationsPage from "./pages/NotificationsPage";
+import AnalyticsPage from "./pages/AnalyticsPage";
+import DelegationPage from "./pages/DelegationPage";
 import AppLayout from "./components/AppLayout";
 import NotFound from "./pages/NotFound";
 
@@ -89,6 +91,16 @@ const App = () => (
               <Route path="notifications" element={
                 <ProtectedRoute>
                   <NotificationsPage />
+                </ProtectedRoute>
+              } />
+              <Route path="analytics" element={
+                <ProtectedRoute roles={["manager", "directeur_exploitation"]}>
+                  <AnalyticsPage />
+                </ProtectedRoute>
+              } />
+              <Route path="delegations" element={
+                <ProtectedRoute roles={["manager", "directeur_exploitation"]}>
+                  <DelegationPage />
                 </ProtectedRoute>
               } />
               <Route path="users" element={
