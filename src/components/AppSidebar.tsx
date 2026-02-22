@@ -7,21 +7,23 @@ import acbatLogo from "@/assets/acbat-logo.jpeg";
 import {
   LayoutDashboard, Users, ShoppingCart, Package, Truck, Wrench, FileText,
   CreditCard, HeadphonesIcon, Bell, Settings, LogOut, ChevronLeft, ChevronRight,
-  BarChart3, UserCheck
+  BarChart3, UserCheck, Ship, Construction
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 
 const menuItems = [
-  { icon: LayoutDashboard, label: "Tableau de bord", path: "/dashboard", roles: ["manager", "directeur_exploitation"] },
+  { icon: LayoutDashboard, label: "Tableau de bord", path: "/dashboard", roles: ["manager", "directeur_exploitation", "responsable_showroom"] },
   { icon: BarChart3, label: "Analytics", path: "/analytics", roles: ["manager", "directeur_exploitation"] },
-  { icon: ShoppingCart, label: "Commandes", path: "/orders", roles: ["manager", "directeur_exploitation", "responsable_commercial", "commercial"] },
-  { icon: Users, label: "Clients", path: "/clients", roles: ["manager", "directeur_exploitation", "responsable_commercial", "commercial"] },
+  { icon: ShoppingCart, label: "Commandes", path: "/orders", roles: ["manager", "directeur_exploitation", "responsable_commercial", "commercial", "responsable_showroom"] },
+  { icon: Users, label: "Clients", path: "/clients", roles: ["manager", "directeur_exploitation", "responsable_commercial", "commercial", "responsable_showroom"] },
+  { icon: FileText, label: "Devis", path: "/quotes", roles: ["manager", "responsable_commercial", "commercial", "responsable_showroom"] },
   { icon: Package, label: "Produits & Stock", path: "/products", roles: ["manager", "responsable_achat", "responsable_logistique"] },
+  { icon: Ship, label: "Achats Import", path: "/purchase-orders", roles: ["manager", "responsable_achat", "directeur_exploitation"] },
   { icon: Truck, label: "Logistique", path: "/logistics", roles: ["manager", "responsable_logistique", "responsable_achat"] },
   { icon: Package, label: "Livraisons", path: "/delivery", roles: ["manager", "responsable_logistique", "livraison"] },
+  { icon: Construction, label: "Chantiers", path: "/chantiers", roles: ["manager", "responsable_technique", "directeur_exploitation"] },
   { icon: Wrench, label: "Technique", path: "/technical", roles: ["manager", "responsable_technique", "technicien_montage"] },
-  { icon: FileText, label: "Devis", path: "/quotes", roles: ["manager", "responsable_commercial", "commercial"] },
   { icon: CreditCard, label: "Comptabilité", path: "/accounting", roles: ["manager", "directeur_exploitation", "responsable_comptabilite"] },
   { icon: HeadphonesIcon, label: "SAV", path: "/sav", roles: ["manager", "responsable_sav"] },
   { icon: Bell, label: "Notifications", path: "/notifications", roles: [] }, // visible to all
