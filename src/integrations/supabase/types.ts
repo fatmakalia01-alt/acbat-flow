@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      brands: {
+        Row: {
+          id: string
+          name: string
+          logo_url: string | null
+          description: string | null
+          official_website: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          logo_url?: string | null
+          description?: string | null
+          official_website?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          logo_url?: string | null
+          description?: string | null
+          official_website?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       audit_log: {
         Row: {
           action: string
@@ -1089,6 +1119,234 @@ export type Database = {
           },
         ]
       }
+      sites: {
+        Row: {
+          id: string
+          name: string
+          address: string | null
+          city: string | null
+          phone: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          address?: string | null
+          city?: string | null
+          phone?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          address?: string | null
+          city?: string | null
+          phone?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      purchase_orders: {
+        Row: {
+          id: string
+          reference: string
+          supplier_id: string | null
+          brand_id: string | null
+          status: Database["public"]["Enums"]["purchase_order_status"]
+          estimated_arrival: string | null
+          actual_arrival: string | null
+          total_amount_eur: number | null
+          exchange_rate: number | null
+          total_amount_tnd: number | null
+          customs_fees: number | null
+          transport_fees: number | null
+          transit_notes: string | null
+          customs_notes: string | null
+          notes: string | null
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          reference: string
+          supplier_id?: string | null
+          brand_id?: string | null
+          status?: Database["public"]["Enums"]["purchase_order_status"]
+          estimated_arrival?: string | null
+          actual_arrival?: string | null
+          total_amount_eur?: number | null
+          exchange_rate?: number | null
+          customs_fees?: number | null
+          transport_fees?: number | null
+          transit_notes?: string | null
+          customs_notes?: string | null
+          notes?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          reference?: string
+          supplier_id?: string | null
+          brand_id?: string | null
+          status?: Database["public"]["Enums"]["purchase_order_status"]
+          estimated_arrival?: string | null
+          actual_arrival?: string | null
+          total_amount_eur?: number | null
+          exchange_rate?: number | null
+          customs_fees?: number | null
+          transport_fees?: number | null
+          transit_notes?: string | null
+          customs_notes?: string | null
+          notes?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_orders_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_orders_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      purchase_order_items: {
+        Row: {
+          id: string
+          purchase_order_id: string
+          product_id: string | null
+          description: string | null
+          quantity: number
+          unit_price_eur: number
+          notes: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          purchase_order_id: string
+          product_id?: string | null
+          description?: string | null
+          quantity?: number
+          unit_price_eur?: number
+          notes?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          purchase_order_id?: string
+          product_id?: string | null
+          description?: string | null
+          quantity?: number
+          unit_price_eur?: number
+          notes?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_order_items_purchase_order_id_fkey"
+            columns: ["purchase_order_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chantiers: {
+        Row: {
+          id: string
+          reference: string
+          name: string
+          client_id: string | null
+          order_id: string | null
+          site_id: string | null
+          status: Database["public"]["Enums"]["chantier_status"]
+          planned_start: string | null
+          planned_end: string | null
+          actual_start: string | null
+          actual_end: string | null
+          team_lead: string | null
+          team_members: string[] | null
+          address_chantier: string | null
+          notes: string | null
+          technical_notes: string | null
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          reference: string
+          name: string
+          client_id?: string | null
+          order_id?: string | null
+          site_id?: string | null
+          status?: Database["public"]["Enums"]["chantier_status"]
+          planned_start?: string | null
+          planned_end?: string | null
+          actual_start?: string | null
+          actual_end?: string | null
+          team_lead?: string | null
+          team_members?: string[] | null
+          address_chantier?: string | null
+          notes?: string | null
+          technical_notes?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          reference?: string
+          name?: string
+          client_id?: string | null
+          order_id?: string | null
+          site_id?: string | null
+          status?: Database["public"]["Enums"]["chantier_status"]
+          planned_start?: string | null
+          planned_end?: string | null
+          actual_start?: string | null
+          actual_end?: string | null
+          team_lead?: string | null
+          team_members?: string[] | null
+          address_chantier?: string | null
+          notes?: string | null
+          technical_notes?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chantiers_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chantiers_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -1117,8 +1375,22 @@ export type Database = {
       | "technicien_montage"
       | "responsable_sav"
       | "responsable_comptabilite"
+      | "responsable_showroom"
       | "client"
       | "livraison"
+      purchase_order_status:
+      | "brouillon"
+      | "en_commande"
+      | "en_transit"
+      | "en_douane"
+      | "receptionne"
+      | "annule"
+      chantier_status:
+      | "planifie"
+      | "en_cours"
+      | "en_attente"
+      | "termine"
+      | "annule"
       invoice_status:
       | "brouillon"
       | "emise"
@@ -1315,8 +1587,24 @@ export const Constants = {
         "technicien_montage",
         "responsable_sav",
         "responsable_comptabilite",
+        "responsable_showroom",
         "client",
         "livraison",
+      ],
+      purchase_order_status: [
+        "brouillon",
+        "en_commande",
+        "en_transit",
+        "en_douane",
+        "receptionne",
+        "annule",
+      ],
+      chantier_status: [
+        "planifie",
+        "en_cours",
+        "en_attente",
+        "termine",
+        "annule",
       ],
       invoice_status: [
         "brouillon",
