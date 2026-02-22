@@ -54,7 +54,7 @@ const Dashboard = () => {
         supabase.from("client_orders").select("id", { count: "exact", head: true }),
         supabase.from("clients").select("id", { count: "exact", head: true }),
         supabase.from("order_workflow_steps").select("id", { count: "exact", head: true }).eq("status", "delayed"),
-        supabase.from("delegations").select("*").eq("active", true).eq("delegator_id", user?.id ?? ""),
+        supabase.from("delegations").select("*").eq("status", "active").eq("from_user_id", user?.id ?? ""),
       ]);
       setStats({
         orders: ordersRes.count ?? 0,
@@ -132,8 +132,8 @@ const Dashboard = () => {
   const toggleDelegation = async () => {
     if (!user) return;
     if (delegationActive) {
-      await supabase.from("delegations").update({ active: false, ended_at: new Date().toISOString() })
-        .eq("delegator_id", user.id).eq("active", true);
+      await supabase.from("delegations").update({ status: "revoked" })
+        .eq("from_user_id", user.id).eq("status", "active");
       setDelegationActive(false);
       toast({ title: "Mode absence désactivé" });
     } else {
@@ -144,10 +144,11 @@ const Dashboard = () => {
         return;
       }
       await supabase.from("delegations").insert({
-        delegator_id: user.id,
-        delegatee_id: directeurs[0].user_id,
+        from_user_id: user.id,
+        to_user_id: directeurs[0].user_id,
+        role: "directeur_exploitation",
         reason: delegationReason || "Absence manager",
-        active: true,
+        status: "active",
       });
       setDelegationActive(true);
       setShowDelegation(false);
