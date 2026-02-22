@@ -129,6 +129,25 @@ const Dashboard = () => {
     color: STATUS_COLORS[d.name] || "hsl(210, 20%, 70%)",
   }));
 
+  // Real satisfaction rate from SAV tickets
+  const { data: savStats } = useQuery({
+    queryKey: ["sav-satisfaction"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("sav_tickets")
+        .select("status");
+      if (!data?.length) return null;
+      const total = data.length;
+      const resolved = data.filter((t) => t.status === "resolu" || t.status === "ferme").length;
+      return { rate: Math.round((resolved / total) * 100), total };
+    },
+  });
+
+  const satisfactionRate = savStats?.rate ?? null;
+  // SVG circle circumference for r=60: 2πr ≈ 377
+  const CIRC = 377;
+  const satisfactionDash = satisfactionRate !== null ? (satisfactionRate / 100) * CIRC : 0;
+
   const toggleDelegation = async () => {
     if (!user) return;
     if (delegationActive) {
@@ -337,20 +356,26 @@ const Dashboard = () => {
         {/* Satisfaction */}
         <Card className="shadow-card">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base font-display">Taux de satisfaction</CardTitle>
+            <CardTitle className="text-base font-display">Taux de résolution SAV</CardTitle>
           </CardHeader>
           <CardContent className="flex items-center justify-center">
             <div className="text-center space-y-4">
               <div className="relative inline-flex items-center justify-center">
                 <svg className="w-36 h-36">
                   <circle cx="72" cy="72" r="60" fill="none" stroke="hsl(var(--border))" strokeWidth="12" />
-                  <circle cx="72" cy="72" r="60" fill="none" stroke="hsl(122, 39%, 49%)" strokeWidth="12"
-                    strokeDasharray={`${0.92 * 377} ${377}`} strokeLinecap="round"
-                    transform="rotate(-90 72 72)" />
+                  {satisfactionRate !== null && (
+                    <circle cx="72" cy="72" r="60" fill="none" stroke="hsl(122, 39%, 49%)" strokeWidth="12"
+                      strokeDasharray={`${satisfactionDash} ${CIRC}`} strokeLinecap="round"
+                      transform="rotate(-90 72 72)" />
+                  )}
                 </svg>
-                <span className="absolute text-3xl font-bold">92%</span>
+                <span className="absolute text-3xl font-bold">
+                  {satisfactionRate !== null ? `${satisfactionRate}%` : "N/A"}
+                </span>
               </div>
-              <p className="text-sm text-muted-foreground">Basé sur 80 000+ clients satisfaits</p>
+              <p className="text-sm text-muted-foreground">
+                {savStats ? `${savStats.total} ticket(s) SAV traité(s)` : "Aucun ticket SAV encore"}
+              </p>
             </div>
           </CardContent>
         </Card>
