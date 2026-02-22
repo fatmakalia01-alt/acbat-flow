@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+// NB: roles loaded from AuthContext to scope delivery visibility
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -25,7 +26,7 @@ const statusColors: Record<string, string> = {
 };
 
 const DeliveryPage = () => {
-    const { user } = useAuth();
+    const { user, hasRole } = useAuth();
     const { toast } = useToast();
     const queryClient = useQueryClient();
     const [selectedDelivery, setSelectedDelivery] = useState<any>(null);
@@ -40,19 +41,30 @@ const DeliveryPage = () => {
         carrier_type: "interne"
     });
 
+    // Whether the current user is a delivery driver (restricted view)
+    const isLivreur = hasRole("livraison") && !hasRole("manager") && !hasRole("responsable_logistique");
+
     const { data: deliveries = [], isLoading } = useQuery({
-        queryKey: ["my-deliveries", user?.id],
+        queryKey: ["my-deliveries", user?.id, isLivreur],
         queryFn: async () => {
-            const { data, error } = await supabase
+            let query = supabase
                 .from("deliveries")
-                .select("*, client_orders(reference, clients(*))")
-                .or(`technician_id.eq.${user?.id},status.eq.planifiee`)
-                .order("scheduled_date", { ascending: true });
+                .select("*, client_orders(reference, clients(*))");
+
+            if (isLivreur) {
+                // Livreur: only their assigned deliveries OR unassigned planned ones
+                query = query.or(
+                    `technician_id.eq.${user?.id},and(technician_id.is.null,status.eq.planifiee)`
+                );
+            }
+            // Managers / logistics: no extra filter — RLS on Supabase handles it
+            const { data, error } = await query.order("scheduled_date", { ascending: true });
             if (error) throw error;
             return data;
         },
         enabled: !!user,
     });
+
 
     const updateDelivery = useMutation({
         mutationFn: async (payload: any) => {
