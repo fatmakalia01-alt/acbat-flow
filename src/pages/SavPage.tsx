@@ -12,7 +12,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Search, Eye, HeadphonesIcon, CheckCircle, Clock, AlertTriangle } from "lucide-react";
+import { Plus, Search, Eye, HeadphonesIcon, CheckCircle, Clock, AlertTriangle, Send, UserPlus, MessageSquare } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 
@@ -37,6 +40,8 @@ const SavPage = () => {
     const [dialogOpen, setDialogOpen] = useState(false);
     const [detailOpen, setDetailOpen] = useState(false);
     const [selectedTicket, setSelectedTicket] = useState<any>(null);
+    const [comment, setComment] = useState("");
+    const [isInternal, setIsInternal] = useState(false);
     const [form, setForm] = useState({ client_id: "", subject: "", description: "", priority: "normal" });
 
     const { data: tickets = [], isLoading } = useQuery({
@@ -55,6 +60,32 @@ const SavPage = () => {
         queryKey: ["clients-list"],
         queryFn: async () => {
             const { data, error } = await supabase.from("clients").select("id, full_name, company_name").order("full_name");
+            if (error) throw error;
+            return data;
+        },
+    });
+
+    const { data: staff = [] } = useQuery({
+        queryKey: ["staff-list"],
+        queryFn: async () => {
+            const { data, error } = await supabase
+                .from("profiles")
+                .select("user_id, full_name")
+                .order("full_name");
+            if (error) throw error;
+            return data;
+        },
+    });
+
+    const { data: comments = [], isLoading: loadingComments } = useQuery({
+        queryKey: ["sav-comments", selectedTicket?.id],
+        enabled: !!selectedTicket,
+        queryFn: async () => {
+            const { data, error } = await supabase
+                .from("sav_comments")
+                .select("*, profiles:user_id(full_name)")
+                .eq("ticket_id", selectedTicket.id)
+                .order("created_at", { ascending: true });
             if (error) throw error;
             return data;
         },
@@ -90,6 +121,34 @@ const SavPage = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["sav-tickets"] });
             toast({ title: "Statut mis à jour" });
+        },
+    });
+
+    const assignTicket = useMutation({
+        mutationFn: async (assigned_to: string) => {
+            const { error } = await supabase.from("sav_tickets").update({ assigned_to }).eq("id", selectedTicket.id);
+            if (error) throw error;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["sav-tickets"] });
+            toast({ title: "Ticket assigné" });
+        },
+    });
+
+    const postComment = useMutation({
+        mutationFn: async () => {
+            const { error } = await supabase.from("sav_comments").insert({
+                ticket_id: selectedTicket.id,
+                user_id: user?.id,
+                content: comment,
+                is_internal: isInternal,
+            });
+            if (error) throw error;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["sav-comments", selectedTicket?.id] });
+            setComment("");
+            toast({ title: "Commentaire ajouté" });
         },
     });
 
@@ -171,6 +230,7 @@ const SavPage = () => {
                                 <TableHead>Référence</TableHead>
                                 <TableHead>Client</TableHead>
                                 <TableHead>Sujet</TableHead>
+                                <TableHead>Assigné à</TableHead>
                                 <TableHead>Priorité</TableHead>
                                 <TableHead>Statut</TableHead>
                                 <TableHead>Date</TableHead>
@@ -187,6 +247,22 @@ const SavPage = () => {
                                     <TableCell className="font-mono text-sm">{t.reference}</TableCell>
                                     <TableCell>{t.clients?.full_name}</TableCell>
                                     <TableCell className="max-w-48 truncate">{t.subject}</TableCell>
+                                    <TableCell>
+                                        <div className="flex items-center gap-1 text-xs">
+                                            {t.assigned_to ? (
+                                                <>
+                                                    <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold">
+                                                        {staff.find((s: any) => s.user_id === t.assigned_to)?.full_name?.charAt(0) || "?"}
+                                                    </div>
+                                                    <span className="truncate max-w-[80px]">
+                                                        {staff.find((s: any) => s.user_id === t.assigned_to)?.full_name}
+                                                    </span>
+                                                </>
+                                            ) : (
+                                                <span className="text-muted-foreground italic text-[10px]">Non assigné</span>
+                                            )}
+                                        </div>
+                                    </TableCell>
                                     <TableCell>
                                         <Badge className={priorityColors[t.priority] || ""}>{t.priority}</Badge>
                                     </TableCell>
@@ -278,12 +354,70 @@ const SavPage = () => {
                                         </SelectContent>
                                     </Select>
                                 </div>
-                                <div><span className="text-muted-foreground">Créé le:</span> {format(new Date(selectedTicket.created_at), "dd/MM/yyyy")}</div>
+                                <div>
+                                    <span className="text-muted-foreground">Assigné à:</span>{" "}
+                                    <Select value={selectedTicket.assigned_to || "none"}
+                                        onValueChange={v => { assignTicket.mutate(v === "none" ? null : v); setSelectedTicket({ ...selectedTicket, assigned_to: v === "none" ? null : v }); }}>
+                                        <SelectTrigger className="w-36 h-8 inline-flex"><SelectValue /></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="none">Non assigné</SelectItem>
+                                            {staff.map((s: any) => (
+                                                <SelectItem key={s.user_id} value={s.user_id}>{s.full_name}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="col-span-2"><span className="text-muted-foreground">Date:</span> {format(new Date(selectedTicket.created_at), "dd/MM/yyyy HH:mm")}</div>
                             </div>
-                            {selectedTicket.subject && <div className="font-medium">{selectedTicket.subject}</div>}
-                            {selectedTicket.description && (
-                                <div className="bg-muted p-3 rounded-lg text-sm">{selectedTicket.description}</div>
-                            )}
+
+                            <Separator />
+
+                            <div className="space-y-3">
+                                <div className="flex items-center gap-2 font-medium text-sm">
+                                    <MessageSquare className="h-4 w-4" /> Discussion
+                                </div>
+                                <ScrollArea className="h-[250px] pr-4">
+                                    <div className="space-y-4">
+                                        <div className="bg-muted p-3 rounded-lg text-sm border-l-4 border-primary/50">
+                                            <div className="flex justify-between items-center mb-1">
+                                                <span className="font-bold text-xs uppercase">Description initiale</span>
+                                                <span className="text-[10px] text-muted-foreground">{format(new Date(selectedTicket.created_at), "dd/MM HH:mm")}</span>
+                                            </div>
+                                            {selectedTicket.description}
+                                        </div>
+
+                                        {comments.map((c: any) => (
+                                            <div key={c.id} className={`p-3 rounded-lg text-sm ${c.is_internal ? 'bg-amber-50 border border-amber-200' : 'bg-secondary'}`}>
+                                                <div className="flex justify-between items-center mb-1">
+                                                    <span className="font-bold text-xs">{c.profiles?.full_name} {c.is_internal && <Badge variant="outline" className="text-[10px] h-4 ml-1 border-amber-300 text-amber-600">Interne</Badge>}</span>
+                                                    <span className="text-[10px] text-muted-foreground">{format(new Date(c.created_at), "dd/MM HH:mm")}</span>
+                                                </div>
+                                                {c.content}
+                                            </div>
+                                        ))}
+                                        {loadingComments && <div className="text-center text-xs text-muted-foreground py-2">Chargement des messages...</div>}
+                                    </div>
+                                </ScrollArea>
+
+                                <div className="space-y-3 pt-2">
+                                    <Textarea
+                                        placeholder="Votre message..."
+                                        value={comment}
+                                        onChange={e => setComment(e.target.value)}
+                                        rows={2}
+                                        className="text-sm"
+                                    />
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <Switch id="internal" checked={isInternal} onCheckedChange={setIsInternal} />
+                                            <Label htmlFor="internal" className="text-xs cursor-pointer">Note interne</Label>
+                                        </div>
+                                        <Button size="sm" onClick={() => postComment.mutate()} disabled={!comment || postComment.isPending}>
+                                            <Send className="h-3 w-3 mr-2" /> Répondre
+                                        </Button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     )}
                 </DialogContent>
