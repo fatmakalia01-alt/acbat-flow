@@ -22,6 +22,7 @@ import AnalyticsPage from "./pages/AnalyticsPage";
 import DelegationPage from "./pages/DelegationPage";
 import SuppliersPage from "./pages/SuppliersPage";
 import StockMovements from "./pages/StockMovements";
+import DeliveryPage from "./pages/DeliveryPage";
 import AppLayout from "./components/AppLayout";
 import NotFound from "./pages/NotFound";
 
@@ -113,6 +114,11 @@ const App = () => (
               <Route path="stock-movements" element={
                 <ProtectedRoute roles={["manager", "responsable_logistique", "directeur_exploitation"]}>
                   <StockMovements />
+                </ProtectedRoute>
+              } />
+              <Route path="delivery" element={
+                <ProtectedRoute roles={["manager", "responsable_logistique", "livraison"]}>
+                  <DeliveryPage />
                 </ProtectedRoute>
               } />
               <Route path="users" element={
