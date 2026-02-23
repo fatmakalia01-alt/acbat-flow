@@ -36,11 +36,11 @@ const queryClient = new QueryClient();
 const HomeRedirect = () => {
   const { roles, loading } = useAuth();
   if (loading) return null;
-  if (roles.includes("client")) return <Navigate to="/my-orders" replace />;
-  return <Navigate to="/dashboard" replace />;
+  const to = roles.includes("client") ? "/my-orders" : "/dashboard";
+  return React.createElement("div", { key: "home-redirect-wrapper" }, React.createElement(Navigate, { to, replace: true }));
 };
 
-console.log("APP VERSION: FIXED_REF_v6");
+console.log("APP VERSION: FIXED_REF_v7_DIAG");
 
 function App() {
   // We use React.createElement to evade automatic JSX ref injection by the lovable-tagger
