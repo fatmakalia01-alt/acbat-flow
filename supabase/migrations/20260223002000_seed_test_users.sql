@@ -19,14 +19,29 @@ BEGIN
 END $$;
 
 -- =====================================================================
--- STEP 0: Trigger and Function Cleanup
+-- STEP 0: Schema Updates (add email column if not present)
+-- =====================================================================
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'profiles' AND column_name = 'email') THEN
+    ALTER TABLE public.profiles ADD COLUMN email text;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'user_roles' AND column_name = 'email') THEN
+    ALTER TABLE public.user_roles ADD COLUMN email text;
+  END IF;
+END $$;
+
+-- =====================================================================
+-- STEP 0b: Trigger and Function Cleanup
 -- =====================================================================
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = 'public' AS $$
 BEGIN
-  INSERT INTO public.profiles (user_id, full_name)
-  VALUES (NEW.id, COALESCE(NEW.raw_user_meta_data->>'full_name', ''))
-  ON CONFLICT (user_id) DO NOTHING;
+  INSERT INTO public.profiles (user_id, full_name, email)
+  VALUES (NEW.id, COALESCE(NEW.raw_user_meta_data->>'full_name', ''), NEW.email)
+  ON CONFLICT (user_id) DO UPDATE SET 
+    full_name = EXCLUDED.full_name,
+    email = EXCLUDED.email;
   RETURN NEW;
 END; $$;
 
@@ -104,11 +119,13 @@ BEGIN
       'email', now(), now(), now());
 
     -- Profile & Role
-    INSERT INTO public.profiles (user_id, full_name) VALUES (u_id, u_name)
-    ON CONFLICT (user_id) DO UPDATE SET full_name = EXCLUDED.full_name;
+    INSERT INTO public.profiles (user_id, full_name, email) VALUES (u_id, u_name, u_email)
+    ON CONFLICT (user_id) DO UPDATE SET 
+      full_name = EXCLUDED.full_name,
+      email = EXCLUDED.email;
 
-    INSERT INTO public.user_roles (user_id, role) VALUES (u_id, u_role) 
-    ON CONFLICT (user_id, role) DO NOTHING;
+    INSERT INTO public.user_roles (user_id, role, email) VALUES (u_id, u_role, u_email) 
+    ON CONFLICT (user_id, role) DO UPDATE SET email = EXCLUDED.email;
 
   END LOOP;
 END $$;
