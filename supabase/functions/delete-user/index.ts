@@ -15,6 +15,37 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
+    // Get the session from the request
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      throw new Error('No authorization header');
+    }
+
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_ANON_KEY')!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    // Get caller info
+    const { data: { user: caller }, error: userError } = await supabaseClient.auth.getUser();
+    if (userError || !caller) throw new Error("Unauthorized");
+
+    // Check if caller is manager
+    const { data: roleData, error: roleError } = await supabaseAdmin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", caller.id)
+      .eq("role", "manager")
+      .single();
+
+    if (roleError || !roleData) {
+      return new Response(JSON.stringify({ error: "Forbidden: Manager role required" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { user_id } = await req.json();
 
     if (!user_id) {
