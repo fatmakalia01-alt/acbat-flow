@@ -47,10 +47,10 @@ function ProtectedRoute({ children, roles }: ProtectedRouteProps) {
               Se déconnecter et changer de compte
             </button>
             <Link
-              to="/dashboard"
+              to="/"
               className="px-4 py-2 bg-secondary text-secondary-foreground rounded-md text-sm font-medium hover:bg-secondary/80 transition-colors"
             >
-              Retour au tableau de bord
+              Retour à l'accueil
             </Link>
           </div>
         </div>
