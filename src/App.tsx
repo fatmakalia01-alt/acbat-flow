@@ -1,4 +1,4 @@
-import React from "react";
+import React, { forwardRef } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -40,130 +40,132 @@ const HomeRedirect = () => {
   return <Navigate to="/dashboard" replace />;
 };
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AuthProvider>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/" element={<AppLayout />}>
-              <Route index element={<HomeRedirect />} />
-              <Route path="dashboard" element={
-                <ProtectedRoute roles={["manager", "directeur_exploitation", "responsable_showroom"]}>
-                  <Dashboard />
-                </ProtectedRoute>
-              } />
-              <Route path="orders" element={
-                <ProtectedRoute roles={["manager", "directeur_exploitation", "responsable_commercial", "commercial", "responsable_showroom"]}>
-                  <OrdersManagement />
-                </ProtectedRoute>
-              } />
-              <Route path="clients" element={
-                <ProtectedRoute roles={["manager", "directeur_exploitation", "responsable_commercial", "commercial", "responsable_showroom"]}>
-                  <ClientsManagement />
-                </ProtectedRoute>
-              } />
-              <Route path="quotes" element={
-                <ProtectedRoute roles={["manager", "responsable_commercial", "commercial", "responsable_showroom"]}>
-                  <QuotesManagement />
-                </ProtectedRoute>
-              } />
-              <Route path="accounting" element={
-                <ProtectedRoute roles={["manager", "directeur_exploitation", "responsable_comptabilite"]}>
-                  <AccountingPage />
-                </ProtectedRoute>
-              } />
-              <Route path="products" element={
-                <ProtectedRoute roles={["manager", "responsable_achat", "responsable_logistique"]}>
-                  <ProductsPage />
-                </ProtectedRoute>
-              } />
-              <Route path="purchase-orders" element={
-                <ProtectedRoute roles={["manager", "responsable_achat", "directeur_exploitation"]}>
-                  <PurchaseOrdersPage />
-                </ProtectedRoute>
-              } />
-              <Route path="logistics" element={
-                <ProtectedRoute roles={["manager", "responsable_logistique", "responsable_achat"]}>
-                  <LogisticsPage />
-                </ProtectedRoute>
-              } />
-              <Route path="technical" element={
-                <ProtectedRoute roles={["manager", "responsable_technique", "technicien_montage"]}>
-                  <TechnicalPage />
-                </ProtectedRoute>
-              } />
-              <Route path="chantiers" element={
-                <ProtectedRoute roles={["manager", "responsable_technique", "directeur_exploitation"]}>
-                  <JobsitesPage />
-                </ProtectedRoute>
-              } />
-              <Route path="sav" element={
-                <ProtectedRoute roles={["manager", "responsable_sav"]}>
-                  <SavPage />
-                </ProtectedRoute>
-              } />
-              <Route path="notifications" element={
-                <ProtectedRoute>
-                  <NotificationsPage />
-                </ProtectedRoute>
-              } />
-              <Route path="analytics" element={
-                <ProtectedRoute roles={["manager", "directeur_exploitation"]}>
-                  <AnalyticsPage />
-                </ProtectedRoute>
-              } />
-              <Route path="delegations" element={
-                <ProtectedRoute roles={["manager", "directeur_exploitation"]}>
-                  <DelegationPage />
-                </ProtectedRoute>
-              } />
-              <Route path="suppliers" element={
-                <ProtectedRoute roles={["manager", "responsable_achat", "directeur_exploitation"]}>
-                  <SuppliersPage />
-                </ProtectedRoute>
-              } />
-              <Route path="stock-movements" element={
-                <ProtectedRoute roles={["manager", "responsable_logistique", "directeur_exploitation"]}>
-                  <StockMovements />
-                </ProtectedRoute>
-              } />
-              <Route path="delivery" element={
-                <ProtectedRoute roles={["manager", "responsable_logistique", "livraison"]}>
-                  <DeliveryPage />
-                </ProtectedRoute>
-              } />
-              <Route path="users" element={
-                <ProtectedRoute roles={["manager"]}>
-                  <UsersManagement />
-                </ProtectedRoute>
-              } />
-              <Route path="tracking" element={
-                <ProtectedRoute roles={["manager", "directeur_exploitation", "responsable_commercial", "commercial", "responsable_achat", "responsable_logistique", "responsable_technique", "technicien_montage", "responsable_sav", "responsable_comptabilite"]}>
-                  <CommandTracking />
-                </ProtectedRoute>
-              } />
-              <Route path="simulator" element={
-                <ProtectedRoute roles={["manager", "directeur_exploitation"]}>
-                  <SimulatorPage />
-                </ProtectedRoute>
-              } />
-              <Route path="my-orders" element={
-                <ProtectedRoute roles={["client"]}>
-                  <ClientPortal />
-                </ProtectedRoute>
-              } />
-            </Route>
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+const App = forwardRef<HTMLDivElement, any>((_, ref) => (
+  <div ref={ref}>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AuthProvider>
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route path="/" element={<AppLayout />}>
+                <Route index element={<HomeRedirect />} />
+                <Route path="dashboard" element={
+                  <ProtectedRoute roles={["manager", "directeur_exploitation", "responsable_showroom"]}>
+                    <Dashboard />
+                  </ProtectedRoute>
+                } />
+                <Route path="orders" element={
+                  <ProtectedRoute roles={["manager", "directeur_exploitation", "responsable_commercial", "commercial", "responsable_showroom"]}>
+                    <OrdersManagement />
+                  </ProtectedRoute>
+                } />
+                <Route path="clients" element={
+                  <ProtectedRoute roles={["manager", "directeur_exploitation", "responsable_commercial", "commercial", "responsable_showroom"]}>
+                    <ClientsManagement />
+                  </ProtectedRoute>
+                } />
+                <Route path="quotes" element={
+                  <ProtectedRoute roles={["manager", "responsable_commercial", "commercial", "responsable_showroom"]}>
+                    <QuotesManagement />
+                  </ProtectedRoute>
+                } />
+                <Route path="accounting" element={
+                  <ProtectedRoute roles={["manager", "directeur_exploitation", "responsable_comptabilite"]}>
+                    <AccountingPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="products" element={
+                  <ProtectedRoute roles={["manager", "responsable_achat", "responsable_logistique"]}>
+                    <ProductsPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="purchase-orders" element={
+                  <ProtectedRoute roles={["manager", "responsable_achat", "directeur_exploitation"]}>
+                    <PurchaseOrdersPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="logistics" element={
+                  <ProtectedRoute roles={["manager", "responsable_logistique", "responsable_achat"]}>
+                    <LogisticsPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="technical" element={
+                  <ProtectedRoute roles={["manager", "responsable_technique", "technicien_montage"]}>
+                    <TechnicalPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="chantiers" element={
+                  <ProtectedRoute roles={["manager", "responsable_technique", "directeur_exploitation"]}>
+                    <JobsitesPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="sav" element={
+                  <ProtectedRoute roles={["manager", "responsable_sav"]}>
+                    <SavPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="notifications" element={
+                  <ProtectedRoute>
+                    <NotificationsPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="analytics" element={
+                  <ProtectedRoute roles={["manager", "directeur_exploitation"]}>
+                    <AnalyticsPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="delegations" element={
+                  <ProtectedRoute roles={["manager", "directeur_exploitation"]}>
+                    <DelegationPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="suppliers" element={
+                  <ProtectedRoute roles={["manager", "responsable_achat", "directeur_exploitation"]}>
+                    <SuppliersPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="stock-movements" element={
+                  <ProtectedRoute roles={["manager", "responsable_logistique", "directeur_exploitation"]}>
+                    <StockMovements />
+                  </ProtectedRoute>
+                } />
+                <Route path="delivery" element={
+                  <ProtectedRoute roles={["manager", "responsable_logistique", "livraison"]}>
+                    <DeliveryPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="users" element={
+                  <ProtectedRoute roles={["manager"]}>
+                    <UsersManagement />
+                  </ProtectedRoute>
+                } />
+                <Route path="tracking" element={
+                  <ProtectedRoute roles={["manager", "directeur_exploitation", "responsable_commercial", "commercial", "responsable_achat", "responsable_logistique", "responsable_technique", "technicien_montage", "responsable_sav", "responsable_comptabilite"]}>
+                    <CommandTracking />
+                  </ProtectedRoute>
+                } />
+                <Route path="simulator" element={
+                  <ProtectedRoute roles={["manager", "directeur_exploitation"]}>
+                    <SimulatorPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="my-orders" element={
+                  <ProtectedRoute roles={["client"]}>
+                    <ClientPortal />
+                  </ProtectedRoute>
+                } />
+              </Route>
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  </div>
+));
 
 export default App;
 
