@@ -94,19 +94,26 @@ BEGIN
     EXECUTE format('
       INSERT INTO auth.users (
         id, instance_id, aud, role, email, encrypted_password,
-        email_confirmed_at, 
+        email_confirmed_at,
+        email_change, email_change_token_new, email_change_token_current,
+        email_change_confirm_status,
+        recovery_token, confirmation_token,
         raw_app_meta_data, raw_user_meta_data,
         is_super_admin, %s %s
         created_at, updated_at
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, %s %s now(), now())',
+      VALUES ($1, $2, $3, $4, $5, $6, $7,
+              '''', '''', '''',
+              0,
+              '''', '''',
+              $8, $9, $10, %s %s now(), now())',
       CASE WHEN has_is_anon THEN 'is_anonymous,' ELSE '' END,
       CASE WHEN has_is_sso THEN 'is_sso_user,' ELSE '' END,
       CASE WHEN has_is_anon THEN 'false,' ELSE '' END,
       CASE WHEN has_is_sso THEN 'false,' ELSE '' END
-    ) USING 
-      u_id, v_instance_id, 'authenticated', 'authenticated', 
-      u_email, pwd_hash, 
+    ) USING
+      u_id, v_instance_id, 'authenticated', 'authenticated',
+      u_email, pwd_hash,
       now(), -- sets email_confirmed_at, which triggers confirmed_at generation
       jsonb_build_object('provider','email','providers',array['email'], 'email_confirmed', true),
       jsonb_build_object('full_name', u_name),
