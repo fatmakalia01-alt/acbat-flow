@@ -1,38 +1,19 @@
 -- =====================================================================
+-- v18: THE GENERATED-SAFE APPROVAL SEED
+-- =====================================================================
 -- STEP -1: THE NUCLEAR CLEANUP (Clean the Slate)
 -- =====================================================================
--- This will delete EVERYTHING in all tables to prevent FK errors.
--- WARNING: This wipes all orders, products, etc.
 DO $$ 
 BEGIN
-    -- 1. Clean public schema tables (order matters for FKs)
     TRUNCATE 
-        public.audit_log,
-        public.notifications,
-        public.delegations,
-        public.sav_tickets,
-        public.payments,
-        public.invoices,
-        public.quote_items,
-        public.quotes,
-        public.order_workflow_steps,
-        public.order_items,
-        public.client_orders,
-        public.chantiers,
-        public.purchase_order_items,
-        public.purchase_orders,
-        public.stock,
-        public.products,
-        public.product_categories,
-        public.suppliers,
-        public.clients,
-        public.brands,
-        public.sites,
-        public.user_roles,
-        public.profiles
+        public.audit_log, public.notifications, public.delegations, public.sav_tickets,
+        public.payments, public.invoices, public.quote_items, public.quotes,
+        public.order_workflow_steps, public.order_items, public.client_orders,
+        public.chantiers, public.purchase_order_items, public.purchase_orders,
+        public.stock, public.products, public.product_categories, public.suppliers,
+        public.clients, public.brands, public.sites, public.user_roles, public.profiles
         RESTART IDENTITY CASCADE;
 
-    -- 2. Wipe Auth Schema
     DELETE FROM auth.users;
     DELETE FROM auth.identities;
 END $$;
@@ -40,7 +21,6 @@ END $$;
 -- =====================================================================
 -- STEP 0: Trigger and Function Cleanup
 -- =====================================================================
--- Ensure the trigger function is perfect
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = 'public' AS $$
 BEGIN
@@ -50,12 +30,11 @@ BEGIN
   RETURN NEW;
 END; $$;
 
--- Drop and recreate trigger to ensure it's clean
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
 -- =====================================================================
--- STEP 1: Fresh Seeding (v15)
+-- STEP 1: Fresh Seeding (v18)
 -- Password for all accounts: 54372272Hk
 -- =====================================================================
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
@@ -71,7 +50,7 @@ DECLARE
   u_name text;
   u_role public.app_role;
 BEGIN
-  -- 1. Detect columns
+  -- 1. Detect dynamic columns (Ignoring confirmed_at as it is GENERATED)
   SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'auth' AND table_name = 'users' AND column_name = 'is_anonymous') INTO has_is_anon;
   SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'auth' AND table_name = 'users' AND column_name = 'is_sso_user') INTO has_is_sso;
 
@@ -94,7 +73,9 @@ BEGIN
 
   -- 3. Perform Insertions
   FOR u_id, u_email, u_name, u_role IN SELECT * FROM user_seed_data LOOP
-    -- Insert auth record (confirmed_at is excluded as it is generated)
+    -- Insert auth record
+    -- We EXCLUDE 'confirmed_at' because Postgres errors if we try to insert into a generated column.
+    -- Setting 'email_confirmed_at' will cause the DB to generate 'confirmed_at' automatically.
     EXECUTE format('
       INSERT INTO auth.users (
         id, instance_id, aud, role, email, encrypted_password,
@@ -111,8 +92,8 @@ BEGIN
     ) USING 
       u_id, v_instance_id, 'authenticated', 'authenticated', 
       u_email, pwd_hash, 
-      now(),
-      jsonb_build_object('provider','email','providers',array['email']),
+      now(), -- sets email_confirmed_at, which triggers confirmed_at generation
+      jsonb_build_object('provider','email','providers',array['email'], 'email_confirmed', true),
       jsonb_build_object('full_name', u_name),
       false;
 
@@ -122,9 +103,11 @@ BEGIN
       jsonb_build_object('sub', u_id::text, 'email', u_email, 'email_verified', true, 'provider', 'email'),
       'email', now(), now(), now());
 
-    -- Role (Profile is auto-created by trigger)
-    INSERT INTO public.user_roles (user_id, role) 
-    VALUES (u_id, u_role) 
+    -- Profile & Role
+    INSERT INTO public.profiles (user_id, full_name) VALUES (u_id, u_name)
+    ON CONFLICT (user_id) DO UPDATE SET full_name = EXCLUDED.full_name;
+
+    INSERT INTO public.user_roles (user_id, role) VALUES (u_id, u_role) 
     ON CONFLICT (user_id, role) DO NOTHING;
 
   END LOOP;
