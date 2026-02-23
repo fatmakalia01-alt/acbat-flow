@@ -18,9 +18,13 @@ function AppLayout() {
 
   return (
     <div className="flex min-h-screen bg-background">
-      <AppSidebar />
+      <div key="sidebar-wrapper">
+        <AppSidebar />
+      </div>
       <main className="flex-1 overflow-auto">
-        <Outlet />
+        <div key="outlet-wrapper">
+          <Outlet />
+        </div>
       </main>
     </div>
   );
