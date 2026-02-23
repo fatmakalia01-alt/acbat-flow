@@ -21,10 +21,10 @@ export const Toaster = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTM
                   React.createElement("div", { className: "grid gap-1", key: "content" }, [
                     title && React.createElement(ToastTitle, { key: "title" }, title),
                     description && React.createElement(ToastDescription, { key: "description" }, description)
-                  ]),
-                  action,
+                  ].filter(Boolean)),
+                  action ? React.cloneElement(action as React.ReactElement, { key: "action" }) : null,
                   React.createElement(ToastClose, { key: "close" })
-                ]
+                ].filter(Boolean)
               );
             }),
             React.createElement(ToastViewport, { key: "viewport" })
