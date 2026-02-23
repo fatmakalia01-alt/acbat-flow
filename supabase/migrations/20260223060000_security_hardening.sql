@@ -53,15 +53,28 @@ CREATE TRIGGER tr_generate_sav_ref_atomic
 
 -- 4. REFINE POLICIES WITH ROLE-BASED ACCESS
 
--- Drop old overly-permissive "true" policies
+-- Drop old overly-permissive policies (from 20260222180000_rls_security_final.sql)
 DO $$ 
 DECLARE
   pol RECORD;
 BEGIN
+  -- List of specific old policy names to remove
   FOR pol IN 
     SELECT policyname, tablename FROM pg_policies 
     WHERE schemaname = 'public' 
-      AND (policyname LIKE '%true%' OR policyname LIKE '%Staff can manage%')
+      AND (
+        policyname LIKE '%true%' 
+        OR policyname LIKE '%Staff can manage%'
+        OR policyname LIKE 'Staff can view%'
+        OR policyname IN (
+          'Staff can manage clients', 'Staff can manage suppliers', 'Staff can view products',
+          'Staff can manage products', 'Staff can manage stock', 'Staff can manage orders',
+          'Staff can manage order items', 'Staff can manage workflow', 'Staff can manage quotes',
+          'Staff can manage quote items', 'Staff can manage invoices', 'Staff can manage payments',
+          'Staff can manage sav', 'Staff can manage deliveries', 'Staff can manage supplier orders',
+          'Profiles are viewable by authenticated users', 'Roles are viewable by authenticated users'
+        )
+      )
   LOOP
     EXECUTE 'DROP POLICY IF EXISTS "' || pol.policyname || '" ON public.' || pol.tablename;
   END LOOP;
