@@ -150,6 +150,23 @@ const ClientsManagement = () => {
         </TabsContent>
       </Tabs>
 
+    const validate = () => {
+      if (!form.full_name.trim()) {
+        toast({ title: "Validation Error", description: "Nom complet est requis", variant: "destructive" });
+      return false;
+      }
+      if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+        toast({ title: "Validation Error", description: "Format d'email invalide", variant: "destructive" });
+      return false;
+      }
+      if (form.phone && !/^\+?[0-9\s-]{8,}$/.test(form.phone)) {
+        toast({ title: "Validation Error", description: "Format de téléphone invalide", variant: "destructive" });
+      return false;
+      }
+      return true;
+    };
+
+      return (
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader><DialogTitle>{editing ? "Modifier le client" : "Nouveau client"}</DialogTitle></DialogHeader>
@@ -167,7 +184,7 @@ const ClientsManagement = () => {
               <Label>Notes</Label>
               <Textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} />
             </div>
-            <Button onClick={() => upsertClient.mutate()} disabled={!form.full_name || upsertClient.isPending} className="w-full">
+            <Button onClick={() => validate() && upsertClient.mutate()} disabled={!form.full_name || upsertClient.isPending} className="w-full">
               {editing ? "Enregistrer" : "Créer"}
             </Button>
           </div>
