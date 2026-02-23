@@ -16,17 +16,17 @@ function AppLayout() {
 
   if (!session) return <Navigate to="/login" replace />;
 
-  return (
-    <div className="flex min-h-screen bg-background">
-      <div key="sidebar-wrapper">
-        <AppSidebar />
-      </div>
-      <main className="flex-1 overflow-auto">
-        <div key="outlet-wrapper">
-          <Outlet />
-        </div>
-      </main>
-    </div>
+  return React.createElement(
+    "div",
+    { className: "flex min-h-screen bg-background" },
+    [
+      React.createElement("div", { key: "sidebar-wrapper" }, React.createElement(AppSidebar, null)),
+      React.createElement(
+        "main",
+        { key: "main-content", className: "flex-1 overflow-auto" },
+        React.createElement("div", { key: "outlet-wrapper" }, React.createElement(Outlet, null))
+      )
+    ]
   );
 }
 
