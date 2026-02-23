@@ -40,7 +40,7 @@ const HomeRedirect = () => {
   return React.createElement("div", { key: "home-redirect-wrapper" }, React.createElement(Navigate, { to, replace: true }));
 };
 
-console.log("APP VERSION: FIXED_REF_v7_DIAG");
+console.log("APP VERSION: FIXED_REF_v9_TIMEOUT_DIAG");
 
 function App() {
   // We use React.createElement to evade automatic JSX ref injection by the lovable-tagger
