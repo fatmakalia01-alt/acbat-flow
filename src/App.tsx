@@ -40,141 +40,59 @@ const HomeRedirect = () => {
   return <Navigate to="/dashboard" replace />;
 };
 
-console.log("APP VERSION: FIXED_REF_v5");
-
-// Wrap library components that shouldn't receive refs from the tagger
-function TanstackProvider({ children, client }: { children: React.ReactNode; client: QueryClient }) {
-  return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
-}
-
-function RadixTooltipProvider({ children }: { children: React.ReactNode }) {
-  return <TooltipProvider>{children}</TooltipProvider>;
-}
+console.log("APP VERSION: FIXED_REF_v6");
 
 function App() {
-  return (
-    <TanstackProvider client={queryClient}>
-      <RadixTooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <AuthProvider>
-            <Routes>
-              <Route path="/login" element={<Login />} />
-              <Route path="/" element={<AppLayout />}>
-                <Route index element={<HomeRedirect />} />
-                <Route path="dashboard" element={
-                  <ProtectedRoute roles={["manager", "directeur_exploitation", "responsable_showroom"]}>
-                    <Dashboard />
-                  </ProtectedRoute>
-                } />
-                <Route path="orders" element={
-                  <ProtectedRoute roles={["manager", "directeur_exploitation", "responsable_commercial", "commercial", "responsable_showroom"]}>
-                    <OrdersManagement />
-                  </ProtectedRoute>
-                } />
-                <Route path="clients" element={
-                  <ProtectedRoute roles={["manager", "directeur_exploitation", "responsable_commercial", "commercial", "responsable_showroom"]}>
-                    <ClientsManagement />
-                  </ProtectedRoute>
-                } />
-                <Route path="quotes" element={
-                  <ProtectedRoute roles={["manager", "responsable_commercial", "commercial", "responsable_showroom"]}>
-                    <QuotesManagement />
-                  </ProtectedRoute>
-                } />
-                <Route path="accounting" element={
-                  <ProtectedRoute roles={["manager", "directeur_exploitation", "responsable_comptabilite"]}>
-                    <AccountingPage />
-                  </ProtectedRoute>
-                } />
-                <Route path="products" element={
-                  <ProtectedRoute roles={["manager", "responsable_achat", "responsable_logistique"]}>
-                    <ProductsPage />
-                  </ProtectedRoute>
-                } />
-                <Route path="purchase-orders" element={
-                  <ProtectedRoute roles={["manager", "responsable_achat", "directeur_exploitation"]}>
-                    <PurchaseOrdersPage />
-                  </ProtectedRoute>
-                } />
-                <Route path="logistics" element={
-                  <ProtectedRoute roles={["manager", "responsable_logistique", "responsable_achat"]}>
-                    <LogisticsPage />
-                  </ProtectedRoute>
-                } />
-                <Route path="technical" element={
-                  <ProtectedRoute roles={["manager", "responsable_technique", "technicien_montage"]}>
-                    <TechnicalPage />
-                  </ProtectedRoute>
-                } />
-                <Route path="chantiers" element={
-                  <ProtectedRoute roles={["manager", "responsable_technique", "directeur_exploitation"]}>
-                    <JobsitesPage />
-                  </ProtectedRoute>
-                } />
-                <Route path="sav" element={
-                  <ProtectedRoute roles={["manager", "responsable_sav"]}>
-                    <SavPage />
-                  </ProtectedRoute>
-                } />
-                <Route path="notifications" element={
-                  <ProtectedRoute>
-                    <NotificationsPage />
-                  </ProtectedRoute>
-                } />
-                <Route path="analytics" element={
-                  <ProtectedRoute roles={["manager", "directeur_exploitation"]}>
-                    <AnalyticsPage />
-                  </ProtectedRoute>
-                } />
-                <Route path="delegations" element={
-                  <ProtectedRoute roles={["manager", "directeur_exploitation"]}>
-                    <DelegationPage />
-                  </ProtectedRoute>
-                } />
-                <Route path="suppliers" element={
-                  <ProtectedRoute roles={["manager", "responsable_achat", "directeur_exploitation"]}>
-                    <SuppliersPage />
-                  </ProtectedRoute>
-                } />
-                <Route path="stock-movements" element={
-                  <ProtectedRoute roles={["manager", "responsable_logistique", "directeur_exploitation"]}>
-                    <StockMovements />
-                  </ProtectedRoute>
-                } />
-                <Route path="delivery" element={
-                  <ProtectedRoute roles={["manager", "responsable_logistique", "livraison"]}>
-                    <DeliveryPage />
-                  </ProtectedRoute>
-                } />
-                <Route path="users" element={
-                  <ProtectedRoute roles={["manager"]}>
-                    <UsersManagement />
-                  </ProtectedRoute>
-                } />
-                <Route path="tracking" element={
-                  <ProtectedRoute roles={["manager", "directeur_exploitation", "responsable_commercial", "commercial", "responsable_achat", "responsable_logistique", "responsable_technique", "technicien_montage", "responsable_sav", "responsable_comptabilite"]}>
-                    <CommandTracking />
-                  </ProtectedRoute>
-                } />
-                <Route path="simulator" element={
-                  <ProtectedRoute roles={["manager", "directeur_exploitation"]}>
-                    <SimulatorPage />
-                  </ProtectedRoute>
-                } />
-                <Route path="my-orders" element={
-                  <ProtectedRoute roles={["client"]}>
-                    <ClientPortal />
-                  </ProtectedRoute>
-                } />
-              </Route>
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </AuthProvider>
-        </BrowserRouter>
-      </RadixTooltipProvider>
-    </TanstackProvider>
+  // We use React.createElement to evade automatic JSX ref injection by the lovable-tagger
+  return React.createElement(
+    QueryClientProvider,
+    { client: queryClient },
+    React.createElement(
+      TooltipProvider,
+      null,
+      React.createElement(Toaster, null),
+      React.createElement(Sonner, null),
+      React.createElement(
+        BrowserRouter,
+        null,
+        React.createElement(
+          AuthProvider,
+          null,
+          React.createElement(
+            Routes,
+            null,
+            React.createElement(Route, { path: "/login", element: React.createElement(Login, null) }),
+            React.createElement(
+              Route,
+              { path: "/", element: React.createElement(AppLayout, null) },
+              React.createElement(Route, { index: true, element: React.createElement(HomeRedirect, null) }),
+              React.createElement(Route, { path: "dashboard", element: React.createElement(ProtectedRoute, { roles: ["manager", "directeur_exploitation", "responsable_showroom"] }, React.createElement(Dashboard, null)) }),
+              React.createElement(Route, { path: "orders", element: React.createElement(ProtectedRoute, { roles: ["manager", "directeur_exploitation", "responsable_commercial", "commercial", "responsable_showroom"] }, React.createElement(OrdersManagement, null)) }),
+              React.createElement(Route, { path: "clients", element: React.createElement(ProtectedRoute, { roles: ["manager", "directeur_exploitation", "responsable_commercial", "commercial", "responsable_showroom"] }, React.createElement(ClientsManagement, null)) }),
+              React.createElement(Route, { path: "quotes", element: React.createElement(ProtectedRoute, { roles: ["manager", "responsable_commercial", "commercial", "responsable_showroom"] }, React.createElement(QuotesManagement, null)) }),
+              React.createElement(Route, { path: "accounting", element: React.createElement(ProtectedRoute, { roles: ["manager", "directeur_exploitation", "responsable_comptabilite"] }, React.createElement(AccountingPage, null)) }),
+              React.createElement(Route, { path: "products", element: React.createElement(ProtectedRoute, { roles: ["manager", "responsable_achat", "responsable_logistique"] }, React.createElement(ProductsPage, null)) }),
+              React.createElement(Route, { path: "purchase-orders", element: React.createElement(ProtectedRoute, { roles: ["manager", "responsable_achat", "directeur_exploitation"] }, React.createElement(PurchaseOrdersPage, null)) }),
+              React.createElement(Route, { path: "logistics", element: React.createElement(ProtectedRoute, { roles: ["manager", "responsable_logistique", "responsable_achat"] }, React.createElement(LogisticsPage, null)) }),
+              React.createElement(Route, { path: "technical", element: React.createElement(ProtectedRoute, { roles: ["manager", "responsable_technique", "technicien_montage"] }, React.createElement(TechnicalPage, null)) }),
+              React.createElement(Route, { path: "chantiers", element: React.createElement(ProtectedRoute, { roles: ["manager", "responsable_technique", "directeur_exploitation"] }, React.createElement(JobsitesPage, null)) }),
+              React.createElement(Route, { path: "sav", element: React.createElement(ProtectedRoute, { roles: ["manager", "responsable_sav"] }, React.createElement(SavPage, null)) }),
+              React.createElement(Route, { path: "notifications", element: React.createElement(ProtectedRoute, null, React.createElement(NotificationsPage, null)) }),
+              React.createElement(Route, { path: "analytics", element: React.createElement(ProtectedRoute, { roles: ["manager", "directeur_exploitation"] }, React.createElement(AnalyticsPage, null)) }),
+              React.createElement(Route, { path: "delegations", element: React.createElement(ProtectedRoute, { roles: ["manager", "directeur_exploitation"] }, React.createElement(DelegationPage, null)) }),
+              React.createElement(Route, { path: "suppliers", element: React.createElement(ProtectedRoute, { roles: ["manager", "responsable_achat", "directeur_exploitation"] }, React.createElement(SuppliersPage, null)) }),
+              React.createElement(Route, { path: "stock-movements", element: React.createElement(ProtectedRoute, { roles: ["manager", "responsable_logistique", "directeur_exploitation"] }, React.createElement(StockMovements, null)) }),
+              React.createElement(Route, { path: "delivery", element: React.createElement(ProtectedRoute, { roles: ["manager", "responsable_logistique", "livraison"] }, React.createElement(DeliveryPage, null)) }),
+              React.createElement(Route, { path: "users", element: React.createElement(ProtectedRoute, { roles: ["manager"] }, React.createElement(UsersManagement, null)) }),
+              React.createElement(Route, { path: "tracking", element: React.createElement(ProtectedRoute, { roles: ["manager", "directeur_exploitation", "responsable_commercial", "commercial", "responsable_achat", "responsable_logistique", "responsable_technique", "technicien_montage", "responsable_sav", "responsable_comptabilite"] }, React.createElement(CommandTracking, null)) }),
+              React.createElement(Route, { path: "simulator", element: React.createElement(ProtectedRoute, { roles: ["manager", "directeur_exploitation"] }, React.createElement(SimulatorPage, null)) }),
+              React.createElement(Route, { path: "my-orders", element: React.createElement(ProtectedRoute, { roles: ["client"] }, React.createElement(ClientPortal, null)) })
+            ),
+            React.createElement(Route, { path: "*", element: React.createElement(NotFound, null) })
+          )
+        )
+      )
+    )
   );
 }
 
