@@ -141,9 +141,20 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
--- 6. HARDEN ALL APP FUNCTIONS
-DROP FUNCTION IF EXISTS public.notify_management(text, text, uuid, public.notification_type, public.alert_level);
-ALTER FUNCTION public.notify_management(text, text, uuid, public.notification_type, public.alert_level) SECURITY DEFINER SET search_path = public;
+-- 6. HARDEN ALL APP FUNCTIONS (Safely)
+DO $$ 
+BEGIN
+  -- notify_management
+  BEGIN
+    ALTER FUNCTION public.notify_management(text, text, uuid, public.notification_type, public.alert_level) SECURITY DEFINER SET search_path = public;
+  EXCEPTION WHEN undefined_function THEN
+    RAISE NOTICE 'Function notify_management not found, skipping hardening';
+  END;
 
-DROP FUNCTION IF EXISTS public.is_manager_absent();
-ALTER FUNCTION public.is_manager_absent() SECURITY DEFINER SET search_path = public;
+  -- is_manager_absent
+  BEGIN
+    ALTER FUNCTION public.is_manager_absent() SECURITY DEFINER SET search_path = public;
+  EXCEPTION WHEN undefined_function THEN
+    RAISE NOTICE 'Function is_manager_absent not found, skipping hardening';
+  END;
+END $$;
