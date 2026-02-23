@@ -5,13 +5,43 @@ import type { Database } from './types';
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-// Import the supabase client like this:
-// import { supabase } from "@/integrations/supabase/client";
+// Strict singleton pattern for Supabase client
+const createSupabaseClient = () => {
+  return createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+    auth: {
+      storage: localStorage,
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+      // Use a more resilient lock strategy to avoid "this.lock is not a function"
+      // and "Multiple GoTrueClient instances" warnings.
+      lock: async (name: string, acquireTimeout: number, callback: () => Promise<any>) => {
+        // Try to use navigator.locks if available, otherwise just run the callback
+        if (typeof navigator !== 'undefined' && navigator.locks && typeof navigator.locks.request === 'function') {
+          try {
+            return await navigator.locks.request(name, { ifAvailable: true }, async (lock) => {
+              if (lock) {
+                return await callback();
+              }
+              // If lock not available, just proceed - better than hanging or crashing
+              return await callback();
+            });
+          } catch (e) {
+            console.warn('Auth lock acquisition failed, proceeding without lock', e);
+            return await callback();
+          }
+        }
+        return await callback();
+      }
+    }
+  });
+};
 
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
-  auth: {
-    storage: localStorage,
-    persistSession: true,
-    autoRefreshToken: true,
-  }
-});
+// Use globalThis to ensure the instance persists across HMR and module reloads
+const globalSupabase = globalThis as any;
+
+if (!globalSupabase.__supabase_instance__) {
+  globalSupabase.__supabase_instance__ = createSupabaseClient();
+}
+
+export const supabase = globalSupabase.__supabase_instance__;
