@@ -83,32 +83,49 @@ END $$;
 
 -- 4a. Clients Isolation (Most Critical)
 -- Clients can ONLY see their own data
+DROP POLICY IF EXISTS "Clients can view own orders" ON public.client_orders;
 CREATE POLICY "Clients can view own orders" ON public.client_orders
   FOR SELECT TO authenticated USING (auth.uid() = client_id OR public.is_staff(auth.uid()));
 
+DROP POLICY IF EXISTS "Clients can view own profile" ON public.profiles;
 CREATE POLICY "Clients can view own profile" ON public.profiles
   FOR SELECT TO authenticated USING (auth.uid() = user_id OR public.is_staff(auth.uid()));
 
 -- 4b. Staff Module Access (Role-based)
 -- General ERP visibility for internal staff
+DROP POLICY IF EXISTS "Staff can view everything" ON public.clients;
 CREATE POLICY "Staff can view everything" ON public.clients FOR SELECT TO authenticated USING (public.is_staff(auth.uid()));
+
+DROP POLICY IF EXISTS "Staff can view suppliers" ON public.suppliers;
 CREATE POLICY "Staff can view suppliers" ON public.suppliers FOR SELECT TO authenticated USING (public.is_staff(auth.uid()));
+
+DROP POLICY IF EXISTS "Staff can view products" ON public.products;
 CREATE POLICY "Staff can view products" ON public.products FOR SELECT TO authenticated USING (public.is_staff(auth.uid()));
+
+DROP POLICY IF EXISTS "Staff can view dashboard data" ON public.client_orders;
 CREATE POLICY "Staff can view dashboard data" ON public.client_orders FOR SELECT TO authenticated USING (public.is_staff(auth.uid()));
 
 -- Write access for specific roles
+DROP POLICY IF EXISTS "Managers can manage all" ON public.clients;
 CREATE POLICY "Managers can manage all" ON public.clients FOR ALL TO authenticated USING (public.current_user_has_role('manager'));
+
+DROP POLICY IF EXISTS "Commercials can manage clients" ON public.clients;
 CREATE POLICY "Commercials can manage clients" ON public.clients FOR ALL TO authenticated 
   USING (public.current_user_has_role('commercial') OR public.current_user_has_role('responsable_commercial'));
 
 -- 4c. Secure Justifications & Audit
+DROP POLICY IF EXISTS "Staff can view justifications" ON public.workflow_justifications;
 CREATE POLICY "Staff can view justifications" ON public.workflow_justifications FOR SELECT TO authenticated USING (public.is_staff(auth.uid()));
+
+DROP POLICY IF EXISTS "Users can create justifications" ON public.workflow_justifications;
 CREATE POLICY "Users can create justifications" ON public.workflow_justifications FOR INSERT TO authenticated WITH CHECK (auth.uid() = justified_by);
 
+DROP POLICY IF EXISTS "Managers can view audit log" ON public.audit_log;
 CREATE POLICY "Managers can view audit log" ON public.audit_log FOR SELECT TO authenticated USING (public.current_user_has_role('manager'));
 
 -- 4d. Secure Notifications
 DROP POLICY IF EXISTS "System can insert notifications" ON public.notifications;
+DROP POLICY IF EXISTS "Staff can create notifications" ON public.notifications;
 CREATE POLICY "Staff can create notifications" ON public.notifications 
   FOR INSERT TO authenticated WITH CHECK (public.is_staff(auth.uid()));
 
