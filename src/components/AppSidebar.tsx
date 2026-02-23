@@ -9,7 +9,7 @@ import {
   CreditCard, HeadphonesIcon, Bell, Settings, LogOut, ChevronLeft, ChevronRight,
   BarChart3, UserCheck, Ship, Construction, Activity
 } from "lucide-react";
-import { useState } from "react";
+import { useState, forwardRef } from "react";
 import { Button } from "@/components/ui/button";
 
 const menuItems = [
@@ -36,7 +36,7 @@ const menuItems = [
 ];
 
 export const AppSidebar = forwardRef<HTMLDivElement>((_props, ref) => {
-  const { profile, roles, user, signOut, isManager, isInternalStaff } = useAuth();
+  const { profile, roles, user, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
@@ -132,4 +132,3 @@ export const AppSidebar = forwardRef<HTMLDivElement>((_props, ref) => {
 AppSidebar.displayName = "AppSidebar";
 
 export default AppSidebar;
-```
