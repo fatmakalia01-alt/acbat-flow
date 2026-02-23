@@ -1,4 +1,4 @@
-import React, { forwardRef } from "react";
+import React from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -11,13 +11,13 @@ interface ProtectedRouteProps {
   roles?: AppRole[];
 }
 
-const ProtectedRoute = forwardRef<HTMLDivElement, ProtectedRouteProps>(({ children, roles }, ref) => {
+const ProtectedRoute = ({ children, roles }: ProtectedRouteProps) => {
   const { user, roles: userRoles, loading } = useAuth();
   const location = useLocation();
 
   if (loading) {
     return (
-      <div ref={ref} className="flex items-center justify-center h-screen">
+      <div className="flex items-center justify-center h-screen">
         <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary" />
       </div>
     );
@@ -29,7 +29,7 @@ const ProtectedRoute = forwardRef<HTMLDivElement, ProtectedRouteProps>(({ childr
 
   if (roles && roles.length > 0 && !roles.some(r => userRoles.includes(r))) {
     return (
-      <div ref={ref} className="flex flex-col items-center justify-center h-full p-12 text-center gap-4">
+      <div className="flex flex-col items-center justify-center h-full p-12 text-center gap-4">
         <div className="h-16 w-16 rounded-full bg-destructive/10 flex items-center justify-center">
           <span className="text-3xl">🔒</span>
         </div>
@@ -41,7 +41,7 @@ const ProtectedRoute = forwardRef<HTMLDivElement, ProtectedRouteProps>(({ childr
     );
   }
 
-  return <div ref={ref}>{children}</div>;
-});
+  return <div>{children}</div>;
+};
 
 export default ProtectedRoute;
