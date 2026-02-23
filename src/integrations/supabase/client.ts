@@ -13,26 +13,6 @@ const createSupabaseClient = () => {
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: true,
-      // Use a more resilient lock strategy to avoid "this.lock is not a function"
-      // and "Multiple GoTrueClient instances" warnings.
-      lock: async (name: string, acquireTimeout: number, callback: () => Promise<any>) => {
-        // Try to use navigator.locks if available, otherwise just run the callback
-        if (typeof navigator !== 'undefined' && navigator.locks && typeof navigator.locks.request === 'function') {
-          try {
-            return await navigator.locks.request(name, { ifAvailable: true }, async (lock) => {
-              if (lock) {
-                return await callback();
-              }
-              // If lock not available, just proceed - better than hanging or crashing
-              return await callback();
-            });
-          } catch (e) {
-            console.warn('Auth lock acquisition failed, proceeding without lock', e);
-            return await callback();
-          }
-        }
-        return await callback();
-      }
     }
   });
 };
