@@ -1,0 +1,2 @@
+-- Fix email_change NULL causing GoTrue scan error
+UPDATE auth.users SET email_change = '' WHERE email_change IS NULL;
