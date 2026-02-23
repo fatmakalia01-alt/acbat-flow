@@ -47,6 +47,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
+DROP TRIGGER IF EXISTS tr_generate_sav_ref_atomic ON public.sav_tickets;
 CREATE TRIGGER tr_generate_sav_ref_atomic
   BEFORE INSERT ON public.sav_tickets
   FOR EACH ROW EXECUTE FUNCTION public.generate_sav_ref_atomic();
