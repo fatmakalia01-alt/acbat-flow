@@ -142,8 +142,13 @@ const App = forwardRef<HTMLDivElement, any>((props, ref) => (
                 </ProtectedRoute>
               } />
               <Route path="tracking" element={
-                <ProtectedRoute>
+                <ProtectedRoute roles={["manager", "directeur_exploitation", "responsable_commercial", "commercial", "responsable_achat", "responsable_logistique", "responsable_technique", "technicien_montage", "responsable_sav", "responsable_comptabilite"]}>
                   <CommandTracking />
+                </ProtectedRoute>
+              } />
+              <Route path="simulator" element={
+                <ProtectedRoute roles={["manager", "directeur_exploitation"]}>
+                  <SimulatorPage />
                 </ProtectedRoute>
               } />
               <Route path="my-orders" element={
