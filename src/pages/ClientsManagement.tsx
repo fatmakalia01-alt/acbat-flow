@@ -82,6 +82,22 @@ const ClientsManagement = () => {
     </div>
   );
 
+  const validate = () => {
+    if (!form.full_name.trim()) {
+      toast({ title: "Validation Error", description: "Nom complet est requis", variant: "destructive" });
+      return false;
+    }
+    if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+      toast({ title: "Validation Error", description: "Format d'email invalide", variant: "destructive" });
+      return false;
+    }
+    if (form.phone && !/^\+?[0-9\s-]{8,}$/.test(form.phone)) {
+      toast({ title: "Validation Error", description: "Format de téléphone invalide", variant: "destructive" });
+      return false;
+    }
+    return true;
+  };
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -150,23 +166,6 @@ const ClientsManagement = () => {
         </TabsContent>
       </Tabs>
 
-    const validate = () => {
-      if (!form.full_name.trim()) {
-        toast({ title: "Validation Error", description: "Nom complet est requis", variant: "destructive" });
-      return false;
-      }
-      if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-        toast({ title: "Validation Error", description: "Format d'email invalide", variant: "destructive" });
-      return false;
-      }
-      if (form.phone && !/^\+?[0-9\s-]{8,}$/.test(form.phone)) {
-        toast({ title: "Validation Error", description: "Format de téléphone invalide", variant: "destructive" });
-      return false;
-      }
-      return true;
-    };
-
-      return (
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader><DialogTitle>{editing ? "Modifier le client" : "Nouveau client"}</DialogTitle></DialogHeader>
