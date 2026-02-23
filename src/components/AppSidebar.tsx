@@ -35,8 +35,8 @@ const menuItems = [
   { icon: Settings, label: "Utilisateurs", path: "/users", roles: ["manager"] },
 ];
 
-const AppSidebar = () => {
-  const { profile, roles, user, signOut } = useAuth();
+export const AppSidebar = forwardRef<HTMLDivElement>((_props, ref) => {
+  const { profile, roles, user, signOut, isManager, isInternalStaff } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
@@ -62,7 +62,7 @@ const AppSidebar = () => {
   );
 
   return (
-    <aside className={cn(
+    <aside ref={ref} className={cn(
       "h-screen bg-sidebar text-sidebar-foreground flex flex-col transition-all duration-300 sticky top-0",
       collapsed ? "w-16" : "w-64"
     )}>
@@ -127,6 +127,9 @@ const AppSidebar = () => {
       </div>
     </aside>
   );
-};
+});
+
+AppSidebar.displayName = "AppSidebar";
 
 export default AppSidebar;
+```
