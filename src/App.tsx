@@ -36,11 +36,29 @@ const queryClient = new QueryClient();
 const HomeRedirect = () => {
   const { roles, loading } = useAuth();
   if (loading) return null;
-  const to = roles.includes("client") ? "/my-orders" : "/dashboard";
+
+  // Définir la page d'atterrissage prioritaire selon le premier rôle trouvé
+  const getLandingPage = (userRoles: string[]) => {
+    if (userRoles.includes("manager") || userRoles.includes("directeur_exploitation") || userRoles.includes("responsable_showroom")) return "/dashboard";
+    if (userRoles.includes("client")) return "/my-orders";
+    if (userRoles.includes("livraison") || userRoles.includes("responsable_logistique")) return "/delivery";
+    if (userRoles.includes("responsable_technique") || userRoles.includes("technicien_montage")) return "/technical";
+    if (userRoles.includes("commercial") || userRoles.includes("responsable_commercial")) return "/orders";
+    if (userRoles.includes("responsable_achat")) return "/products";
+    if (userRoles.includes("responsable_sav")) return "/sav";
+    if (userRoles.includes("responsable_comptabilite")) return "/accounting";
+
+    // Par défaut, essayer le dashboard (ProtectedRoute gérera l'accès refusé si nécessaire)
+    return "/dashboard";
+  };
+
+  const to = getLandingPage(roles);
+  console.log("HomeRedirect: Redirecting user with roles", roles, "to", to);
+
   return React.createElement("div", { key: "home-redirect-wrapper" }, React.createElement(Navigate, { to, replace: true }));
 };
 
-console.log("APP VERSION: FIXED_REF_v9_TIMEOUT_DIAG");
+console.log("APP VERSION: FIXED_REF_v10_REMAP_OUTLET");
 
 function App() {
   // We use React.createElement to evade automatic JSX ref injection by the lovable-tagger
