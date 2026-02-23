@@ -40,6 +40,8 @@ const HomeRedirect = () => {
   return <Navigate to="/dashboard" replace />;
 };
 
+console.log("APP VERSION: FIXED_REF_v4");
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
