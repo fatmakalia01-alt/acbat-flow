@@ -14,36 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      brands: {
-        Row: {
-          id: string
-          name: string
-          logo_url: string | null
-          description: string | null
-          official_website: string | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          name: string
-          logo_url?: string | null
-          description?: string | null
-          official_website?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          name?: string
-          logo_url?: string | null
-          description?: string | null
-          official_website?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       audit_log: {
         Row: {
           action: string
@@ -80,6 +50,131 @@ export type Database = {
         }
         Relationships: []
       }
+      brands: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          logo_url: string | null
+          name: string
+          official_website: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          logo_url?: string | null
+          name: string
+          official_website?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          logo_url?: string | null
+          name?: string
+          official_website?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      chantiers: {
+        Row: {
+          actual_end: string | null
+          actual_start: string | null
+          address_chantier: string | null
+          client_id: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          notes: string | null
+          order_id: string | null
+          planned_end: string | null
+          planned_start: string | null
+          reference: string
+          site_id: string | null
+          status: Database["public"]["Enums"]["chantier_status"]
+          team_lead: string | null
+          team_members: string[] | null
+          technical_notes: string | null
+          updated_at: string
+        }
+        Insert: {
+          actual_end?: string | null
+          actual_start?: string | null
+          address_chantier?: string | null
+          client_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          order_id?: string | null
+          planned_end?: string | null
+          planned_start?: string | null
+          reference: string
+          site_id?: string | null
+          status?: Database["public"]["Enums"]["chantier_status"]
+          team_lead?: string | null
+          team_members?: string[] | null
+          technical_notes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          actual_end?: string | null
+          actual_start?: string | null
+          address_chantier?: string | null
+          client_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          order_id?: string | null
+          planned_end?: string | null
+          planned_start?: string | null
+          reference?: string
+          site_id?: string | null
+          status?: Database["public"]["Enums"]["chantier_status"]
+          team_lead?: string | null
+          team_members?: string[] | null
+          technical_notes?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chantiers_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chantiers_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chantiers_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "client_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chantiers_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_orders: {
         Row: {
           advance_amount: number | null
@@ -89,6 +184,7 @@ export type Database = {
           id: string
           notes: string | null
           reference: string
+          site_id: string | null
           status: Database["public"]["Enums"]["order_status"]
           total_ht: number | null
           total_ttc: number | null
@@ -104,6 +200,7 @@ export type Database = {
           id?: string
           notes?: string | null
           reference?: string
+          site_id?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           total_ht?: number | null
           total_ttc?: number | null
@@ -119,6 +216,7 @@ export type Database = {
           id?: string
           notes?: string | null
           reference?: string
+          site_id?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           total_ht?: number | null
           total_ttc?: number | null
@@ -132,6 +230,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_orders_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
             referencedColumns: ["id"]
           },
         ]
@@ -235,6 +340,8 @@ export type Database = {
       deliveries: {
         Row: {
           actual_date: string | null
+          carrier_name: string | null
+          carrier_type: string | null
           client_notes: string | null
           created_at: string
           id: string
@@ -246,18 +353,19 @@ export type Database = {
           pv_signed: boolean | null
           pv_url: string | null
           scheduled_date: string | null
+          site_id: string | null
           status: string
           tech_notes: string | null
           technician_id: string | null
-          updated_at: string
-          carrier_name: string | null
           tracking_number: string | null
-          vehicle_plate: string | null
           transport_cost: number | null
-          carrier_type: string | null
+          updated_at: string
+          vehicle_plate: string | null
         }
         Insert: {
           actual_date?: string | null
+          carrier_name?: string | null
+          carrier_type?: string | null
           client_notes?: string | null
           created_at?: string
           id?: string
@@ -269,13 +377,19 @@ export type Database = {
           pv_signed?: boolean | null
           pv_url?: string | null
           scheduled_date?: string | null
+          site_id?: string | null
           status?: string
           tech_notes?: string | null
           technician_id?: string | null
+          tracking_number?: string | null
+          transport_cost?: number | null
           updated_at?: string
+          vehicle_plate?: string | null
         }
         Update: {
           actual_date?: string | null
+          carrier_name?: string | null
+          carrier_type?: string | null
           client_notes?: string | null
           created_at?: string
           id?: string
@@ -287,10 +401,14 @@ export type Database = {
           pv_signed?: boolean | null
           pv_url?: string | null
           scheduled_date?: string | null
+          site_id?: string | null
           status?: string
           tech_notes?: string | null
           technician_id?: string | null
+          tracking_number?: string | null
+          transport_cost?: number | null
           updated_at?: string
+          vehicle_plate?: string | null
         }
         Relationships: [
           {
@@ -298,6 +416,13 @@ export type Database = {
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "client_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deliveries_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
             referencedColumns: ["id"]
           },
         ]
@@ -618,6 +743,7 @@ export type Database = {
       products: {
         Row: {
           active: boolean | null
+          brand_id: string | null
           category_id: string | null
           created_at: string
           description: string | null
@@ -632,6 +758,7 @@ export type Database = {
         }
         Insert: {
           active?: boolean | null
+          brand_id?: string | null
           category_id?: string | null
           created_at?: string
           description?: string | null
@@ -646,6 +773,7 @@ export type Database = {
         }
         Update: {
           active?: boolean | null
+          brand_id?: string | null
           category_id?: string | null
           created_at?: string
           description?: string | null
@@ -659,6 +787,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "products_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "products_category_id_fkey"
             columns: ["category_id"]
@@ -679,6 +814,7 @@ export type Database = {
         Row: {
           avatar_url: string | null
           created_at: string
+          email: string | null
           full_name: string
           id: string
           phone: string | null
@@ -688,6 +824,7 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           created_at?: string
+          email?: string | null
           full_name?: string
           id?: string
           phone?: string | null
@@ -697,6 +834,7 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           created_at?: string
+          email?: string | null
           full_name?: string
           id?: string
           phone?: string | null
@@ -704,6 +842,139 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      purchase_order_items: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          notes: string | null
+          product_id: string | null
+          purchase_order_id: string
+          quantity: number
+          unit_price_eur: number
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          notes?: string | null
+          product_id?: string | null
+          purchase_order_id: string
+          quantity?: number
+          unit_price_eur?: number
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          notes?: string | null
+          product_id?: string | null
+          purchase_order_id?: string
+          quantity?: number
+          unit_price_eur?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_order_items_purchase_order_id_fkey"
+            columns: ["purchase_order_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      purchase_orders: {
+        Row: {
+          actual_arrival: string | null
+          brand_id: string | null
+          created_at: string
+          created_by: string | null
+          customs_fees: number | null
+          customs_notes: string | null
+          estimated_arrival: string | null
+          exchange_rate: number | null
+          id: string
+          notes: string | null
+          reference: string
+          status: Database["public"]["Enums"]["purchase_order_status"]
+          supplier_id: string | null
+          total_amount_eur: number | null
+          total_amount_tnd: number | null
+          transit_notes: string | null
+          transport_fees: number | null
+          updated_at: string
+        }
+        Insert: {
+          actual_arrival?: string | null
+          brand_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          customs_fees?: number | null
+          customs_notes?: string | null
+          estimated_arrival?: string | null
+          exchange_rate?: number | null
+          id?: string
+          notes?: string | null
+          reference: string
+          status?: Database["public"]["Enums"]["purchase_order_status"]
+          supplier_id?: string | null
+          total_amount_eur?: number | null
+          total_amount_tnd?: number | null
+          transit_notes?: string | null
+          transport_fees?: number | null
+          updated_at?: string
+        }
+        Update: {
+          actual_arrival?: string | null
+          brand_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          customs_fees?: number | null
+          customs_notes?: string | null
+          estimated_arrival?: string | null
+          exchange_rate?: number | null
+          id?: string
+          notes?: string | null
+          reference?: string
+          status?: Database["public"]["Enums"]["purchase_order_status"]
+          supplier_id?: string | null
+          total_amount_eur?: number | null
+          total_amount_tnd?: number | null
+          transit_notes?: string | null
+          transport_fees?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_orders_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_orders_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_orders_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       quote_items: {
         Row: {
@@ -822,6 +1093,41 @@ export type Database = {
           },
         ]
       }
+      sav_comments: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          is_internal: boolean | null
+          ticket_id: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          is_internal?: boolean | null
+          ticket_id: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          is_internal?: boolean | null
+          ticket_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sav_comments_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "sav_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sav_tickets: {
         Row: {
           assigned_to: string | null
@@ -885,6 +1191,36 @@ export type Database = {
           },
         ]
       }
+      sites: {
+        Row: {
+          address: string | null
+          city: string | null
+          created_at: string
+          id: string
+          name: string
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       stock: {
         Row: {
           id: string
@@ -913,6 +1249,44 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "stock_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stock_movements: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          product_id: string
+          quantity: number
+          reason: string | null
+          type: Database["public"]["Enums"]["stock_movement_type"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          product_id: string
+          quantity: number
+          reason?: string | null
+          type: Database["public"]["Enums"]["stock_movement_type"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          product_id?: string
+          quantity?: number
+          reason?: string | null
+          type?: Database["public"]["Enums"]["stock_movement_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_movements_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
@@ -1028,330 +1402,54 @@ export type Database = {
       user_roles: {
         Row: {
           created_at: string
+          email: string | null
           id: string
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Insert: {
           created_at?: string
+          email?: string | null
           id?: string
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Update: {
           created_at?: string
+          email?: string | null
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
         }
         Relationships: []
       }
-      sav_comments: {
-        Row: {
-          content: string
-          created_at: string
-          id: string
-          is_internal: boolean | null
-          ticket_id: string
-          user_id: string
-        }
-        Insert: {
-          content: string
-          created_at?: string
-          id?: string
-          is_internal?: boolean | null
-          ticket_id: string
-          user_id: string
-        }
-        Update: {
-          content?: string
-          created_at?: string
-          id?: string
-          is_internal?: boolean | null
-          ticket_id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "sav_comments_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "sav_tickets"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      stock_movements: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          id: string
-          product_id: string
-          quantity: number
-          reason: string | null
-          type: Database["public"]["Enums"]["stock_movement_type"]
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          id?: string
-          product_id: string
-          quantity: number
-          reason?: string | null
-          type: Database["public"]["Enums"]["stock_movement_type"]
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          id?: string
-          product_id?: string
-          quantity?: number
-          reason?: string | null
-          type?: Database["public"]["Enums"]["stock_movement_type"]
-        }
-        Relationships: [
-          {
-            foreignKeyName: "stock_movements_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      sites: {
-        Row: {
-          id: string
-          name: string
-          address: string | null
-          city: string | null
-          phone: string | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          name: string
-          address?: string | null
-          city?: string | null
-          phone?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          name?: string
-          address?: string | null
-          city?: string | null
-          phone?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      purchase_orders: {
-        Row: {
-          id: string
-          reference: string
-          supplier_id: string | null
-          brand_id: string | null
-          status: Database["public"]["Enums"]["purchase_order_status"]
-          estimated_arrival: string | null
-          actual_arrival: string | null
-          total_amount_eur: number | null
-          exchange_rate: number | null
-          total_amount_tnd: number | null
-          customs_fees: number | null
-          transport_fees: number | null
-          transit_notes: string | null
-          customs_notes: string | null
-          notes: string | null
-          created_by: string | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          reference: string
-          supplier_id?: string | null
-          brand_id?: string | null
-          status?: Database["public"]["Enums"]["purchase_order_status"]
-          estimated_arrival?: string | null
-          actual_arrival?: string | null
-          total_amount_eur?: number | null
-          exchange_rate?: number | null
-          customs_fees?: number | null
-          transport_fees?: number | null
-          transit_notes?: string | null
-          customs_notes?: string | null
-          notes?: string | null
-          created_by?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          reference?: string
-          supplier_id?: string | null
-          brand_id?: string | null
-          status?: Database["public"]["Enums"]["purchase_order_status"]
-          estimated_arrival?: string | null
-          actual_arrival?: string | null
-          total_amount_eur?: number | null
-          exchange_rate?: number | null
-          customs_fees?: number | null
-          transport_fees?: number | null
-          transit_notes?: string | null
-          customs_notes?: string | null
-          notes?: string | null
-          created_by?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "purchase_orders_supplier_id_fkey"
-            columns: ["supplier_id"]
-            isOneToOne: false
-            referencedRelation: "suppliers"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "purchase_orders_brand_id_fkey"
-            columns: ["brand_id"]
-            isOneToOne: false
-            referencedRelation: "brands"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      purchase_order_items: {
-        Row: {
-          id: string
-          purchase_order_id: string
-          product_id: string | null
-          description: string | null
-          quantity: number
-          unit_price_eur: number
-          notes: string | null
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          purchase_order_id: string
-          product_id?: string | null
-          description?: string | null
-          quantity?: number
-          unit_price_eur?: number
-          notes?: string | null
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          purchase_order_id?: string
-          product_id?: string | null
-          description?: string | null
-          quantity?: number
-          unit_price_eur?: number
-          notes?: string | null
-          created_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "purchase_order_items_purchase_order_id_fkey"
-            columns: ["purchase_order_id"]
-            isOneToOne: false
-            referencedRelation: "purchase_orders"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      chantiers: {
-        Row: {
-          id: string
-          reference: string
-          name: string
-          client_id: string | null
-          order_id: string | null
-          site_id: string | null
-          status: Database["public"]["Enums"]["chantier_status"]
-          planned_start: string | null
-          planned_end: string | null
-          actual_start: string | null
-          actual_end: string | null
-          team_lead: string | null
-          team_members: string[] | null
-          address_chantier: string | null
-          notes: string | null
-          technical_notes: string | null
-          created_by: string | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          reference: string
-          name: string
-          client_id?: string | null
-          order_id?: string | null
-          site_id?: string | null
-          status?: Database["public"]["Enums"]["chantier_status"]
-          planned_start?: string | null
-          planned_end?: string | null
-          actual_start?: string | null
-          actual_end?: string | null
-          team_lead?: string | null
-          team_members?: string[] | null
-          address_chantier?: string | null
-          notes?: string | null
-          technical_notes?: string | null
-          created_by?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          reference?: string
-          name?: string
-          client_id?: string | null
-          order_id?: string | null
-          site_id?: string | null
-          status?: Database["public"]["Enums"]["chantier_status"]
-          planned_start?: string | null
-          planned_end?: string | null
-          actual_start?: string | null
-          actual_end?: string | null
-          team_lead?: string | null
-          team_members?: string[] | null
-          address_chantier?: string | null
-          notes?: string | null
-          technical_notes?: string | null
-          created_by?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "chantiers_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "chantiers_site_id_fkey"
-            columns: ["site_id"]
-            isOneToOne: false
-            referencedRelation: "sites"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      get_ca_evolution_12months: {
+        Args: never
+        Returns: {
+          ca: number
+          mois: string
+        }[]
+      }
+      get_current_month_ca: { Args: never; Returns: number }
+      get_orders_status_distribution: {
+        Args: never
+        Returns: {
+          name: string
+          value: number
+        }[]
+      }
+      get_top_commerciaux: {
+        Args: { limit_n?: number }
+        Returns: {
+          ca: number
+          nom: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1365,89 +1463,89 @@ export type Database = {
     Enums: {
       alert_level: "jaune" | "rouge" | "bleue" | "rouge_clignotant"
       app_role:
-      | "manager"
-      | "directeur_exploitation"
-      | "responsable_achat"
-      | "responsable_logistique"
-      | "responsable_commercial"
-      | "commercial"
-      | "responsable_technique"
-      | "technicien_montage"
-      | "responsable_sav"
-      | "responsable_comptabilite"
-      | "responsable_showroom"
-      | "client"
-      | "livraison"
-      purchase_order_status:
-      | "brouillon"
-      | "en_commande"
-      | "en_transit"
-      | "en_douane"
-      | "receptionne"
-      | "annule"
+        | "manager"
+        | "directeur_exploitation"
+        | "responsable_achat"
+        | "responsable_logistique"
+        | "responsable_commercial"
+        | "commercial"
+        | "responsable_technique"
+        | "technicien_montage"
+        | "responsable_sav"
+        | "responsable_comptabilite"
+        | "client"
+        | "responsable_showroom"
+        | "livraison"
       chantier_status:
-      | "planifie"
-      | "en_cours"
-      | "en_attente"
-      | "termine"
-      | "annule"
+        | "planifie"
+        | "en_cours"
+        | "en_attente"
+        | "termine"
+        | "annule"
       invoice_status:
-      | "brouillon"
-      | "emise"
-      | "payee_partiel"
-      | "payee"
-      | "impayee"
-      | "annulee"
+        | "brouillon"
+        | "emise"
+        | "payee_partiel"
+        | "payee"
+        | "impayee"
+        | "annulee"
       notification_type:
-      | "info"
-      | "alerte_delai"
-      | "depassement"
-      | "transition"
-      | "urgente"
+        | "info"
+        | "alerte_delai"
+        | "depassement"
+        | "transition"
+        | "urgente"
       order_status:
-      | "brouillon"
-      | "en_validation"
-      | "validee"
-      | "en_commande_fournisseur"
-      | "en_reception"
-      | "en_preparation"
-      | "en_livraison"
-      | "livree"
-      | "en_facturation"
-      | "payee"
-      | "cloturee"
-      | "annulee"
+        | "brouillon"
+        | "en_validation"
+        | "validee"
+        | "en_commande_fournisseur"
+        | "en_reception"
+        | "en_preparation"
+        | "en_livraison"
+        | "livree"
+        | "en_facturation"
+        | "payee"
+        | "cloturee"
+        | "annulee"
       payment_method:
-      | "especes"
-      | "cheque"
-      | "virement"
-      | "carte_bancaire"
-      | "traite_bancaire"
+        | "especes"
+        | "cheque"
+        | "virement"
+        | "carte_bancaire"
+        | "traite_bancaire"
       payment_status: "en_attente" | "confirme" | "rejete"
+      purchase_order_status:
+        | "brouillon"
+        | "en_commande"
+        | "en_transit"
+        | "en_douane"
+        | "receptionne"
+        | "annule"
       quote_status:
-      | "brouillon"
-      | "en_validation"
-      | "accepte"
-      | "refuse"
-      | "expire"
+        | "brouillon"
+        | "en_validation"
+        | "accepte"
+        | "refuse"
+        | "expire"
       sav_status: "ouvert" | "en_cours" | "resolu" | "ferme"
       stock_movement_type: "in" | "out" | "adjustment"
       workflow_step_name:
-      | "creation_commande"
-      | "validation_commerciale"
-      | "commande_fournisseur"
-      | "reception_marchandises"
-      | "preparation_technique"
-      | "livraison_installation"
-      | "validation_client"
-      | "facturation_paiement"
-      | "cloture_archivage"
+        | "creation_commande"
+        | "validation_commerciale"
+        | "commande_fournisseur"
+        | "reception_marchandises"
+        | "preparation_technique"
+        | "livraison_installation"
+        | "validation_client"
+        | "facturation_paiement"
+        | "cloture_archivage"
       workflow_step_status:
-      | "pending"
-      | "in_progress"
-      | "completed"
-      | "delayed"
-      | "blocked"
+        | "pending"
+        | "in_progress"
+        | "completed"
+        | "delayed"
+        | "blocked"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1461,116 +1559,116 @@ type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
-  | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-  | { schema: keyof DatabaseWithoutInternals },
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-  ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-    DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-  : never = never,
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-    DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
-  ? R
-  : never
+    ? R
+    : never
   : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-    DefaultSchema["Views"])
-  ? (DefaultSchema["Tables"] &
-    DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
-      Row: infer R
-    }
-  ? R
-  : never
-  : never
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
-  | keyof DefaultSchema["Tables"]
-  | { schema: keyof DatabaseWithoutInternals },
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-  ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-  : never = never,
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-    Insert: infer I
-  }
-  ? I
-  : never
+      Insert: infer I
+    }
+    ? I
+    : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-  ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-    Insert: infer I
-  }
-  ? I
-  : never
-  : never
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
-  | keyof DefaultSchema["Tables"]
-  | { schema: keyof DatabaseWithoutInternals },
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-  ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-  : never = never,
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-    Update: infer U
-  }
-  ? U
-  : never
+      Update: infer U
+    }
+    ? U
+    : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-  ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-    Update: infer U
-  }
-  ? U
-  : never
-  : never
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
-  | keyof DefaultSchema["Enums"]
-  | { schema: keyof DatabaseWithoutInternals },
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-  ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-  : never = never,
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
-  ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
-  : never
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
-  | keyof DefaultSchema["CompositeTypes"]
-  | { schema: keyof DatabaseWithoutInternals },
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-  ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-  : never = never,
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-  ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
-  : never
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
 
 export const Constants = {
   public: {
@@ -1587,17 +1685,9 @@ export const Constants = {
         "technicien_montage",
         "responsable_sav",
         "responsable_comptabilite",
-        "responsable_showroom",
         "client",
+        "responsable_showroom",
         "livraison",
-      ],
-      purchase_order_status: [
-        "brouillon",
-        "en_commande",
-        "en_transit",
-        "en_douane",
-        "receptionne",
-        "annule",
       ],
       chantier_status: [
         "planifie",
@@ -1643,6 +1733,14 @@ export const Constants = {
         "traite_bancaire",
       ],
       payment_status: ["en_attente", "confirme", "rejete"],
+      purchase_order_status: [
+        "brouillon",
+        "en_commande",
+        "en_transit",
+        "en_douane",
+        "receptionne",
+        "annule",
+      ],
       quote_status: [
         "brouillon",
         "en_validation",
@@ -1651,6 +1749,7 @@ export const Constants = {
         "expire",
       ],
       sav_status: ["ouvert", "en_cours", "resolu", "ferme"],
+      stock_movement_type: ["in", "out", "adjustment"],
       workflow_step_name: [
         "creation_commande",
         "validation_commerciale",

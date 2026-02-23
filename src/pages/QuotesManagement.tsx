@@ -100,14 +100,14 @@ const QuotesManagement = () => {
       if (!selectedQuote || !newItem.product_id) return;
       const product = products.find(p => p.id === newItem.product_id);
       if (!product) return;
-      const total_ht = Number(product.base_price) * newItem.quantity;
+      const total_ht = Number(product.price_ht) * newItem.quantity;
       const total_ttc = total_ht * (1 + (Number(product.tva_rate) || 19) / 100);
       const { error } = await supabase.from("quote_items").insert({
         quote_id: selectedQuote.id,
         product_id: newItem.product_id,
         description: product.name,
         quantity: newItem.quantity,
-        unit_price_ht: product.base_price,
+        unit_price_ht: product.price_ht,
         tva_rate: product.tva_rate || 19,
         total_ht,
         total_ttc,
@@ -157,7 +157,7 @@ const QuotesManagement = () => {
   });
 
   const updateStatus = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+    mutationFn: async ({ id, status }: { id: string; status: "brouillon" | "en_validation" | "accepte" | "refuse" | "expire" }) => {
       const { error } = await supabase.from("quotes").update({ status }).eq("id", id);
       if (error) throw error;
     },
@@ -295,7 +295,7 @@ const QuotesManagement = () => {
                 <div><span className="text-muted-foreground">Total TTC:</span> {(selectedQuote.total_ttc || 0).toLocaleString("fr-TN")} TND</div>
                 <div>
                   <span className="text-muted-foreground">Statut:</span>{" "}
-                  <Select value={selectedQuote.status} onValueChange={v => { updateStatus.mutate({ id: selectedQuote.id, status: v }); setSelectedQuote({ ...selectedQuote, status: v }); }}>
+                  <Select value={selectedQuote.status} onValueChange={(v: "brouillon" | "en_validation" | "accepte" | "refuse" | "expire") => { updateStatus.mutate({ id: selectedQuote.id, status: v }); setSelectedQuote({ ...selectedQuote, status: v }); }}>
                     <SelectTrigger className="w-44 inline-flex h-8"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {Constants.public.Enums.quote_status.map(s => (

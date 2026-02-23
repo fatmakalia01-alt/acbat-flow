@@ -22,7 +22,7 @@ const styles = StyleSheet.create({
         height: 40,
     },
     titleContainer: {
-        alignItems: 'right',
+        alignItems: 'flex-end',
     },
     title: {
         fontSize: 18,
@@ -64,7 +64,7 @@ const styles = StyleSheet.create({
     col4: { width: '25%', textAlign: 'right' },
     totals: {
         marginTop: 30,
-        alignItems: 'right',
+        alignItems: 'flex-end',
         paddingRight: 10,
     },
     totalRow: {
