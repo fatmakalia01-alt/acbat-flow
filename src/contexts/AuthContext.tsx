@@ -44,7 +44,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [mockRole, setMockRole] = useState<AppRole | null>(null);
   const navigate = useNavigate();
 
-  const fetchWithTimeout = async <T,>(promise: Promise<T>, description: string, timeoutMs: number = 10000): Promise<T> => {
+  const fetchWithTimeout = async (promise: Promise<any>, description: string, timeoutMs: number = 10000): Promise<any> => {
     const timeoutPromise = new Promise<never>((_, reject) =>
       setTimeout(() => reject(new Error(`Timeout API (${description}) après ${timeoutMs}ms`)), timeoutMs)
     );
@@ -57,10 +57,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setRolesLoading(true);
     try {
       // 1. Récupérer le profil
-      const { data: profileData, error: profileError } = await fetchWithTimeout(
+      const resProfile = await fetchWithTimeout(
         supabase.from("profiles").select("*").eq("id", userId).single(),
         "fetch profile"
       );
+      const { data: profileData, error: profileError } = resProfile;
 
       if (profileError) {
         console.warn("AuthContext: Profile fetch error (might not exist yet):", profileError);
@@ -70,16 +71,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       // 2. Récupérer les rôles
-      const { data: rolesData, error: rolesError } = await fetchWithTimeout(
+      const resRoles = await fetchWithTimeout(
         supabase.from("user_roles").select("role").eq("user_id", userId),
         "fetch roles"
       );
+      const { data: rolesData, error: rolesError } = resRoles;
 
       if (rolesError) {
         console.error("AuthContext: Roles fetch error:", rolesError);
         setRoles([]);
       } else {
-        const roleList = rolesData?.map(r => r.role) || [];
+        const roleList = rolesData?.map((r: any) => r.role) || [];
         console.log("AuthContext: Roles fetched:", roleList);
         setRoles(roleList as AppRole[]);
       }
