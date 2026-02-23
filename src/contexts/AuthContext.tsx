@@ -44,17 +44,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [mockRole, setMockRole] = useState<AppRole | null>(null);
   const navigate = useNavigate();
 
+  const fetchWithTimeout = async <T,>(promise: Promise<T>, description: string, timeoutMs: number = 10000): Promise<T> => {
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error(`Timeout API (${description}) après ${timeoutMs}ms`)), timeoutMs)
+    );
+    console.log(`AuthContext: Starting ${description}...`);
+    return Promise.race([promise, timeoutPromise]);
+  };
+
   const fetchUserData = async (userId: string) => {
     console.log("AuthContext: fetchUserData starting for", userId);
     setRolesLoading(true);
     try {
       // 1. Récupérer le profil
-      console.log("AuthContext: Fetching profile...");
-      const { data: profileData, error: profileError } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", userId)
-        .single();
+      const { data: profileData, error: profileError } = await fetchWithTimeout(
+        supabase.from("profiles").select("*").eq("id", userId).single(),
+        "fetch profile"
+      );
 
       if (profileError) {
         console.warn("AuthContext: Profile fetch error (might not exist yet):", profileError);
@@ -64,11 +70,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       // 2. Récupérer les rôles
-      console.log("AuthContext: Fetching roles...");
-      const { data: rolesData, error: rolesError } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", userId);
+      const { data: rolesData, error: rolesError } = await fetchWithTimeout(
+        supabase.from("user_roles").select("role").eq("user_id", userId),
+        "fetch roles"
+      );
 
       if (rolesError) {
         console.error("AuthContext: Roles fetch error:", rolesError);
@@ -79,7 +84,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setRoles(roleList as AppRole[]);
       }
     } catch (err) {
-      console.error("AuthContext: Unexpected error in fetchUserData:", err);
+      console.error("AuthContext: Error in fetchUserData:", err);
     } finally {
       console.log("AuthContext: fetchUserData finished (rolesLoading -> false)");
       setRolesLoading(false);
