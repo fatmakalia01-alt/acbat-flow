@@ -1,6 +1,7 @@
 import React from "react";
-import { Navigate, useLocation } from "react-router-dom";
+import { Navigate, useLocation, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { ShieldAlert } from "lucide-react";
 
 type AppRole = 'manager' | 'directeur_exploitation' | 'responsable_achat' | 'responsable_logistique' |
   'responsable_commercial' | 'commercial' | 'responsable_technique' | 'technicien_montage' |
@@ -24,35 +25,40 @@ function ProtectedRoute({ children, roles }: ProtectedRouteProps) {
   }
 
   if (!user) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    return React.createElement("div", { key: "redirect-login-wrapper" }, React.createElement(Navigate, { to: "/login", state: { from: location }, replace: true }));
   }
 
   if (roles && roles.length > 0 && !roles.some(r => userRoles.includes(r))) {
     return (
-      <div className="flex flex-col items-center justify-center h-full p-12 text-center gap-4">
-        <div className="h-16 w-16 rounded-full bg-destructive/10 flex items-center justify-center">
-          <span className="text-3xl">🔒</span>
-        </div>
-        <h2 className="text-xl font-semibold text-foreground">Accès refusé</h2>
-        <div className="space-y-2">
-          <p className="text-muted-foreground text-sm max-w-xs">
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <div className="max-w-md w-full bg-card p-8 rounded-lg shadow-lg border border-border text-center">
+          <ShieldAlert className="w-12 h-12 text-destructive mx-auto mb-4" />
+          <h1 className="text-2xl font-bold text-foreground mb-2">Accès refusé</h1>
+          <p className="text-muted-foreground mb-6">
             Vous n'avez pas les permissions nécessaires pour accéder à cette page.
+            <br />
+            <span className="text-xs mt-2 block opacity-70">Connecté en tant que : {user.email}</span>
           </p>
-          <p className="text-xs text-muted-foreground bg-muted p-2 rounded border">
-            Connecté en tant que : <span className="font-mono">{user.email}</span>
-          </p>
+          <div className="flex flex-col gap-2">
+            <button
+              onClick={() => signOut()}
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/90 transition-colors"
+            >
+              Se déconnecter et changer de compte
+            </button>
+            <Link
+              to="/dashboard"
+              className="px-4 py-2 bg-secondary text-secondary-foreground rounded-md text-sm font-medium hover:bg-secondary/80 transition-colors"
+            >
+              Retour au tableau de bord
+            </Link>
+          </div>
         </div>
-        <button
-          onClick={() => signOut()}
-          className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/90 transition-colors"
-        >
-          Se déconnecter et changer de compte
-        </button>
       </div>
     );
   }
 
-  return <div>{children}</div>;
+  return React.createElement("div", { key: "protected-content-wrapper" }, children);
 }
 
 export default ProtectedRoute;
