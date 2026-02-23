@@ -106,6 +106,11 @@ CREATE POLICY "Users can create justifications" ON public.workflow_justification
 
 CREATE POLICY "Managers can view audit log" ON public.audit_log FOR SELECT TO authenticated USING (public.current_user_has_role('manager'));
 
+-- 4d. Secure Notifications
+DROP POLICY IF EXISTS "System can insert notifications" ON public.notifications;
+CREATE POLICY "Staff can create notifications" ON public.notifications 
+  FOR INSERT TO authenticated WITH CHECK (public.is_staff(auth.uid()));
+
 -- 5. TRIGGER FOR AUDIT LOGGING (SECURITY DEFINER)
 CREATE OR REPLACE FUNCTION public.log_audit_event()
 RETURNS trigger AS $$
