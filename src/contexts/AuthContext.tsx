@@ -35,38 +35,57 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [roles, setRoles] = useState<AppRole[]>([]);
-  const [loading, setLoading] = useState(true);
+  // authLoading = on attend encore la session initiale
+  const [authLoading, setAuthLoading] = useState(true);
+  // rolesLoading = on attend que les roles soient chargés depuis la DB
+  const [rolesLoading, setRolesLoading] = useState(false);
   const navigate = useNavigate();
 
   const fetchUserData = async (userId: string) => {
-    const [profileRes, rolesRes] = await Promise.all([
-      supabase.from("profiles").select("*").eq("user_id", userId).single(),
-      supabase.from("user_roles").select("role").eq("user_id", userId),
-    ]);
-    if (profileRes.data) setProfile(profileRes.data as Profile);
-    if (rolesRes.data) setRoles(rolesRes.data.map((r: any) => r.role as AppRole));
+    setRolesLoading(true);
+    try {
+      const [profileRes, rolesRes] = await Promise.all([
+        supabase.from("profiles").select("*").eq("user_id", userId).single(),
+        supabase.from("user_roles").select("role").eq("user_id", userId),
+      ]);
+      if (profileRes.data) setProfile(profileRes.data as Profile);
+      if (rolesRes.data && rolesRes.data.length > 0) {
+        setRoles(rolesRes.data.map((r: any) => r.role as AppRole));
+      } else {
+        setRoles([]);
+      }
+    } catch (err) {
+      console.error("Erreur lors du chargement des données utilisateur:", err);
+      setRoles([]);
+    } finally {
+      setRolesLoading(false);
+    }
   };
 
   useEffect(() => {
+    // 1. Vérifier la session existante au démarrage (une seule fois)
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        // IMPORTANT : attendre fetchUserData avant de terminer le loading initial
+        await fetchUserData(session.user.id);
+      }
+      setAuthLoading(false);
+    });
+
+    // 2. Écouter les changements suivants (login/logout)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        setTimeout(() => fetchUserData(session.user.id), 0);
+        // IMPORTANT : pas de setTimeout — attendre les rôles
+        await fetchUserData(session.user.id);
       } else {
         setProfile(null);
         setRoles([]);
       }
-      setLoading(false);
-    });
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchUserData(session.user.id);
-      }
-      setLoading(false);
+      setAuthLoading(false);
     });
 
     return () => subscription.unsubscribe();
@@ -88,8 +107,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const isManager = () => hasRole('manager');
   const isInternalStaff = () => roles.some(r => r !== 'client');
 
+  // loading = true tant que l'auth OU les rôles ne sont pas encore résolus
+  // Cela garantit que ProtectedRoute ne vérifie pas l'accès avant d'avoir les rôles
+  const loading = authLoading || rolesLoading;
+
   return (
-    <AuthContext.Provider value={{ session, user, profile, roles, loading, signIn, signOut, hasRole, isManager, isInternalStaff }}>
+    <AuthContext.Provider value={{
+      session, user, profile, roles, loading,
+      signIn, signOut, hasRole, isManager, isInternalStaff
+    }}>
       {children}
     </AuthContext.Provider>
   );
