@@ -1,8 +1,9 @@
+import React, { forwardRef } from "react";
 import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import AppSidebar from "./AppSidebar";
 
-const AppLayout = () => {
+const AppLayout = forwardRef<HTMLDivElement, any>((props, ref) => {
   const { session, loading } = useAuth();
 
   if (loading) {
@@ -16,13 +17,13 @@ const AppLayout = () => {
   if (!session) return <Navigate to="/login" replace />;
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div ref={ref} className="flex min-h-screen bg-background">
       <AppSidebar />
       <main className="flex-1 overflow-auto">
         <Outlet />
       </main>
     </div>
   );
-};
+});
 
 export default AppLayout;
