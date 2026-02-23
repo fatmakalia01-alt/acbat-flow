@@ -142,5 +142,8 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 -- 6. HARDEN ALL APP FUNCTIONS
+DROP FUNCTION IF EXISTS public.notify_management(text, text, uuid, public.notification_type, public.alert_level);
 ALTER FUNCTION public.notify_management(text, text, uuid, public.notification_type, public.alert_level) SECURITY DEFINER SET search_path = public;
+
+DROP FUNCTION IF EXISTS public.is_manager_absent();
 ALTER FUNCTION public.is_manager_absent() SECURITY DEFINER SET search_path = public;
