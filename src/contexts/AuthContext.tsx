@@ -66,30 +66,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
+    console.log("AuthContext: Initializing...");
+    console.log("AuthContext: Supabase URL:", import.meta.env.VITE_SUPABASE_URL);
+
     // Failsafe: if Supabase doesn't respond in 15s, unblock the UI
     const failsafeTimer = setTimeout(() => {
-      console.warn("Auth timeout: Supabase did not respond in 15s, unblocking UI.");
+      console.error("Auth timeout: Supabase did not respond in 15s, unblocking UI.");
       setAuthLoading(false);
       setRolesLoading(false);
     }, 15000);
 
     // 1. Vérifier la session existante au démarrage (une seule fois)
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+    console.log("AuthContext: Fetching session...");
+    supabase.auth.getSession().then(async ({ data: { session }, error }) => {
+      console.log("AuthContext: getSession response received", { session: !!session, error });
       clearTimeout(failsafeTimer);
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
+        console.log("AuthContext: User found, fetching extra data...");
         await fetchUserData(session.user.id);
       }
       setAuthLoading(false);
     }).catch((err) => {
       clearTimeout(failsafeTimer);
-      console.error("Erreur getSession:", err);
+      console.error("AuthContext: Error in getSession:", err);
       setAuthLoading(false);
     });
 
     // 2. Écouter les changements suivants (login/logout)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log("AuthContext: onAuthStateChange event:", event, "session:", !!session);
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
