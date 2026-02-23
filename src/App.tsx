@@ -27,6 +27,7 @@ import DeliveryPage from "./pages/DeliveryPage";
 import PurchaseOrdersPage from "./pages/PurchaseOrdersPage";
 import JobsitesPage from "./pages/JobsitesPage";
 import AppLayout from "./components/AppLayout";
+import CommandTracking from "./pages/CommandTracking";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -137,6 +138,11 @@ const App = forwardRef<HTMLDivElement, any>((props, ref) => (
               <Route path="users" element={
                 <ProtectedRoute roles={["manager"]}>
                   <UsersManagement />
+                </ProtectedRoute>
+              } />
+              <Route path="tracking" element={
+                <ProtectedRoute>
+                  <CommandTracking />
                 </ProtectedRoute>
               } />
               <Route path="my-orders" element={
