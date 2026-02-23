@@ -28,6 +28,7 @@ import PurchaseOrdersPage from "./pages/PurchaseOrdersPage";
 import JobsitesPage from "./pages/JobsitesPage";
 import AppLayout from "./components/AppLayout";
 import CommandTracking from "./pages/CommandTracking";
+import SimulatorPage from "./pages/SimulatorPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
