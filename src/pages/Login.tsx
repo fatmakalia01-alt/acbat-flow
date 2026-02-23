@@ -64,6 +64,13 @@ const Login = () => {
           <p className="text-xs text-center text-muted-foreground mt-6">
             © 2026 ACBAT — Accessoires Bâtiment
           </p>
+          <div className="mt-4 p-3 bg-muted/50 rounded-lg border border-dashed border-muted-foreground/30">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Compte de test Manager</p>
+            <p className="text-xs text-muted-foreground selection:bg-primary/20">
+              Email: <span className="text-foreground font-medium">haithem.kalia@gmail.com</span><br />
+              Pass: <span className="text-foreground font-medium">54372272Hk</span>
+            </p>
+          </div>
         </CardContent>
       </Card>
     </div>
