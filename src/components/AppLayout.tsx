@@ -3,7 +3,7 @@ import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import AppSidebar from "./AppSidebar";
 
-const AppLayout = () => {
+function AppLayout() {
   const { session, loading } = useAuth();
 
   if (loading) {
@@ -24,6 +24,6 @@ const AppLayout = () => {
       </main>
     </div>
   );
-};
+}
 
 export default AppLayout;
