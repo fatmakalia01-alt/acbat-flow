@@ -66,14 +66,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
+    // Failsafe: if Supabase doesn't respond in 5s, unblock the UI
+    const failsafeTimer = setTimeout(() => {
+      console.warn("Auth timeout: Supabase did not respond in 5s, unblocking UI.");
+      setAuthLoading(false);
+      setRolesLoading(false);
+    }, 5000);
+
     // 1. Vérifier la session existante au démarrage (une seule fois)
     supabase.auth.getSession().then(async ({ data: { session } }) => {
+      clearTimeout(failsafeTimer);
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        // IMPORTANT : attendre fetchUserData avant de terminer le loading initial
         await fetchUserData(session.user.id);
       }
+      setAuthLoading(false);
+    }).catch((err) => {
+      clearTimeout(failsafeTimer);
+      console.error("Erreur getSession:", err);
       setAuthLoading(false);
     });
 
@@ -82,7 +93,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        // IMPORTANT : pas de setTimeout — attendre les rôles
         await fetchUserData(session.user.id);
       } else {
         setProfile(null);
@@ -92,7 +102,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setAuthLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      clearTimeout(failsafeTimer);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signIn = async (email: string, password: string) => {
