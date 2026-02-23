@@ -6,24 +6,31 @@ export const Toaster = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTM
   function ToasterInner(props, ref) {
     const { toasts } = useToast();
 
-    return (
-      <div ref={ref}>
-        <ToastProvider>
-          {toasts.map(function ({ id, title, description, action, ...props }) {
-            return (
-              <Toast key={id} {...props}>
-                <div className="grid gap-1">
-                  {title && <ToastTitle>{title}</ToastTitle>}
-                  {description && <ToastDescription>{description}</ToastDescription>}
-                </div>
-                {action}
-                <ToastClose />
-              </Toast>
-            );
-          })}
-          <ToastViewport />
-        </ToastProvider>
-      </div>
+    return React.createElement(
+      "div",
+      { ref: ref },
+      React.createElement(
+        ToastProvider,
+        {
+          children: [
+            toasts.map(function ({ id, title, description, action, ...props }) {
+              return React.createElement(
+                Toast,
+                { key: id, ...props },
+                [
+                  React.createElement("div", { className: "grid gap-1", key: "content" }, [
+                    title && React.createElement(ToastTitle, { key: "title" }, title),
+                    description && React.createElement(ToastDescription, { key: "description" }, description)
+                  ]),
+                  action,
+                  React.createElement(ToastClose, { key: "close" })
+                ]
+              );
+            }),
+            React.createElement(ToastViewport, { key: "viewport" })
+          ]
+        }
+      )
     );
   }
 );
