@@ -20,6 +20,8 @@ interface AuthContextType {
   user: User | null;
   profile: Profile | null;
   roles: AppRole[];
+  mockRole: AppRole | null;
+  setMockRole: (role: AppRole | null) => void;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
@@ -39,6 +41,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [authLoading, setAuthLoading] = useState(true);
   // rolesLoading = on attend que les roles soient chargés depuis la DB
   const [rolesLoading, setRolesLoading] = useState(false);
+  const [mockRole, setMockRole] = useState<AppRole | null>(null);
   const navigate = useNavigate();
 
   const fetchUserData = async (userId: string) => {
@@ -84,6 +87,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else {
         setProfile(null);
         setRoles([]);
+        setMockRole(null);
       }
       setAuthLoading(false);
     });
@@ -100,20 +104,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await supabase.auth.signOut();
     setProfile(null);
     setRoles([]);
+    setMockRole(null);
     navigate("/login");
   };
 
-  const hasRole = (role: AppRole) => roles.includes(role);
+  const getActiveRoles = () => mockRole ? [mockRole] : roles;
+
+  const hasRole = (role: AppRole) => getActiveRoles().includes(role);
   const isManager = () => hasRole('manager');
-  const isInternalStaff = () => roles.some(r => r !== 'client');
+  const isInternalStaff = () => getActiveRoles().some(r => r !== 'client');
 
   // loading = true tant que l'auth OU les rôles ne sont pas encore résolus
-  // Cela garantit que ProtectedRoute ne vérifie pas l'accès avant d'avoir les rôles
   const loading = authLoading || rolesLoading;
 
   return (
     <AuthContext.Provider value={{
-      session, user, profile, roles, loading,
+      session, user, profile, roles: getActiveRoles(), mockRole, setMockRole, loading,
       signIn, signOut, hasRole, isManager, isInternalStaff
     }}>
       {children}
