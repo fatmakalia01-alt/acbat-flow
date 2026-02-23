@@ -66,12 +66,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    // Failsafe: if Supabase doesn't respond in 5s, unblock the UI
+    // Failsafe: if Supabase doesn't respond in 15s, unblock the UI
     const failsafeTimer = setTimeout(() => {
-      console.warn("Auth timeout: Supabase did not respond in 5s, unblocking UI.");
+      console.warn("Auth timeout: Supabase did not respond in 15s, unblocking UI.");
       setAuthLoading(false);
       setRolesLoading(false);
-    }, 5000);
+    }, 15000);
 
     // 1. Vérifier la session existante au démarrage (une seule fois)
     supabase.auth.getSession().then(async ({ data: { session } }) => {
