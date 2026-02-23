@@ -12,7 +12,7 @@ interface ProtectedRouteProps {
 }
 
 function ProtectedRoute({ children, roles }: ProtectedRouteProps) {
-  const { user, roles: userRoles, loading } = useAuth();
+  const { user, roles: userRoles, loading, signOut } = useAuth();
   const location = useLocation();
 
   if (loading) {
@@ -33,10 +33,21 @@ function ProtectedRoute({ children, roles }: ProtectedRouteProps) {
         <div className="h-16 w-16 rounded-full bg-destructive/10 flex items-center justify-center">
           <span className="text-3xl">🔒</span>
         </div>
-        <h2 className="text-xl font-semibold">Accès refusé</h2>
-        <p className="text-muted-foreground text-sm max-w-xs">
-          Vous n'avez pas les permissions nécessaires pour accéder à cette page.
-        </p>
+        <h2 className="text-xl font-semibold text-foreground">Accès refusé</h2>
+        <div className="space-y-2">
+          <p className="text-muted-foreground text-sm max-w-xs">
+            Vous n'avez pas les permissions nécessaires pour accéder à cette page.
+          </p>
+          <p className="text-xs text-muted-foreground bg-muted p-2 rounded border">
+            Connecté en tant que : <span className="font-mono">{user.email}</span>
+          </p>
+        </div>
+        <button
+          onClick={() => signOut()}
+          className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/90 transition-colors"
+        >
+          Se déconnecter et changer de compte
+        </button>
       </div>
     );
   }
