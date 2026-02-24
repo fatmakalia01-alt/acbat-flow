@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -228,7 +228,12 @@ const OrdersManagement = React.forwardRef<HTMLDivElement, {}>(
               <Button><Plus className="h-4 w-4 mr-2" /> Nouvelle commande</Button>
             </DialogTrigger>
             <DialogContent>
-              <DialogHeader><DialogTitle>Créer une commande</DialogTitle></DialogHeader>
+              <DialogHeader>
+                <DialogTitle>Créer une commande</DialogTitle>
+                <DialogDescription>
+                  Sélectionnez le client et le site pour initialiser une nouvelle commande client.
+                </DialogDescription>
+              </DialogHeader>
               <div className="space-y-4">
                 <div>
                   <Label>Client</Label>
@@ -331,9 +336,14 @@ const OrdersManagement = React.forwardRef<HTMLDivElement, {}>(
         <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
           <DialogContent className="max-w-2xl">
             <DialogHeader className="flex flex-row items-center justify-between">
-              <DialogTitle className="flex items-center gap-2">
-                <Package className="h-5 w-5" /> Commande {selectedOrder?.reference}
-              </DialogTitle>
+              <div className="space-y-1">
+                <DialogTitle className="flex items-center gap-2">
+                  <Package className="h-5 w-5" /> Commande {selectedOrder?.reference}
+                </DialogTitle>
+                <DialogDescription>
+                  Détails complets de la commande, articles inclus et suivi du workflow.
+                </DialogDescription>
+              </div>
               {selectedOrder && orderItems.length > 0 && (
                 <PDFDownloadLink
                   document={<OrderPDF order={selectedOrder} items={orderItems} type="facture" />}
