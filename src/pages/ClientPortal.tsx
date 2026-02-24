@@ -11,25 +11,13 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import {
-  ClipboardList, CheckCircle2, Truck, Wrench, Package, FileCheck,
-  CreditCard, Archive, Download, AlertCircle, Clock, MessageSquare, FileWarning
+  Package, Download, MessageSquare, FileWarning
 } from "lucide-react";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import OrderPDF from "@/components/OrderPDF";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-
-const STEP_CONFIG = [
-  { name: "creation_commande", label: "Création commande", icon: ClipboardList, delay: "2j" },
-  { name: "validation_commerciale", label: "Validation commerciale", icon: CheckCircle2, delay: "1j" },
-  { name: "commande_fournisseur", label: "Commande fournisseur", icon: Package, delay: "30j" },
-  { name: "reception_marchandises", label: "Réception marchandises", icon: Truck, delay: "2j" },
-  { name: "preparation_technique", label: "Préparation technique", icon: Wrench, delay: "3j" },
-  { name: "livraison_installation", label: "Livraison & Installation", icon: Truck, delay: "1j" },
-  { name: "validation_client", label: "Validation client", icon: FileCheck, delay: "—" },
-  { name: "facturation_paiement", label: "Facturation", icon: CreditCard, delay: "7j" },
-  { name: "cloture_archivage", label: "Clôture", icon: Archive, delay: "—" },
-];
+import { AnimatedTimeline } from "@/components/AnimatedTimeline";
 
 const STATUS_LABELS: Record<string, string> = {
   brouillon: "Brouillon", en_validation: "En validation", validee: "Validée",
@@ -94,22 +82,6 @@ const ClientPortal = () => {
 
   useEffect(() => { fetchOrders(); }, [user]);
 
-  const getStepColor = (status: string) => {
-    switch (status) {
-      case "completed": return "bg-emerald-500 text-white";
-      case "in_progress": return "bg-blue-500 text-white";
-      case "delayed": return "bg-red-500 text-white";
-      case "blocked": return "bg-red-500 text-white";
-      default: return "bg-muted text-muted-foreground";
-    }
-  };
-
-  const getProgressPercent = (steps: WorkflowStep[]) => {
-    if (!steps.length) return 0;
-    const completed = steps.filter(s => s.status === "completed").length;
-    return Math.round((completed / steps.length) * 100);
-  };
-
   const submitSavTicket = async () => {
     if (!selectedOrder || !savForm.subject) return;
     setSavLoading(true);
@@ -130,34 +102,22 @@ const ClientPortal = () => {
     }
   };
 
-  const confirmValidation = async () => {
-    if (!selectedOrder) return;
-    const step = selectedOrder.steps.find(s => s.step_name === "validation_client" && s.status === "in_progress");
-    if (!step) return;
-    await supabase.from("order_workflow_steps").update({
-      status: "completed",
-      completed_at: new Date().toISOString(),
-    }).eq("id", step.id);
-    toast({ title: "Validation confirmée", description: "Merci ! Votre commande passe en facturation." });
-    fetchOrders();
-  };
-
   return (
     <div className="p-6 space-y-6 max-w-5xl mx-auto">
       {/* Hero header */}
-      <div className="gradient-hero rounded-2xl p-8 text-primary-foreground">
-        <h1 className="text-2xl font-display font-bold">
+      <div className="bg-slate-900 rounded-2xl p-8 text-white shadow-xl">
+        <h1 className="text-2xl font-bold">
           Bonjour, {profile?.full_name || "Client"} 👋
         </h1>
-        <p className="text-primary-foreground/80 mt-1">Votre espace ACBAT — Suivi de vos projets</p>
+        <p className="text-slate-400 mt-1">Votre espace ACBAT — Suivi de vos projets</p>
       </div>
 
       {orders.length === 0 ? (
-        <Card className="shadow-card">
+        <Card className="border-none shadow-md">
           <CardContent className="p-12 text-center">
-            <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <h3 className="font-display font-semibold text-lg">Aucune commande</h3>
-            <p className="text-muted-foreground text-sm mt-1">Vos commandes apparaîtront ici</p>
+            <Package className="h-12 w-12 mx-auto text-slate-300 mb-4" />
+            <h3 className="font-bold text-lg">Aucune commande</h3>
+            <p className="text-slate-400 text-sm mt-1">Vos commandes apparaîtront ici</p>
           </CardContent>
         </Card>
       ) : (
@@ -182,86 +142,32 @@ const ClientPortal = () => {
           {selectedOrder && (
             <div className="space-y-6">
               {/* Main order card */}
-              <Card className="shadow-card">
-                <CardHeader className="pb-3">
+              <Card className="border-none shadow-md overflow-hidden">
+                <CardHeader className="bg-white border-b border-slate-50 pb-4">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="font-display text-lg">{selectedOrder.reference}</CardTitle>
-                    <Badge variant="secondary">{STATUS_LABELS[selectedOrder.status] || selectedOrder.status.replace(/_/g, " ")}</Badge>
+                    <CardTitle className="text-xl font-bold text-slate-900">{selectedOrder.reference}</CardTitle>
+                    <Badge variant="secondary" className="bg-slate-100 text-slate-700">
+                      {STATUS_LABELS[selectedOrder.status] || selectedOrder.status}
+                    </Badge>
                   </div>
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                    <span>Montant: {Number(selectedOrder.total_ttc).toLocaleString("fr-TN")} TND</span>
-                    <span>Créée le: {format(new Date(selectedOrder.created_at), "dd MMMM yyyy", { locale: fr })}</span>
+                  <div className="flex items-center gap-4 text-sm text-slate-500">
+                    <span className="font-medium text-slate-900">{Number(selectedOrder.total_ttc).toLocaleString()} DT TTC</span>
+                    <span>Créée le {format(new Date(selectedOrder.created_at), "dd MMMM yyyy", { locale: fr })}</span>
                   </div>
                 </CardHeader>
-                <CardContent>
-                  {/* Progress bar */}
-                  <div className="mb-6">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium">Progression</span>
-                      <span className="text-sm font-bold text-secondary">{getProgressPercent(selectedOrder.steps)}%</span>
-                    </div>
-                    <div className="h-3 rounded-full bg-muted overflow-hidden">
-                      <motion.div
-                        className="h-full rounded-full gradient-accent"
-                        initial={{ width: 0 }}
-                        animate={{ width: `${getProgressPercent(selectedOrder.steps)}%` }}
-                        transition={{ duration: 1, ease: "easeOut" }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Timeline */}
-                  <div className="space-y-1">
-                    {STEP_CONFIG.map((config, idx) => {
-                      const step = selectedOrder.steps.find(s => s.step_name === config.name);
-                      const status = step?.status || "pending";
-                      const Icon = config.icon;
-                      const isActive = status === "in_progress";
-                      const isCompleted = status === "completed";
-
-                      return (
-                        <motion.div
-                          key={config.name}
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: idx * 0.08 }}
-                          className={`flex items-center gap-4 p-3 rounded-lg transition-colors ${isActive ? "bg-secondary/10 border border-secondary/30" : ""}`}
-                        >
-                          <div className={`h-10 w-10 rounded-full flex items-center justify-center flex-shrink-0 ${getStepColor(status)}`}>
-                            {isCompleted ? (
-                              <CheckCircle2 className="h-5 w-5" />
-                            ) : status === "delayed" ? (
-                              <AlertCircle className="h-5 w-5" />
-                            ) : (
-                              <Icon className="h-5 w-5" />
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className={`text-sm font-medium ${isCompleted ? "text-emerald-600" : isActive ? "text-secondary font-semibold" : "text-muted-foreground"}`}>
-                              {config.label}
-                            </p>
-                            {step?.completed_at && (
-                              <p className="text-xs text-muted-foreground">
-                                Terminé le {format(new Date(step.completed_at), "dd/MM/yyyy", { locale: fr })}
-                              </p>
-                            )}
-                            {isActive && (
-                              <p className="text-xs text-secondary flex items-center gap-1 mt-0.5">
-                                <Clock className="h-3 w-3" /> En cours — Délai standard: {config.delay}
-                              </p>
-                            )}
-                          </div>
-                        </motion.div>
-                      );
-                    })}
-                  </div>
+                <CardContent className="pt-8">
+                  {/* Timeline section */}
+                  <AnimatedTimeline
+                    steps={selectedOrder.steps}
+                    canAdvance={false}
+                  />
                 </CardContent>
               </Card>
 
               {/* Documents */}
-              <Card className="shadow-card">
+              <Card className="border-none shadow-sm">
                 <CardHeader className="pb-3">
-                  <CardTitle className="font-display text-base">Documents</CardTitle>
+                  <CardTitle className="text-lg font-bold">Documents</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -272,24 +178,16 @@ const ClientPortal = () => {
                         fileName={`Devis_${selectedOrder.reference}.pdf`}
                       >
                         {({ loading }) => (
-                          <Button variant="outline" className="justify-start gap-2 h-auto py-3 w-full" disabled={loading}>
-                            <Download className="h-4 w-4 text-secondary" />
+                          <Button variant="outline" className="justify-start gap-3 h-auto py-3 w-full" disabled={loading}>
+                            <Download className="h-4 w-4 text-blue-600" />
                             <div className="text-left">
-                              <p className="text-sm font-medium">Devis</p>
-                              <p className="text-xs text-muted-foreground">{loading ? "Génération..." : "PDF"}</p>
+                              <p className="text-sm font-bold">Devis</p>
+                              <p className="text-xs text-slate-500">{loading ? "Génération..." : "Télécharger PDF"}</p>
                             </div>
                           </Button>
                         )}
                       </PDFDownloadLink>
-                    ) : (
-                      <Button variant="outline" className="justify-start gap-2 h-auto py-3" disabled>
-                        <Download className="h-4 w-4 text-muted-foreground" />
-                        <div className="text-left">
-                          <p className="text-sm font-medium text-muted-foreground">Devis</p>
-                          <p className="text-xs text-muted-foreground">Non disponible</p>
-                        </div>
-                      </Button>
-                    )}
+                    ) : null}
 
                     {/* Bon de livraison */}
                     {selectedOrder.items && selectedOrder.items.length > 0 ? (
@@ -298,90 +196,48 @@ const ClientPortal = () => {
                         fileName={`BL_${selectedOrder.reference}.pdf`}
                       >
                         {({ loading }) => (
-                          <Button variant="outline" className="justify-start gap-2 h-auto py-3 w-full" disabled={loading}>
-                            <Download className="h-4 w-4 text-secondary" />
+                          <Button variant="outline" className="justify-start gap-3 h-auto py-3 w-full" disabled={loading}>
+                            <Download className="h-4 w-4 text-emerald-600" />
                             <div className="text-left">
-                              <p className="text-sm font-medium">Bon de livraison</p>
-                              <p className="text-xs text-muted-foreground">{loading ? "Génération..." : "PDF"}</p>
+                              <p className="text-sm font-bold">Bon de livraison</p>
+                              <p className="text-xs text-slate-500">{loading ? "Génération..." : "Télécharger PDF"}</p>
                             </div>
                           </Button>
                         )}
                       </PDFDownloadLink>
-                    ) : (
-                      <Button variant="outline" className="justify-start gap-2 h-auto py-3" disabled>
-                        <Download className="h-4 w-4 text-muted-foreground" />
-                        <div className="text-left">
-                          <p className="text-sm font-medium text-muted-foreground">Bon de livraison</p>
-                          <p className="text-xs text-muted-foreground">Après livraison</p>
-                        </div>
-                      </Button>
-                    )}
+                    ) : null}
 
                     {/* Facture PDF */}
                     {selectedOrder.items && selectedOrder.items.length > 0 && (
-                      selectedOrder.status === "terminee" || selectedOrder.status === "en_cours"
+                      selectedOrder.status === "terminee" || selectedOrder.status === "en_cours" || selectedOrder.status === "validee"
                     ) ? (
                       <PDFDownloadLink
                         document={<OrderPDF order={selectedOrder} items={selectedOrder.items} type="facture" />}
                         fileName={`Facture_${selectedOrder.reference}.pdf`}
                       >
                         {({ loading }) => (
-                          <Button variant="outline" className="justify-start gap-2 h-auto py-3 w-full" disabled={loading}>
-                            <Download className="h-4 w-4 text-secondary" />
+                          <Button variant="outline" className="justify-start gap-3 h-auto py-3 w-full" disabled={loading}>
+                            <Download className="h-4 w-4 text-orange-600" />
                             <div className="text-left">
-                              <p className="text-sm font-medium">Facture</p>
-                              <p className="text-xs text-muted-foreground">{loading ? "Génération..." : "PDF"}</p>
+                              <p className="text-sm font-bold">Facture</p>
+                              <p className="text-xs text-slate-500">{loading ? "Génération..." : "Télécharger PDF"}</p>
                             </div>
                           </Button>
                         )}
                       </PDFDownloadLink>
-                    ) : (
-                      <Button variant="outline" className="justify-start gap-2 h-auto py-3" disabled>
-                        <Download className="h-4 w-4 text-muted-foreground" />
-                        <div className="text-left">
-                          <p className="text-sm font-medium text-muted-foreground">Facture</p>
-                          <p className="text-xs text-muted-foreground">Après validation</p>
-                        </div>
-                      </Button>
-                    )}
+                    ) : null}
                   </div>
                 </CardContent>
               </Card>
 
-              {/* Client validation step */}
-              {selectedOrder.steps.find(s => s.step_name === "validation_client" && s.status === "in_progress") && (
-                <Card className="shadow-card border-success/30">
-                  <CardContent className="p-6 text-center space-y-4">
-                    <CheckCircle2 className="h-12 w-12 mx-auto text-success" />
-                    <h3 className="font-display font-semibold">Votre commande est prête</h3>
-                    <p className="text-sm text-muted-foreground">Confirmez que tout est conforme</p>
-                    <div className="flex gap-3 justify-center flex-wrap">
-                      <Button
-                        className="bg-success hover:bg-success/90 text-success-foreground"
-                        onClick={confirmValidation}
-                      >
-                        ✅ Tout est conforme
-                      </Button>
-                      <Button
-                        variant="outline"
-                        className="text-destructive border-destructive/30"
-                        onClick={() => setSavOpen(true)}
-                      >
-                        Signaler un problème
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
               {/* SAV CTA always visible */}
-              <Card className="shadow-card bg-muted/30 border-dashed">
+              <Card className="border-none shadow-sm bg-slate-50 border-dashed border-2">
                 <CardContent className="p-4 flex items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
-                    <MessageSquare className="h-5 w-5 text-muted-foreground" />
+                    <MessageSquare className="h-5 w-5 text-slate-400" />
                     <div>
-                      <p className="text-sm font-medium">Besoin d'assistance ?</p>
-                      <p className="text-xs text-muted-foreground">Notre équipe SAV est disponible</p>
+                      <p className="text-sm font-bold">Besoin d'assistance ?</p>
+                      <p className="text-xs text-slate-500">Notre équipe SAV est disponible pour vous répondre.</p>
                     </div>
                   </div>
                   <Button variant="outline" size="sm" className="gap-2" onClick={() => setSavOpen(true)}>
