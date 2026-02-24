@@ -72,8 +72,9 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error: any) {
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 400,
+    console.error("[create-user] Internal error:", error);
+    return new Response(JSON.stringify({ error: "An internal error occurred. Please try again." }), {
+      status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
