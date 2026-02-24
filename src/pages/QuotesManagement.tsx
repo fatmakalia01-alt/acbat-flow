@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
@@ -245,7 +245,12 @@ const QuotesManagement = () => {
       {/* New quote dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Créer un devis</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>Créer un devis</DialogTitle>
+            <DialogDescription>
+              Initialisez un nouveau devis pour un client en précisant sa validité.
+            </DialogDescription>
+          </DialogHeader>
           <div className="space-y-4">
             <div>
               <Label>Client</Label>
@@ -273,7 +278,12 @@ const QuotesManagement = () => {
       <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader className="flex flex-row items-center justify-between">
-            <DialogTitle className="flex items-center gap-2"><FileText className="h-5 w-5" /> Devis {selectedQuote?.reference}</DialogTitle>
+            <div className="space-y-1">
+              <DialogTitle className="flex items-center gap-2"><FileText className="h-5 w-5" /> Devis {selectedQuote?.reference}</DialogTitle>
+              <DialogDescription>
+                Détails du devis, articles sélectionnés et génération de PDF.
+              </DialogDescription>
+            </div>
             {selectedQuote && quoteItems.length > 0 && (
               <PDFDownloadLink
                 document={<OrderPDF order={selectedQuote} items={quoteItems} type="devis" />}
