@@ -20,8 +20,6 @@ interface AuthContextType {
   user: User | null;
   profile: Profile | null;
   roles: AppRole[];
-  mockRole: AppRole | null;
-  setMockRole: (role: AppRole | null) => void;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
@@ -38,16 +36,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [authLoading, setAuthLoading] = useState(true);
-  const [mockRole, setMockRole] = useState<AppRole | null>(null);
   const navigate = useNavigate();
-  
+
   const fetchingForUserRef = useRef<string | null>(null);
   const dataLoadedRef = useRef(false);
 
   const fetchUserData = useCallback(async (userId: string) => {
     if (fetchingForUserRef.current === userId) return;
     fetchingForUserRef.current = userId;
-    
+
     try {
       const [resProfile, resRoles] = await Promise.all([
         supabase.from("profiles").select("*").eq("user_id", userId).maybeSingle(),
@@ -62,7 +59,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const roleList = resRoles.data.map((r: any) => r.role) as AppRole[];
         setRoles(roleList);
       }
-      
+
       dataLoadedRef.current = true;
     } catch (err) {
       console.error("AuthContext: fetchUserData error:", err);
@@ -79,7 +76,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const { data: { session: currentSession } } = await supabase.auth.getSession();
         if (!mounted) return;
-        
+
         if (currentSession?.user) {
           setSession(currentSession);
           setUser(currentSession.user);
@@ -97,7 +94,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Listen for future auth changes (sign in/out)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
       if (!mounted) return;
-      
+
       setSession(newSession);
       setUser(newSession?.user ?? null);
 
@@ -107,7 +104,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } else {
         setProfile(null);
         setRoles([]);
-        setMockRole(null);
         fetchingForUserRef.current = null;
         dataLoadedRef.current = false;
       }
@@ -131,19 +127,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await supabase.auth.signOut();
     setProfile(null);
     setRoles([]);
-    setMockRole(null);
     navigate("/login");
   };
 
-  const getActiveRoles = () => mockRole ? [mockRole] : roles;
-
-  const hasRole = (role: AppRole) => getActiveRoles().includes(role);
+  const hasRole = (role: AppRole) => roles.includes(role);
   const isManager = () => hasRole('manager');
-  const isInternalStaff = () => getActiveRoles().some(r => r !== 'client');
+  const isInternalStaff = () => roles.some(r => r !== 'client');
 
   return (
     <AuthContext.Provider value={{
-      session, user, profile, roles: getActiveRoles(), mockRole, setMockRole, loading: authLoading,
+      session, user, profile, roles, loading: authLoading,
       signIn, signOut, hasRole, isManager, isInternalStaff
     }}>
       {children}
