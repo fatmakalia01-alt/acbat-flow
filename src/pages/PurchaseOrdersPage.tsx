@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -411,6 +411,9 @@ const PurchaseOrdersPage = () => {
                 <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle>{editing ? "Modifier le bon de commande" : "Nouveau bon de commande"}</DialogTitle>
+                        <DialogDescription>
+                            Détails de la commande fournisseur internationale, informations financières et logistiques.
+                        </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-5">
                         {/* Row 1 */}
@@ -574,6 +577,9 @@ const PurchaseOrdersPage = () => {
                             <Ship className="h-5 w-5" />
                             {selected?.reference}
                         </DialogTitle>
+                        <DialogDescription>
+                            Suivi détaillé du transit, de la douane et des frais associés.
+                        </DialogDescription>
                     </DialogHeader>
                     {selected && (
                         <div className="space-y-5">
