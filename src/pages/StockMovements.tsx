@@ -44,7 +44,7 @@ const StockMovements = () => {
         queryFn: async () => {
             const { data, error } = await supabase
                 .from("stock_movements")
-                .select("*, products(name, sku, stock_quantity)")
+                .select("*, products(name, sku)")
                 .order("created_at", { ascending: false });
             if (error) throw error;
             return data || [];
@@ -55,7 +55,7 @@ const StockMovements = () => {
     const { data: products = [] } = useQuery({
         queryKey: ["products-for-movement"],
         queryFn: async () => {
-            const { data, error } = await supabase.from("products").select("id, name, sku, stock_quantity").order("name");
+            const { data, error } = await supabase.from("products").select("id, name, sku, stock(quantity)").order("name");
             if (error) throw error;
             return data || [];
         },
@@ -226,7 +226,7 @@ const StockMovements = () => {
                                         <TableCell>
                                             <div className="flex items-center gap-1 text-sm">
                                                 <Package className="h-3 w-3 text-muted-foreground" />
-                                                <span className="font-medium">{m.products?.stock_quantity ?? "—"}</span>
+                                                <span className="font-medium">{m.products?.stock?.[0]?.quantity ?? "—"}</span>
                                             </div>
                                         </TableCell>
                                         <TableCell className="text-sm text-muted-foreground">
@@ -261,7 +261,7 @@ const StockMovements = () => {
                                     {products.map((p: any) => (
                                         <SelectItem key={p.id} value={p.id}>
                                             <span className="font-medium">{p.name}</span>
-                                            <span className="text-xs text-muted-foreground ml-2">({p.sku}) — Stock: {p.stock_quantity}</span>
+                                            <span className="text-xs text-muted-foreground ml-2">({p.sku}) — Stock: {(p as any).stock?.[0]?.quantity ?? 0}</span>
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
