@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import {
     Search, ArrowDownCircle, ArrowUpCircle, AlertCircle, History,
@@ -249,6 +249,9 @@ const StockMovements = () => {
                             <BarChart3 className="h-5 w-5" />
                             Enregistrer un mouvement de stock
                         </DialogTitle>
+                        <DialogDescription>
+                            Saisissez les détails du mouvement de stock (entrée, sortie ou ajustement).
+                        </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4">
                         <div>
