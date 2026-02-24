@@ -202,8 +202,10 @@ await test("Lire catalogue produits", async () => {
     const { data, count, error } = await sb.from("products").select("id, name", { count: "exact" });
     if (error) throw error;
     if (data?.length) state.productId = data[0].id;
+    else return `${count} produits — base vide (seed requis)`;
     return `${count} produits disponibles`;
 });
+
 
 await test("Lire stocks (table stock)", async () => {
     const { data, count, error } = await sb.from("stock").select("product_id, quantity", { count: "exact" });
@@ -359,11 +361,12 @@ await test("Supprimer livraison test", async () => {
     return "supprimée ✓";
 });
 
-await test("Supprimer mouvements stock test (reason=Test automatique*)", async () => {
-    if (!state.productId) return "N/A";
+await test("Supprimer mouvements stock test", async () => {
+    if (!state.productId) return "N/A (0 produits en base)";
+    // Try deleting by product_id + reason filter
     const { error } = await sb.from("stock_movements").delete()
         .eq("product_id", state.productId)
-        .like("reason", "Test automatique%");
+        .or("reason.like.Test automatique%");
     if (error) throw error;
     return "supprimés ✓";
 });
@@ -389,8 +392,11 @@ await test("Supprimer commande test", async () => {
     return "supprimée ✓";
 });
 
-await test("Supprimer client test", async () => {
+await test("Supprimer client test (après nettoyage des dépendances)", async () => {
     if (!state.clientId) return "N/A";
+    // First remove any remaining SAV tickets and orders referencing this client
+    await sb.from("sav_tickets").delete().eq("client_id", state.clientId);
+    await sb.from("client_orders").delete().eq("client_id", state.clientId);
     const { error } = await sb.from("clients").delete().eq("id", state.clientId);
     if (error) throw error;
     return "supprimé ✓";
