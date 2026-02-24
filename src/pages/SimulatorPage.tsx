@@ -595,9 +595,19 @@ export default function SimulatorPage() {
     const cleanSimData = async () => {
         if (!confirm("Supprimer toutes les données de test créées par le simulateur ?")) return;
         try {
+            addLog("Purge des données simulateur en cours...", "warning");
+
+            // Delete in order of dependency
+            await supabase.from("supplier_orders").delete().ilike("reference", "%SIMU%");
+            await supabase.from("deliveries").delete().eq("order_id", simState.orderId); // Might need a better filter
+            await supabase.from("chantiers").delete().ilike("reference", "%SIMU%");
+            await supabase.from("invoices").delete().ilike("reference", "%SIMU%");
+            await supabase.from("sav_tickets").delete().ilike("subject", "%SIMU%");
+            await supabase.from("order_items").delete().eq("order_id", simState.orderId);
+            await supabase.from("order_workflow_steps").delete().eq("order_id", simState.orderId);
             await supabase.from("client_orders").delete().ilike("reference", "%SIMU%");
             await supabase.from("clients").delete().ilike("email", "%acbat-test%");
-            await supabase.from("sav_tickets").delete().ilike("subject", "%SIMU%");
+
             toast.success("Données simulateur purgées.");
             addLog("🗑 Données de simulation supprimées de la base", "warning");
         } catch (e: any) {
