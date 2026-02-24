@@ -9,7 +9,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Search, Pencil, Users, Mail, Phone, MapPin } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Plus, Search, Pencil, Trash2, Users, Mail, Phone, MapPin, Package } from "lucide-react";
 
 const SuppliersPage = () => {
     const { toast } = useToast();
@@ -17,6 +18,7 @@ const SuppliersPage = () => {
     const [search, setSearch] = useState("");
     const [dialogOpen, setDialogOpen] = useState(false);
     const [editing, setEditing] = useState<any>(null);
+    const [deleteId, setDeleteId] = useState<string | null>(null);
 
     const emptyForm = {
         name: "", contact_person: "", email: "", phone: "", address: "", country: "Italie", notes: ""
@@ -51,6 +53,19 @@ const SuppliersPage = () => {
             setForm(emptyForm);
             setEditing(null);
             toast({ title: editing ? "Fournisseur modifié" : "Fournisseur créé" });
+        },
+        onError: (e: any) => toast({ title: "Erreur", description: e.message, variant: "destructive" }),
+    });
+
+    const deleteSupplier = useMutation({
+        mutationFn: async (id: string) => {
+            const { error } = await supabase.from("suppliers").delete().eq("id", id);
+            if (error) throw error;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["suppliers"] });
+            setDeleteId(null);
+            toast({ title: "Fournisseur supprimé" });
         },
         onError: (e: any) => toast({ title: "Erreur", description: e.message, variant: "destructive" }),
     });
@@ -97,6 +112,7 @@ const SuppliersPage = () => {
                                 <TableHead>Contact</TableHead>
                                 <TableHead>Coordonnées</TableHead>
                                 <TableHead>Pays</TableHead>
+                                <TableHead className="text-center">Commandes</TableHead>
                                 <TableHead>Actions</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -124,10 +140,21 @@ const SuppliersPage = () => {
                                             {s.country}
                                         </div>
                                     </TableCell>
+                                    <TableCell className="text-center">
+                                        <span className="inline-flex items-center gap-1 text-sm font-medium">
+                                            <Package className="h-3 w-3 text-muted-foreground" />
+                                            {s.supplier_orders_count ?? 0}
+                                        </span>
+                                    </TableCell>
                                     <TableCell>
-                                        <Button variant="ghost" size="icon" onClick={() => openEdit(s)}>
-                                            <Pencil className="h-4 w-4" />
-                                        </Button>
+                                        <div className="flex items-center gap-1">
+                                            <Button variant="ghost" size="icon" onClick={() => openEdit(s)}>
+                                                <Pencil className="h-4 w-4" />
+                                            </Button>
+                                            <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-700 hover:bg-red-50" onClick={() => setDeleteId(s.id)}>
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        </div>
                                     </TableCell>
                                 </TableRow>
                             ))}
@@ -177,6 +204,27 @@ const SuppliersPage = () => {
                     </div>
                 </DialogContent>
             </Dialog>
+
+            {/* Delete Confirmation */}
+            <AlertDialog open={!!deleteId} onOpenChange={open => !open && setDeleteId(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Supprimer ce fournisseur ?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Cette action est irréversible. Le fournisseur et toutes ses données associées seront supprimés.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Annuler</AlertDialogCancel>
+                        <AlertDialogAction
+                            className="bg-red-600 hover:bg-red-700"
+                            onClick={() => deleteId && deleteSupplier.mutate(deleteId)}
+                        >
+                            Supprimer
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 };
