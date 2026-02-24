@@ -16,73 +16,73 @@ const STEP_CONFIG: Record<string, {
     label: string;
     description: string;
     daysStandard: number;
-    accent: string;         // Tailwind bg-xxx for the filled circle
-    accentLight: string;    // Tailwind bg-xxx/10 for the card bg tint
-    accentText: string;     // Tailwind text-xxx
-    accentBorder: string;   // Tailwind border-xxx
+    accent: string;
+    accentLight: string;
+    accentText: string;
+    accentBorder: string;
 }> = {
     creation_commande: {
         icon: ShoppingCart, label: "Commande Créée",
         description: "Commande enregistrée dans le système",
         daysStandard: 1,
-        accent: "bg-violet-500", accentLight: "bg-violet-50",
-        accentText: "text-violet-600", accentBorder: "border-violet-200",
+        accent: "bg-emerald-500", accentLight: "bg-emerald-50",
+        accentText: "text-emerald-600", accentBorder: "border-emerald-200",
     },
     validation_commerciale: {
-        icon: CheckCircle, label: "Validation Commerciale",
-        description: "Validation par le responsable commercial",
+        icon: ClipboardCheck, label: "Vérification",
+        description: "Vérification des stocks et disponibilité",
         daysStandard: 2,
         accent: "bg-blue-500", accentLight: "bg-blue-50",
         accentText: "text-blue-600", accentBorder: "border-blue-200",
     },
     commande_fournisseur: {
-        icon: Package, label: "Commande Fournisseur",
-        description: "Bon de commande envoyé au fournisseur",
-        daysStandard: 7,
-        accent: "bg-indigo-500", accentLight: "bg-indigo-50",
-        accentText: "text-indigo-600", accentBorder: "border-indigo-200",
+        icon: CheckCircle, label: "Confirmation",
+        description: "Confirmation auprès du client",
+        daysStandard: 1,
+        accent: "bg-blue-500", accentLight: "bg-blue-50",
+        accentText: "text-blue-600", accentBorder: "border-blue-200",
     },
     reception_marchandises: {
-        icon: Warehouse, label: "Réception Marchandises",
-        description: "Réception et contrôle de la marchandise",
-        daysStandard: 14,
-        accent: "bg-cyan-500", accentLight: "bg-cyan-50",
-        accentText: "text-cyan-600", accentBorder: "border-cyan-200",
-    },
-    preparation_technique: {
-        icon: Wrench, label: "Préparation Technique",
-        description: "Montage et préparation par l'équipe technique",
+        icon: Package, label: "Préparation",
+        description: "Préparation des articles",
         daysStandard: 3,
         accent: "bg-amber-500", accentLight: "bg-amber-50",
         accentText: "text-amber-600", accentBorder: "border-amber-200",
     },
-    livraison_installation: {
-        icon: Truck, label: "Livraison & Installation",
-        description: "Livraison sur site et installation",
-        daysStandard: 2,
-        accent: "bg-orange-500", accentLight: "bg-orange-50",
-        accentText: "text-orange-600", accentBorder: "border-orange-200",
-    },
-    validation_client: {
-        icon: ClipboardCheck, label: "Validation Client",
-        description: "Réception et validation par le client",
+    preparation_technique: {
+        icon: AlertCircle, label: "Qualité",
+        description: "Contrôle qualité des articles",
         daysStandard: 1,
-        accent: "bg-teal-500", accentLight: "bg-teal-50",
-        accentText: "text-teal-600", accentBorder: "border-teal-200",
+        accent: "bg-amber-500", accentLight: "bg-amber-50",
+        accentText: "text-amber-600", accentBorder: "border-amber-200",
     },
-    facturation_paiement: {
-        icon: CreditCard, label: "Facturation & Paiement",
-        description: "Émission de la facture et suivi du paiement",
-        daysStandard: 7,
-        accent: "bg-emerald-500", accentLight: "bg-emerald-50",
-        accentText: "text-emerald-600", accentBorder: "border-emerald-200",
-    },
-    cloture_archivage: {
-        icon: Archive, label: "Clôture & Archivage",
-        description: "Clôture du dossier et archivage",
+    livraison_installation: {
+        icon: Warehouse, label: "Emballage",
+        description: "Emballage et étiquetage",
         daysStandard: 1,
         accent: "bg-slate-500", accentLight: "bg-slate-50",
         accentText: "text-slate-600", accentBorder: "border-slate-200",
+    },
+    validation_client: {
+        icon: Truck, label: "Expédition",
+        description: "Remise au transporteur",
+        daysStandard: 1,
+        accent: "bg-blue-500", accentLight: "bg-blue-50",
+        accentText: "text-blue-600", accentBorder: "border-blue-200",
+    },
+    facturation_paiement: {
+        icon: Truck, label: "Transport",
+        description: "En transit vers le client",
+        daysStandard: 3,
+        accent: "bg-blue-500", accentLight: "bg-blue-50",
+        accentText: "text-blue-600", accentBorder: "border-blue-200",
+    },
+    cloture_archivage: {
+        icon: CheckCheck, label: "Livraison",
+        description: "Livraison et réception",
+        daysStandard: 1,
+        accent: "bg-emerald-500", accentLight: "bg-emerald-50",
+        accentText: "text-emerald-600", accentBorder: "border-emerald-200",
     },
 };
 
@@ -109,8 +109,8 @@ interface AnimatedTimelineProps {
 
 // ─── StatusLabel helper ───────────────────────────────────────────────────────
 const STATUS_LABEL: Record<string, { label: string; icon: string; cls: string }> = {
-    completed: { label: "Terminée", icon: "✓", cls: "bg-emerald-100 text-emerald-700" },
-    in_progress: { label: "En cours", icon: "⏳", cls: "bg-blue-100 text-blue-700" },
+    completed: { label: "Complétée", icon: "✓", cls: "bg-emerald-100 text-emerald-700" },
+    in_progress: { label: "En cours", icon: "⏳", cls: "bg-blue-100 text-blue-700 font-bold" },
     delayed: { label: "En retard", icon: "⚠️", cls: "bg-red-100 text-red-700" },
     blocked: { label: "Bloquée", icon: "🔒", cls: "bg-orange-100 text-orange-700" },
     pending: { label: "En attente", icon: "⏸", cls: "bg-slate-100 text-slate-600" },
@@ -127,34 +127,33 @@ export const AnimatedTimeline = ({ steps, onCompleteStep, onJustifyStep, canAdva
         || sorted.find(s => s.status === "pending")
         || sorted[sorted.length - 1];
 
+    const cfgActive = activeStep ? STEP_CONFIG[activeStep.step_name] : null;
+
     return (
         <div className="w-full space-y-8">
 
             {/* ── Header Progress ─────────────────────────────────────────── */}
-            <div className="space-y-3">
+            <div className="space-y-4">
+                <div className="flex flex-col gap-1">
+                    <h2 className="text-xl font-bold text-slate-900 tracking-tight">Suivi de Commande</h2>
+                    <p className="text-sm text-slate-500 font-medium">{sorted.length} étapes du workflow client</p>
+                </div>
+
                 <div className="flex items-end justify-between">
                     <div>
-                        <p className="text-sm font-semibold text-slate-700">
+                        <p className="text-sm font-bold text-blue-600">
                             {completedCount} sur {sorted.length} étapes complétées
                         </p>
-                        <p className="text-xs text-slate-400 mt-0.5">
-                            {activeStep
-                                ? `Étape actuelle : ${STEP_CONFIG[activeStep.step_name]?.label ?? activeStep.step_name}`
-                                : "Toutes les étapes sont terminées"}
-                        </p>
                     </div>
-                    <span className="text-3xl font-black bg-gradient-to-r from-blue-600 to-emerald-500 bg-clip-text text-transparent">
-                        {Math.round(progressPct)}%
-                    </span>
                 </div>
 
                 {/* Animated progress bar */}
-                <div className="w-full bg-slate-200 rounded-full h-4 overflow-hidden shadow-inner">
+                <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
                     <motion.div
-                        className="h-full rounded-full bg-gradient-to-r from-blue-500 via-violet-500 to-emerald-500"
+                        className="h-full rounded-full bg-emerald-500"
                         initial={{ width: 0 }}
                         animate={{ width: `${progressPct}%` }}
-                        transition={{ duration: 1, ease: "easeOut" }}
+                        transition={{ duration: 1.2, ease: "circOut" }}
                     />
                 </div>
 
@@ -386,41 +385,19 @@ export const AnimatedTimeline = ({ steps, onCompleteStep, onJustifyStep, canAdva
             </div>
 
             {/* ── Summary footer ──────────────────────────────────────────── */}
-            {sorted.length > 0 && (
+            {activeStep && (
                 <motion.div
-                    className="p-4 bg-gradient-to-r from-blue-50 to-violet-50 rounded-xl border border-blue-100"
-                    initial={{ opacity: 0, y: 16 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.6, duration: 0.4 }}
+                    className="pt-6 border-t border-slate-100 flex flex-col gap-2"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.5 }}
                 >
-                    <div className="flex flex-wrap gap-4 text-sm">
-                        <div className="flex items-center gap-1.5">
-                            <div className="w-3 h-3 rounded-full bg-emerald-500" />
-                            <span className="text-slate-700">
-                                <strong>{sorted.filter(s => s.status === "completed").length}</strong> terminée(s)
-                            </span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                            <div className="w-3 h-3 rounded-full bg-blue-500 animate-pulse" />
-                            <span className="text-slate-700">
-                                <strong>{sorted.filter(s => s.status === "in_progress").length}</strong> en cours
-                            </span>
-                        </div>
-                        {sorted.filter(s => s.status === "delayed").length > 0 && (
-                            <div className="flex items-center gap-1.5">
-                                <div className="w-3 h-3 rounded-full bg-red-500" />
-                                <span className="text-red-700 font-semibold">
-                                    <strong>{sorted.filter(s => s.status === "delayed").length}</strong> en retard
-                                </span>
-                            </div>
-                        )}
-                        <div className="flex items-center gap-1.5">
-                            <div className="w-3 h-3 rounded-full bg-slate-300" />
-                            <span className="text-slate-500">
-                                <strong>{sorted.filter(s => s.status === "pending").length}</strong> en attente
-                            </span>
-                        </div>
-                    </div>
+                    <p className="text-sm font-bold text-slate-900">
+                        Étape actuelle: {cfgActive?.label ?? activeStep.step_name} (étape {sorted.indexOf(activeStep) + 1} sur {sorted.length})
+                    </p>
+                    <p className="text-sm text-slate-500 font-medium">
+                        Délai estimé: Livraison prévue le 2026-03-05
+                    </p>
                 </motion.div>
             )}
         </div>
