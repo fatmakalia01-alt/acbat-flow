@@ -32,6 +32,7 @@ const ProductsPage = () => {
 
     const emptyForm = {
         name: "", description: "", sku: "", price_ht: "", tva_rate: "19", brand_id: "",
+        unit: "unité"
     };
     const [form, setForm] = useState(emptyForm);
 
@@ -91,6 +92,7 @@ const ProductsPage = () => {
                 tva_rate: parseFloat(form.tva_rate) || 19,
                 brand_id: form.brand_id === "none" ? null : form.brand_id || null,
                 category_id: (form as any).category_id === "none" ? null : (form as any).category_id || null,
+                unit: (form as any).unit || 'unité',
             };
             if (editing) {
                 const { error } = await supabase.from("products").update(payload).eq("id", editing.id);
@@ -263,6 +265,7 @@ const ProductsPage = () => {
                             <TableRow>
                                 <TableHead>Produit</TableHead>
                                 <TableHead>SKU</TableHead>
+                                <TableHead>Unité</TableHead>
                                 <TableHead>Prix HT</TableHead>
                                 <TableHead>TVA</TableHead>
                                 <TableHead>Stock</TableHead>
@@ -287,6 +290,9 @@ const ProductsPage = () => {
                                             {p.description && <div className="text-xs text-muted-foreground line-clamp-1">{p.description}</div>}
                                         </TableCell>
                                         <TableCell className="font-mono text-sm">{p.sku || "—"}</TableCell>
+                                        <TableCell>
+                                            <Badge variant="outline" className="font-normal">{p.unit || 'unité'}</Badge>
+                                        </TableCell>
                                         <TableCell>{p.price_ht?.toLocaleString("fr-TN")} TND</TableCell>
                                         <TableCell>{p.tva_rate}%</TableCell>
                                         <TableCell>
@@ -353,6 +359,11 @@ const ProductsPage = () => {
                                 <Label>TVA (%)</Label>
                                 <Input type="number" value={form.tva_rate}
                                     onChange={e => setForm(p => ({ ...p, tva_rate: e.target.value }))} />
+                            </div>
+                            <div className="col-span-2">
+                                <Label>Unité de mesure</Label>
+                                <Input placeholder="ex: unité, kg, m2, forfait" value={(form as any).unit}
+                                    onChange={e => setForm(p => ({ ...p, unit: e.target.value } as any))} />
                             </div>
                             <div className="col-span-2">
                                 <Label>Catégorie</Label>
