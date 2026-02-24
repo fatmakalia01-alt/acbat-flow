@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
@@ -230,7 +230,12 @@ ACBAT - Tous droits réservés
       {/* New invoice dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Créer une facture</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>Créer une facture</DialogTitle>
+            <DialogDescription>
+              Générez une nouvelle facture client pour une commande validée.
+            </DialogDescription>
+          </DialogHeader>
           <div className="space-y-4">
             <div>
               <Label>Référence *</Label>
@@ -272,7 +277,12 @@ ACBAT - Tous droits réservés
       {/* Detail dialog */}
       <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
         <DialogContent className="max-w-2xl">
-          <DialogHeader><DialogTitle>Facture {selectedInvoice?.reference}</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>Facture {selectedInvoice?.reference}</DialogTitle>
+            <DialogDescription>
+              Détails financiers de la facture, paiements associés et options d'export.
+            </DialogDescription>
+          </DialogHeader>
           {selectedInvoice && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4 text-sm">
