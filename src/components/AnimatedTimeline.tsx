@@ -1,12 +1,13 @@
 import { motion } from "framer-motion";
 import {
     ShoppingCart, CheckCircle, Package, Warehouse,
-    Wrench, Truck, ClipboardCheck, CreditCard, Archive, Clock, AlertCircle
+    Wrench, Truck, ClipboardCheck, CreditCard, Archive, Clock, AlertCircle, Play, MessageSquare
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 const stepConfig: Record<string, { icon: any; label: string; daysStandard: number; color: string }> = {
     creation_commande: { icon: ShoppingCart, label: "Création commande", daysStandard: 1, color: "bg-blue-500" },
@@ -48,9 +49,12 @@ export interface WorkflowStep {
 
 interface AnimatedTimelineProps {
     steps: WorkflowStep[];
+    onCompleteStep?: (stepId: string) => void;
+    onJustifyStep?: (stepId: string) => void;
+    canAdvance?: boolean;
 }
 
-export const AnimatedTimeline = ({ steps }: AnimatedTimelineProps) => {
+export const AnimatedTimeline = ({ steps, onCompleteStep, onJustifyStep, canAdvance = false }: AnimatedTimelineProps) => {
     const sorted = [...steps].sort((a, b) => a.step_order - b.step_order);
     const completedCount = sorted.filter(s => s.status === "completed").length;
     const progressPct = sorted.length > 0 ? (completedCount / sorted.length) * 100 : 0;
@@ -61,7 +65,7 @@ export const AnimatedTimeline = ({ steps }: AnimatedTimelineProps) => {
             <div className="space-y-2">
                 <div className="flex justify-between text-sm font-medium">
                     <span className="text-slate-700">{completedCount} sur {sorted.length} étapes terminées</span>
-                    <span className="text-primary">{Math.round(progressPct)}%</span>
+                    <span className="text-primary font-bold">{Math.round(progressPct)}%</span>
                 </div>
                 <div className="h-3 bg-slate-200 rounded-full overflow-hidden shadow-inner">
                     <motion.div
@@ -77,7 +81,6 @@ export const AnimatedTimeline = ({ steps }: AnimatedTimelineProps) => {
             <div className="relative pt-2">
                 {/* Vertical connector line */}
                 <div className="absolute left-[22px] top-8 bottom-8 w-1 bg-slate-200 rounded-full" />
-
                 {/* Animated fill line */}
                 <motion.div
                     className="absolute left-[22px] top-8 w-1 bg-gradient-to-b from-blue-600 to-emerald-500 origin-top rounded-full"
@@ -93,13 +96,14 @@ export const AnimatedTimeline = ({ steps }: AnimatedTimelineProps) => {
                         const style = statusStyles[step.status] || statusStyles.pending;
                         const Icon = config?.icon || Clock;
                         const isDelayed = step.status === "delayed";
+                        const isInProgress = step.status === "in_progress";
 
                         return (
                             <motion.div
                                 key={step.id}
                                 initial={{ opacity: 0, x: -20 }}
                                 animate={{ opacity: 1, x: 0 }}
-                                transition={{ delay: i * 0.1, duration: 0.5 }}
+                                transition={{ delay: i * 0.08, duration: 0.4 }}
                                 className="flex items-start gap-6 relative pl-14"
                             >
                                 {/* Icon bubble */}
@@ -115,11 +119,11 @@ export const AnimatedTimeline = ({ steps }: AnimatedTimelineProps) => {
                                 {/* Content Card */}
                                 <div className={cn(
                                     "flex-1 p-5 rounded-xl border bg-white shadow-sm transition-all duration-300 hover:shadow-md",
-                                    step.status === "in_progress" ? "border-blue-200 bg-blue-50/30" :
+                                    isInProgress ? "border-blue-200 bg-blue-50/30" :
                                         isDelayed ? "border-red-200 bg-red-50/30" : "border-slate-100"
                                 )}>
-                                    <div className="flex items-center justify-between mb-2">
-                                        <div className="flex items-center gap-2">
+                                    <div className="flex items-start justify-between gap-2 mb-2">
+                                        <div className="flex items-center gap-2 flex-wrap">
                                             <h3 className={cn("font-bold text-slate-800", step.status === "pending" && "text-slate-400")}>
                                                 {config?.label || step.step_name}
                                             </h3>
@@ -128,42 +132,63 @@ export const AnimatedTimeline = ({ steps }: AnimatedTimelineProps) => {
                                             </Badge>
                                         </div>
                                         {step.responsible_role && (
-                                            <span className="text-[10px] font-semibold text-slate-500 uppercase bg-slate-100 px-2 py-0.5 rounded">
-                                                Service: {step.responsible_role.replace('_', ' ')}
+                                            <span className="text-[10px] font-semibold text-slate-500 uppercase bg-slate-100 px-2 py-0.5 rounded whitespace-nowrap">
+                                                {step.responsible_role.replace(/_/g, ' ')}
                                             </span>
                                         )}
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-4 mt-3">
                                         <div className="space-y-1">
-                                            <p className="text-[10px] text-slate-500 uppercase font-bold">Détails</p>
+                                            <p className="text-[10px] text-slate-500 uppercase font-bold">Délai standard</p>
                                             <div className="flex items-center gap-1.5 text-xs text-slate-700">
                                                 <Clock className="w-3 h-3 text-slate-400" />
-                                                <span>Délai: {config?.daysStandard || 0} jours</span>
+                                                <span>{config?.daysStandard || 0} jour(s)</span>
                                             </div>
                                         </div>
                                         <div className="space-y-1 text-right">
-                                            <p className="text-[10px] text-slate-500 uppercase font-bold">Echéance</p>
-                                            <p className={cn("text-xs font-medium", isDelayed ? "text-red-600" : "text-slate-700")}>
-                                                {step.due_date ? format(new Date(step.due_date), "dd MMMM yyyy", { locale: fr }) : "Non définie"}
+                                            <p className="text-[10px] text-slate-500 uppercase font-bold">Échéance</p>
+                                            <p className={cn("text-xs font-medium", isDelayed ? "text-red-600 font-bold" : "text-slate-700")}>
+                                                {step.due_date ? format(new Date(step.due_date), "dd MMM yyyy", { locale: fr }) : "Non définie"}
                                             </p>
                                         </div>
                                     </div>
 
+                                    {step.completed_at && (
+                                        <p className="mt-2 text-[11px] text-emerald-600 font-medium">
+                                            ✓ Terminé le {format(new Date(step.completed_at), "dd MMM yyyy à HH:mm", { locale: fr })}
+                                        </p>
+                                    )}
+
                                     {step.notes && (
-                                        <div className="mt-4 p-3 bg-slate-50 rounded-lg border border-slate-100 flex gap-3 italic">
+                                        <div className="mt-3 p-3 bg-slate-50 rounded-lg border border-slate-100 flex gap-2">
                                             <AlertCircle className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
-                                            <p className="text-xs text-slate-600 leading-relaxed">{step.notes}</p>
+                                            <p className="text-xs text-slate-600 leading-relaxed italic">{step.notes}</p>
                                         </div>
                                     )}
 
-                                    {isDelayed && (
-                                        <div className="mt-3 flex justify-end">
-                                            <Badge variant="destructive" className="animate-bounce">
-                                                Action requise
-                                            </Badge>
-                                        </div>
-                                    )}
+                                    {/* Action buttons */}
+                                    <div className="mt-4 flex gap-2 flex-wrap">
+                                        {canAdvance && isInProgress && onCompleteStep && (
+                                            <Button
+                                                size="sm"
+                                                className="bg-emerald-600 hover:bg-emerald-700 gap-2 h-8 text-xs"
+                                                onClick={() => onCompleteStep(step.id)}
+                                            >
+                                                <Play className="w-3 h-3" /> Marquer terminée
+                                            </Button>
+                                        )}
+                                        {isDelayed && onJustifyStep && (
+                                            <Button
+                                                size="sm"
+                                                variant="destructive"
+                                                className="gap-2 h-8 text-xs"
+                                                onClick={() => onJustifyStep(step.id)}
+                                            >
+                                                <MessageSquare className="w-3 h-3" /> Justifier le retard
+                                            </Button>
+                                        )}
+                                    </div>
                                 </div>
                             </motion.div>
                         );
