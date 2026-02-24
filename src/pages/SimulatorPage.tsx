@@ -302,8 +302,8 @@ async function executeAction(
             ].map(s => ({ ...s, order_id: simState.orderId }));
 
             await supabase.from("order_workflow_steps").insert(workflowSteps);
-            await supabase.from("client_orders").update({ status: "en_cours" }).eq("id", simState.orderId);
-            addLog(`✓ Workflow démarré — État: EN COURS`, "success");
+            await supabase.from("client_orders").update({ status: "en_commande_fournisseur" }).eq("id", simState.orderId);
+            addLog(`✓ Workflow démarré — État: EN COMMANDE FOURNISSEUR`, "success");
             break;
         }
 
@@ -313,7 +313,7 @@ async function executeAction(
         case "detect_need": {
             addLog("Gestion Achat: Création commande fournisseur...", "info");
             if (simState.orderId) {
-                const { data: supplier } = await supabase.from("suppliers").select("id").limit(1).single();
+                const { data: supplier } = await supabase.from("suppliers").select("id").limit(1).maybeSingle();
                 if (supplier) {
                     await supabase.from("supplier_orders").insert({
                         reference: `PO-SIMU-${simState.quoteId}`,
@@ -442,7 +442,7 @@ async function executeAction(
                         client_id: simState.clientId,
                         amount: 14875,
                         method: "virement",
-                        status: "complete"
+                        status: "confirme"
                     });
                 }
 
@@ -452,7 +452,7 @@ async function executeAction(
                 await supabase.from("order_workflow_steps")
                     .update({ status: "completed", completed_at: new Date().toISOString() })
                     .eq("order_id", simState.orderId).eq("step_name", "cloture_archivage");
-                await supabase.from("client_orders").update({ status: "terminee" }).eq("id", simState.orderId);
+                await supabase.from("client_orders").update({ status: "cloturee" }).eq("id", simState.orderId);
                 addLog("✓ Facture payée et dossier clos", "success");
             }
             break;
