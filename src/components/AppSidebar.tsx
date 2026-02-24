@@ -7,7 +7,7 @@ import acbatLogo from "@/assets/acbat-logo.jpeg";
 import {
   LayoutDashboard, Users, ShoppingCart, Package, Truck, Wrench, FileText,
   CreditCard, HeadphonesIcon, Bell, Settings, LogOut, ChevronLeft, ChevronRight,
-  BarChart3, UserCheck, Ship, Construction, Activity
+  BarChart3, UserCheck, Ship, Construction, Activity, ClipboardCheck
 } from "lucide-react";
 import { useState, forwardRef } from "react";
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,7 @@ const menuItems = [
   { icon: LayoutDashboard, label: "Tableau de bord", path: "/dashboard", roles: ["manager", "directeur_exploitation", "responsable_showroom"] },
   { icon: BarChart3, label: "Analytics", path: "/analytics", roles: ["manager", "directeur_exploitation"] },
   { icon: ShoppingCart, label: "Commandes", path: "/orders", roles: ["manager", "directeur_exploitation", "responsable_commercial", "commercial", "responsable_showroom"] },
-  { icon: Bell, label: "Suivi Commandes", path: "/tracking", roles: ["manager", "directeur_exploitation", "responsable_commercial", "commercial", "responsable_achat", "responsable_logistique", "responsable_technique", "technicien_montage", "responsable_sav", "responsable_comptabilite"] },
+  { icon: ClipboardCheck, label: "Suivi Commandes", path: "/tracking", roles: ["manager", "directeur_exploitation", "responsable_commercial", "commercial", "responsable_achat", "responsable_logistique", "responsable_technique", "technicien_montage", "responsable_sav", "responsable_comptabilite"] },
   { icon: Activity, label: "Simulateur", path: "/simulator", roles: ["manager", "directeur_exploitation"] },
   { icon: Users, label: "Clients", path: "/clients", roles: ["manager", "directeur_exploitation", "responsable_commercial", "commercial", "responsable_showroom"] },
   { icon: FileText, label: "Devis", path: "/quotes", roles: ["manager", "responsable_commercial", "commercial", "responsable_showroom"] },
