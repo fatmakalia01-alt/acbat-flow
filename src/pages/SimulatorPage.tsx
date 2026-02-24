@@ -229,7 +229,7 @@ async function executeAction(
             const clientId = simState.clientId;
             if (!clientId) { addLog("Aucun client trouvé.", "warning"); break; }
 
-            const { data: products } = await supabase.from("products").select("id, price_ht").limit(2);
+            const { data: products } = await supabase.from("products").select("id, price_ht, unit").limit(2);
             const ref = `DV-SIMU-${Date.now().toString().slice(-6)}`;
 
             const { data: order, error } = await supabase.from("client_orders").insert({
