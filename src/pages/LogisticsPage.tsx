@@ -69,7 +69,7 @@ const LogisticsPage = () => {
             const { data, error } = await supabase
                 .from("client_orders")
                 .select("id, reference, clients(full_name)")
-                .in("status", ["en_cours", "validee"])
+                .in("status", ["validee", "en_preparation", "en_livraison"])
                 .order("reference");
             if (error) throw error;
             return data || [];
