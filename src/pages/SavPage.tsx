@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -287,7 +287,12 @@ const SavPage = () => {
             {/* Create dialog */}
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
                 <DialogContent>
-                    <DialogHeader><DialogTitle>Nouveau ticket SAV</DialogTitle></DialogHeader>
+                    <DialogHeader>
+                        <DialogTitle>Nouveau ticket SAV</DialogTitle>
+                        <DialogDescription>
+                            Créez un nouveau ticket pour suivre un problème ou une demande d'assistance client.
+                        </DialogDescription>
+                    </DialogHeader>
                     <div className="space-y-4">
                         <div>
                             <Label>Client *</Label>
@@ -335,6 +340,9 @@ const SavPage = () => {
                         <DialogTitle className="flex items-center gap-2">
                             <HeadphonesIcon className="h-5 w-5" /> {selectedTicket?.reference}
                         </DialogTitle>
+                        <DialogDescription>
+                            Historique et gestion des commentaires pour ce ticket SAV.
+                        </DialogDescription>
                     </DialogHeader>
                     {selectedTicket && (
                         <div className="space-y-4">
