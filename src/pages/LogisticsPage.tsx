@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import {
     Truck, Package, CheckCircle, Clock, AlertTriangle,
@@ -361,6 +361,9 @@ const LogisticsPage = () => {
                         <DialogTitle className="flex items-center gap-2">
                             <Truck className="h-5 w-5" /> Planifier une livraison
                         </DialogTitle>
+                        <DialogDescription>
+                            Organisez une nouvelle livraison client en assignant une date, un chauffeur et un véhicule.
+                        </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4">
                         <div>
