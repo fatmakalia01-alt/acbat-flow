@@ -4,7 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AnimatedTimeline, WorkflowStep } from "@/components/AnimatedTimeline";
 import {
     Loader2, Play, CheckCircle2, AlertCircle, Search, Filter,
-    RefreshCw, ChevronRight, Clock, Package, User, Calendar, TrendingUp
+    RefreshCw, ChevronRight, Clock, Package, User, Calendar,
+    TrendingUp, MapPin, Truck, Phone, Mail, Building2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -17,7 +18,7 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { motion, AnimatePresence } from "framer-motion";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── Types ─────────────────────────────────────────────────────────────────
 interface OrderSummary {
     id: string;
     reference: string;
@@ -29,24 +30,32 @@ interface OrderSummary {
     stepsCompleted?: number;
 }
 
-// ─── Status config ────────────────────────────────────────────────────────────
+// ─── Status config ─────────────────────────────────────────────────────────
 const STATUS_CONFIG: Record<string, { label: string; color: string; dot: string }> = {
     brouillon: { label: "Brouillon", color: "bg-slate-100 text-slate-700 border-slate-200", dot: "bg-slate-400" },
     en_validation: { label: "En validation", color: "bg-amber-100 text-amber-800 border-amber-200", dot: "bg-amber-500 animate-pulse" },
     validee: { label: "Validée", color: "bg-blue-100 text-blue-800 border-blue-200", dot: "bg-blue-500" },
     en_cours: { label: "En cours", color: "bg-indigo-100 text-indigo-800 border-indigo-200", dot: "bg-indigo-500 animate-pulse" },
+    en_commande_fournisseur: { label: "Cmd fourn.", color: "bg-purple-100 text-purple-800 border-purple-200", dot: "bg-purple-500" },
+    en_reception: { label: "En réception", color: "bg-cyan-100 text-cyan-800 border-cyan-200", dot: "bg-cyan-500" },
+    en_preparation: { label: "Préparation", color: "bg-amber-100 text-amber-800 border-amber-200", dot: "bg-amber-500" },
+    en_livraison: { label: "En livraison", color: "bg-orange-100 text-orange-800 border-orange-200", dot: "bg-orange-500 animate-pulse" },
+    livree: { label: "Livrée", color: "bg-teal-100 text-teal-800 border-teal-200", dot: "bg-teal-500" },
+    en_facturation: { label: "Facturation", color: "bg-violet-100 text-violet-800 border-violet-200", dot: "bg-violet-500" },
+    payee: { label: "Payée", color: "bg-emerald-100 text-emerald-800 border-emerald-200", dot: "bg-emerald-500" },
+    cloturee: { label: "Clôturée", color: "bg-green-100 text-green-800 border-green-200", dot: "bg-green-500" },
     terminee: { label: "Terminée", color: "bg-emerald-100 text-emerald-800 border-emerald-200", dot: "bg-emerald-500" },
     annulee: { label: "Annulée", color: "bg-red-100 text-red-700 border-red-200", dot: "bg-red-400" },
 };
 
 const ALL_STATUSES = Object.keys(STATUS_CONFIG);
-
-// Roles that can advance workflow steps
-const ADVANCE_ROLES = ["manager", "directeur_exploitation", "responsable_commercial",
+const ADVANCE_ROLES = [
+    "manager", "directeur_exploitation", "responsable_commercial",
     "commercial", "responsable_logistique", "responsable_technique",
-    "technicien_montage", "responsable_achat", "responsable_sav", "responsable_comptabilite"];
+    "technicien_montage", "responsable_achat", "responsable_sav", "responsable_comptabilite",
+];
 
-// ─── Order Card (list item) ────────────────────────────────────────────────────
+// ─── Order Card ─────────────────────────────────────────────────────────────
 const OrderCard = ({ order, isSelected, onClick }: { order: OrderSummary; isSelected: boolean; onClick: () => void }) => {
     const cfg = STATUS_CONFIG[order.status] || STATUS_CONFIG.brouillon;
     const progress = order.stepsTotal ? Math.round(((order.stepsCompleted || 0) / order.stepsTotal) * 100) : 0;
@@ -55,9 +64,9 @@ const OrderCard = ({ order, isSelected, onClick }: { order: OrderSummary; isSele
         <button
             onClick={onClick}
             className={cn(
-                "w-full text-left p-4 rounded-xl border transition-all duration-200 group",
+                "w-full text-left p-4 rounded-xl border transition-all duration-200",
                 isSelected
-                    ? "border-primary bg-primary/5 ring-1 ring-primary/20 shadow-sm"
+                    ? "border-blue-300 bg-blue-50 ring-2 ring-blue-100 shadow-sm"
                     : "border-slate-100 bg-white hover:border-slate-200 hover:shadow-sm"
             )}
         >
@@ -85,10 +94,9 @@ const OrderCard = ({ order, isSelected, onClick }: { order: OrderSummary; isSele
                         )}
                     </p>
                 </div>
-                <ChevronRight className={cn("w-4 h-4 text-slate-300 shrink-0 mt-1 transition-transform", isSelected && "text-primary rotate-90")} />
+                <ChevronRight className={cn("w-4 h-4 text-slate-300 shrink-0 mt-1 transition-transform", isSelected && "text-blue-500 rotate-90")} />
             </div>
 
-            {/* Progress bar */}
             {order.stepsTotal ? (
                 <div className="mt-3 space-y-1">
                     <div className="flex justify-between text-[10px] text-slate-400">
@@ -107,18 +115,16 @@ const OrderCard = ({ order, isSelected, onClick }: { order: OrderSummary; isSele
     );
 };
 
-// ─── Main Component ────────────────────────────────────────────────────────────
+// ─── Main Component ──────────────────────────────────────────────────────────
 export default function CommandTracking() {
     const { user, roles, loading: authLoading } = useAuth();
 
-    // List state
     const [orders, setOrders] = useState<OrderSummary[]>([]);
     const [filteredOrders, setFilteredOrders] = useState<OrderSummary[]>([]);
     const [search, setSearch] = useState("");
     const [statusFilter, setStatusFilter] = useState<string>("all");
     const [listLoading, setListLoading] = useState(true);
 
-    // Detail state
     const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
     const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
     const [steps, setSteps] = useState<WorkflowStep[]>([]);
@@ -126,63 +132,65 @@ export default function CommandTracking() {
     const [isManagerAbsent, setIsManagerAbsent] = useState(false);
     const [selectedStepForJustify, setSelectedStepForJustify] = useState<string | null>(null);
 
+    // Delivery info (latest delivery linked to order)
+    const [delivery, setDelivery] = useState<any | null>(null);
+
     const canAdvance = ADVANCE_ROLES.some(r => roles.includes(r as any));
     const canValidate = roles.includes("manager") || (isManagerAbsent && roles.includes("directeur_exploitation"));
 
-    // ─── Fetch order list ──────────────────────────────────────────────────────
+    // ─── Fetch orders list ────────────────────────────────────────────────────
     const fetchOrders = useCallback(async () => {
         setListLoading(true);
         try {
             const { data, error } = await supabase
                 .from("client_orders")
-                .select(`id, reference, status, total_ht, created_at, clients (full_name, company_name)`)
+                .select("id, reference, status, total_ht, created_at, clients (full_name, company_name)")
                 .order("created_at", { ascending: false });
-
             if (error) throw error;
 
-            // Fetch step counts for each order
             const withProgress: OrderSummary[] = await Promise.all(
                 (data || []).map(async (o: any) => {
                     const { data: stepData } = await supabase
-                        .from("order_workflow_steps")
-                        .select("status")
-                        .eq("order_id", o.id);
-                    const total = stepData?.length || 0;
-                    const completed = stepData?.filter(s => s.status === "completed").length || 0;
-                    return { ...o, stepsTotal: total, stepsCompleted: completed };
+                        .from("order_workflow_steps").select("status").eq("order_id", o.id);
+                    return {
+                        ...o,
+                        stepsTotal: stepData?.length || 0,
+                        stepsCompleted: stepData?.filter((s: any) => s.status === "completed").length || 0,
+                    };
                 })
             );
-
             setOrders(withProgress);
-        } catch (e: any) {
+        } catch {
             toast.error("Erreur lors du chargement des commandes");
         } finally {
             setListLoading(false);
         }
     }, []);
 
-    // ─── Fetch order detail ────────────────────────────────────────────────────
+    // ─── Fetch order detail ───────────────────────────────────────────────────
     const fetchDetail = useCallback(async (orderId: string) => {
         setDetailLoading(true);
         try {
-            const [{ data: orderData, error: orderError }, { data: stepsData, error: stepsError }, { data: absenceData }] = await Promise.all([
-                supabase.from("client_orders").select(`*, clients (full_name, company_name, email, phone)`).eq("id", orderId).single(),
+            const [{ data: orderData, error: orderError }, { data: stepsData, error: stepsError }, { data: absenceData }, { data: deliveryData }] = await Promise.all([
+                supabase.from("client_orders").select("*, clients (full_name, company_name, email, phone, address, city)").eq("id", orderId).single(),
                 supabase.from("order_workflow_steps").select("*").eq("order_id", orderId).order("step_order", { ascending: true }),
                 supabase.rpc("is_manager_absent" as any),
+                supabase.from("deliveries").select("*").eq("order_id", orderId).order("created_at", { ascending: false }).limit(1).maybeSingle(),
             ]);
             if (orderError) throw orderError;
             if (stepsError) throw stepsError;
             setSelectedOrder(orderData);
             setSteps(stepsData || []);
             setIsManagerAbsent(!!absenceData);
-        } catch (e: any) {
+            setDelivery(deliveryData);
+        } catch {
             toast.error("Erreur lors du chargement du détail");
         } finally {
             setDetailLoading(false);
         }
     }, []);
 
-    // ─── Filter logic ──────────────────────────────────────────────────────────
+    // ─── Filters ──────────────────────────────────────────────────────────────
     useEffect(() => {
         let result = orders;
         if (statusFilter !== "all") result = result.filter(o => o.status === statusFilter);
@@ -197,11 +205,10 @@ export default function CommandTracking() {
         setFilteredOrders(result);
     }, [orders, search, statusFilter]);
 
-    // ─── Initial load + real-time ──────────────────────────────────────────────
+    // ─── Init + realtime ──────────────────────────────────────────────────────
     useEffect(() => {
         if (authLoading || !user) return;
         fetchOrders();
-
         const channel = supabase.channel("tracking-orders")
             .on("postgres_changes", { event: "*", schema: "public", table: "client_orders" }, () => {
                 fetchOrders();
@@ -212,20 +219,20 @@ export default function CommandTracking() {
                 fetchOrders();
             })
             .subscribe();
-
         return () => { supabase.removeChannel(channel); };
     }, [authLoading, user, fetchOrders]);
 
     useEffect(() => {
         if (selectedOrderId) fetchDetail(selectedOrderId);
+        else { setSelectedOrder(null); setSteps([]); setDelivery(null); }
     }, [selectedOrderId, fetchDetail]);
 
-    // ─── Actions ───────────────────────────────────────────────────────────────
+    // ─── Actions ──────────────────────────────────────────────────────────────
     const handleLaunch = async () => {
         if (!selectedOrder) return;
         const { error } = await supabase.from("client_orders").update({ status: "en_validation" }).eq("id", selectedOrder.id);
         if (error) { toast.error("Erreur lors du lancement"); return; }
-        toast.success("Commande lancée — en attente de validation ManagerÏ");
+        toast.success("Commande lancée — en attente de validation Manager");
     };
 
     const handleConfirm = async () => {
@@ -238,52 +245,46 @@ export default function CommandTracking() {
     const handleCompleteStep = async (stepId: string) => {
         const step = steps.find(s => s.id === stepId);
         if (!step) return;
-
         const { error } = await supabase.from("order_workflow_steps")
-            .update({ status: "completed", completed_at: new Date().toISOString() })
-            .eq("id", stepId);
+            .update({ status: "completed", completed_at: new Date().toISOString() }).eq("id", stepId);
         if (error) { toast.error("Erreur lors de la mise à jour de l'étape"); return; }
-
-        // Auto-start next step
         const nextStep = steps.find(s => s.step_order === step.step_order + 1 && s.status === "pending");
         if (nextStep) {
             await supabase.from("order_workflow_steps")
-                .update({ status: "in_progress", started_at: new Date().toISOString() })
-                .eq("id", nextStep.id);
-            toast.success(`Étape terminée — "${nextStep.step_name.replace(/_/g, ' ')}" démarre automatiquement`);
+                .update({ status: "in_progress", started_at: new Date().toISOString() }).eq("id", nextStep.id);
+            toast.success(`Étape terminée — "${nextStep.step_name.replace(/_/g, ' ')}" démarre`);
         } else {
             toast.success("Étape marquée comme terminée !");
         }
     };
 
-    // ─── Stats summary ─────────────────────────────────────────────────────────
     const stats = {
         total: orders.length,
-        enCours: orders.filter(o => ["en_validation", "validee", "en_cours"].includes(o.status)).length,
-        delayed: orders.filter(o => {
-            const order = orders.find(x => x.id === o.id);
-            return order?.stepsTotal && order.stepsCompleted !== undefined &&
-                order.status !== "terminee" && order.status !== "annulee";
-        }).length,
-        terminee: orders.filter(o => o.status === "terminee").length,
+        enCours: orders.filter(o => ["en_validation", "validee", "en_cours", "en_livraison", "en_preparation"].includes(o.status)).length,
+        terminee: orders.filter(o => ["terminee", "cloturee", "payee"].includes(o.status)).length,
+        retard: orders.filter(o => o.stepsCompleted !== undefined && o.stepsTotal !== undefined &&
+            o.status !== "terminee" && o.status !== "annulee" && o.status !== "cloturee" &&
+            o.stepsTotal > 0).length,
     };
 
-    // ─── Loading state ─────────────────────────────────────────────────────────
     if (authLoading) {
         return <div className="flex items-center justify-center min-h-screen"><Loader2 className="animate-spin w-8 h-8 text-primary" /></div>;
     }
 
     return (
-        <div className="min-h-screen bg-slate-50/50">
-            {/* ── Top Header ── */}
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+
+            {/* ── Header ────────────────────────────────────────────────────── */}
             <div className="bg-white border-b border-slate-100 px-6 py-5">
                 <div className="max-w-screen-2xl mx-auto flex items-center justify-between flex-wrap gap-4">
                     <div>
-                        <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-                            <TrendingUp className="w-6 h-6 text-primary" />
+                        <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-2">
+                            <TrendingUp className="w-7 h-7 text-blue-500" />
                             Suivi des Commandes
                         </h1>
-                        <p className="text-sm text-slate-500 mt-0.5">Suivi en temps réel du flux opérationnel</p>
+                        <p className="text-slate-500 text-sm mt-1">
+                            Visualisez l'avancement de vos commandes en temps réel
+                        </p>
                     </div>
                     <Button variant="outline" size="sm" onClick={fetchOrders} className="gap-2">
                         <RefreshCw className="w-4 h-4" /> Actualiser
@@ -291,18 +292,21 @@ export default function CommandTracking() {
                 </div>
             </div>
 
-            {/* ── KPI Row ── */}
+            {/* ── KPI cards ─────────────────────────────────────────────────── */}
             <div className="max-w-screen-2xl mx-auto px-6 py-4 grid grid-cols-2 md:grid-cols-4 gap-3">
                 {[
-                    { label: "Total commandes", value: stats.total, icon: Package, color: "text-slate-600" },
-                    { label: "En cours", value: stats.enCours, icon: Clock, color: "text-blue-600" },
-                    { label: "Terminées", value: stats.terminee, icon: CheckCircle2, color: "text-emerald-600" },
+                    { label: "Total commandes", value: stats.total, icon: Package, color: "text-slate-600", bg: "bg-slate-100" },
+                    { label: "En cours", value: stats.enCours, icon: Clock, color: "text-blue-600", bg: "bg-blue-100" },
+                    { label: "Terminées", value: stats.terminee, icon: CheckCircle2, color: "text-emerald-600", bg: "bg-emerald-100" },
+                    { label: "Actives", value: stats.retard, icon: AlertCircle, color: "text-amber-600", bg: "bg-amber-100" },
                 ].map(k => (
                     <Card key={k.label} className="border-none shadow-sm">
                         <CardContent className="pt-4 pb-3 flex items-center gap-3">
-                            <k.icon className={cn("w-8 h-8 opacity-80", k.color)} />
+                            <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", k.bg)}>
+                                <k.icon className={cn("w-5 h-5", k.color)} />
+                            </div>
                             <div>
-                                <p className="text-2xl font-bold text-slate-900">{k.value}</p>
+                                <p className="text-2xl font-black text-slate-900">{k.value}</p>
                                 <p className="text-xs text-slate-500">{k.label}</p>
                             </div>
                         </CardContent>
@@ -310,50 +314,34 @@ export default function CommandTracking() {
                 ))}
             </div>
 
-            {/* ── Main Layout ── */}
-            <div className="max-w-screen-2xl mx-auto px-6 pb-8 grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-6">
-                {/* ── Left: Order List ── */}
+            {/* ── Main Layout ───────────────────────────────────────────────── */}
+            <div className="max-w-screen-2xl mx-auto px-6 pb-10 grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-6">
+
+                {/* ── Left: Order list ── */}
                 <div className="space-y-3">
-                    {/* Search + Filter */}
-                    <div className="space-y-2">
-                        <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                            <Input
-                                placeholder="Référence, client..."
-                                value={search}
-                                onChange={e => setSearch(e.target.value)}
-                                className="pl-9 bg-white border-slate-200"
-                            />
-                        </div>
-                        <div className="flex gap-1.5 flex-wrap">
-                            <Button
-                                size="sm"
-                                variant={statusFilter === "all" ? "default" : "outline"}
-                                className="h-7 text-xs"
-                                onClick={() => setStatusFilter("all")}
-                            >
-                                Tout ({orders.length})
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                        <Input
+                            placeholder="Référence, client..."
+                            value={search}
+                            onChange={e => setSearch(e.target.value)}
+                            className="pl-9 bg-white border-slate-200"
+                        />
+                    </div>
+                    <div className="flex gap-1.5 flex-wrap">
+                        <Button size="sm" variant={statusFilter === "all" ? "default" : "outline"} className="h-7 text-xs" onClick={() => setStatusFilter("all")}>
+                            Tout ({orders.length})
+                        </Button>
+                        {ALL_STATUSES.filter(s => orders.some(o => o.status === s)).map(s => (
+                            <Button key={s} size="sm" variant={statusFilter === s ? "default" : "outline"} className="h-7 text-xs" onClick={() => setStatusFilter(s)}>
+                                {STATUS_CONFIG[s].label}
                             </Button>
-                            {ALL_STATUSES.filter(s => orders.some(o => o.status === s)).map(s => (
-                                <Button
-                                    key={s}
-                                    size="sm"
-                                    variant={statusFilter === s ? "default" : "outline"}
-                                    className="h-7 text-xs"
-                                    onClick={() => setStatusFilter(s)}
-                                >
-                                    {STATUS_CONFIG[s].label}
-                                </Button>
-                            ))}
-                        </div>
+                        ))}
                     </div>
 
-                    {/* Order list */}
-                    <div className="space-y-2 max-h-[calc(100vh-300px)] overflow-y-auto pr-1">
+                    <div className="space-y-2 max-h-[calc(100vh-320px)] overflow-y-auto pr-1">
                         {listLoading ? (
-                            <div className="flex justify-center py-8">
-                                <Loader2 className="animate-spin w-6 h-6 text-slate-400" />
-                            </div>
+                            <div className="flex justify-center py-8"><Loader2 className="animate-spin w-6 h-6 text-slate-400" /></div>
                         ) : filteredOrders.length === 0 ? (
                             <div className="text-center py-10 text-slate-400">
                                 <Filter className="w-8 h-8 mx-auto mb-2 opacity-50" />
@@ -372,7 +360,7 @@ export default function CommandTracking() {
                     </div>
                 </div>
 
-                {/* ── Right: Order Detail ── */}
+                {/* ── Right: Detail panel ── */}
                 <AnimatePresence mode="wait">
                     {!selectedOrderId ? (
                         <motion.div
@@ -384,18 +372,13 @@ export default function CommandTracking() {
                         >
                             <div className="text-center text-slate-400 px-8">
                                 <Package className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                                <p className="font-medium text-slate-600">Sélectionnez une commande</p>
-                                <p className="text-sm mt-1">Cliquez sur une commande dans la liste pour voir son suivi détaillé</p>
+                                <p className="font-semibold text-slate-600">Sélectionnez une commande</p>
+                                <p className="text-sm mt-1">Cliquez sur une commande pour voir son suivi détaillé</p>
                             </div>
                         </motion.div>
                     ) : detailLoading ? (
-                        <motion.div
-                            key="loading"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            className="flex items-center justify-center rounded-2xl bg-white border border-slate-100 min-h-[400px]"
-                        >
+                        <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                            className="flex items-center justify-center rounded-2xl bg-white border border-slate-100 min-h-[400px]">
                             <Loader2 className="animate-spin w-8 h-8 text-primary" />
                         </motion.div>
                     ) : selectedOrder ? (
@@ -407,58 +390,67 @@ export default function CommandTracking() {
                             transition={{ duration: 0.25 }}
                             className="space-y-6"
                         >
-                            {/* Detail Header */}
-                            <Card className="border-none shadow-sm">
-                                <CardHeader className="bg-slate-900 text-white rounded-t-xl pb-4">
+
+                            {/* ── Order Header Card ── */}
+                            <Card className="border-none shadow-md overflow-hidden">
+                                <CardHeader className="bg-gradient-to-r from-slate-900 to-slate-800 text-white pb-5">
                                     <div className="flex items-start justify-between flex-wrap gap-3">
                                         <div>
-                                            <CardTitle className="text-xl flex items-center gap-2">
-                                                Commande {selectedOrder.reference || `#${selectedOrder.id.slice(0, 8)}`}
+                                            <p className="text-slate-400 text-xs font-semibold uppercase tracking-widest mb-1">Suivi de Commande</p>
+                                            <CardTitle className="text-2xl font-black">
+                                                {selectedOrder.reference || `#${selectedOrder.id.slice(0, 8)}`}
                                             </CardTitle>
-                                            <p className="text-slate-400 text-sm mt-1">
+                                            <p className="text-slate-300 text-sm mt-1">
                                                 {selectedOrder.clients?.full_name || "Client inconnu"}
                                                 {selectedOrder.clients?.company_name && ` — ${selectedOrder.clients.company_name}`}
                                             </p>
                                         </div>
-                                        <div className="flex flex-col gap-2 items-end">
-                                            <Badge className={cn("text-xs capitalize", STATUS_CONFIG[selectedOrder.status]?.color || "bg-slate-100")}>
-                                                <span className={cn("h-1.5 w-1.5 rounded-full mr-1.5", STATUS_CONFIG[selectedOrder.status]?.dot)} />
+                                        <div className="flex flex-col items-end gap-2">
+                                            <span className={cn("inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-bold uppercase tracking-wide", STATUS_CONFIG[selectedOrder.status]?.color || "bg-slate-100 text-slate-700")}>
+                                                <span className={cn("h-2 w-2 rounded-full", STATUS_CONFIG[selectedOrder.status]?.dot)} />
                                                 {STATUS_CONFIG[selectedOrder.status]?.label || selectedOrder.status}
-                                            </Badge>
+                                            </span>
                                             {selectedOrder.total_ht != null && (
-                                                <span className="text-white font-bold text-lg">{selectedOrder.total_ht.toLocaleString()} € HT</span>
+                                                <span className="text-white font-black text-xl">
+                                                    {selectedOrder.total_ht.toLocaleString()} <span className="text-slate-300 text-sm font-normal">DT HT</span>
+                                                </span>
                                             )}
                                         </div>
                                     </div>
+
+                                    {/* Action buttons */}
+                                    <div className="flex flex-wrap gap-2 mt-4">
+                                        {selectedOrder.status === "brouillon" && canAdvance && (
+                                            <Button onClick={handleLaunch} size="sm" className="bg-blue-500 hover:bg-blue-600 gap-2">
+                                                <Play className="w-4 h-4" /> Lancer la commande
+                                            </Button>
+                                        )}
+                                        {selectedOrder.status === "en_validation" && canValidate && (
+                                            <Button onClick={handleConfirm} size="sm" className="bg-emerald-500 hover:bg-emerald-600 gap-2">
+                                                <CheckCircle2 className="w-4 h-4" /> Confirmer & Valider
+                                            </Button>
+                                        )}
+                                        {selectedOrder.status === "en_validation" && !canValidate && (
+                                            <Badge variant="outline" className="text-amber-700 border-amber-200 bg-amber-50/80 py-1.5 px-3 h-auto text-xs">
+                                                ⏳ En attente de validation {isManagerAbsent ? "— Directeur Exploitation" : "— Manager"}
+                                            </Badge>
+                                        )}
+                                        <Button variant="outline" size="sm" onClick={() => fetchDetail(selectedOrderId!)} className="gap-2 bg-white/10 border-white/20 text-white hover:bg-white/20 ml-auto">
+                                            <RefreshCw className="w-3 h-3" /> Rafraîchir
+                                        </Button>
+                                    </div>
                                 </CardHeader>
-                                <CardContent className="pt-4 flex flex-wrap gap-3">
-                                    {selectedOrder.status === "brouillon" && canAdvance && (
-                                        <Button onClick={handleLaunch} className="bg-blue-600 hover:bg-blue-700 gap-2">
-                                            <Play className="w-4 h-4" /> Lancer la commande
-                                        </Button>
-                                    )}
-                                    {selectedOrder.status === "en_validation" && canValidate && (
-                                        <Button onClick={handleConfirm} className="bg-emerald-600 hover:bg-emerald-700 gap-2">
-                                            <CheckCircle2 className="w-4 h-4" /> Confirmer & Valider
-                                        </Button>
-                                    )}
-                                    {selectedOrder.status === "en_validation" && !canValidate && (
-                                        <Badge variant="outline" className="text-amber-700 border-amber-200 bg-amber-50 py-2 px-4 h-auto text-sm">
-                                            {isManagerAbsent ? "⏳ En attente — Directeur Exploitation" : "⏳ En attente — Manager"}
-                                        </Badge>
-                                    )}
-                                    <Button variant="outline" size="sm" onClick={() => fetchDetail(selectedOrderId!)} className="gap-2 ml-auto">
-                                        <RefreshCw className="w-3 h-3" /> Rafraîchir
-                                    </Button>
+
+                                {/* Created date */}
+                                <CardContent className="py-3 bg-slate-50 flex items-center gap-2 text-xs text-slate-500">
+                                    <Calendar className="w-3.5 h-3.5" />
+                                    Créée le {format(new Date(selectedOrder.created_at), "dd MMMM yyyy 'à' HH:mm", { locale: fr })}
                                 </CardContent>
                             </Card>
 
-                            {/* Delay Alert */}
+                            {/* ── Delay Alert ── */}
                             {steps.some(s => s.status === "delayed") && (
-                                <motion.div
-                                    initial={{ opacity: 0, y: -10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                >
+                                <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
                                     <Card className="border-red-200 bg-red-50 shadow-sm">
                                         <CardContent className="pt-5">
                                             <div className="flex items-start gap-3">
@@ -466,7 +458,7 @@ export default function CommandTracking() {
                                                 <div>
                                                     <h3 className="font-bold text-red-900">⚠️ Alerte Retard</h3>
                                                     <p className="text-red-700 text-sm mt-0.5">
-                                                        {steps.filter(s => s.status === "delayed").length} étape(s) ont dépassé leur délai et nécessitent une justification.
+                                                        {steps.filter(s => s.status === "delayed").length} étape(s) dépassent leur délai et nécessitent une justification.
                                                     </p>
                                                 </div>
                                             </div>
@@ -475,17 +467,19 @@ export default function CommandTracking() {
                                 </motion.div>
                             )}
 
-                            {/* Timeline */}
-                            <Card className="border-none shadow-sm">
-                                <CardHeader className="border-b bg-slate-50/50">
-                                    <CardTitle className="text-lg flex items-center gap-2">
-                                        Avancement du Workflow
+                            {/* ── Animated Timeline ── */}
+                            <Card className="border-none shadow-md">
+                                <CardHeader className="border-b bg-white">
+                                    <div className="flex items-center justify-between">
+                                        <CardTitle className="text-lg flex items-center gap-2">
+                                            Avancement du Workflow
+                                        </CardTitle>
                                         <Badge variant="secondary" className="font-normal">
                                             {steps.filter(s => s.status === "completed").length} / {steps.length} étapes
                                         </Badge>
-                                    </CardTitle>
+                                    </div>
                                 </CardHeader>
-                                <CardContent className="pt-8">
+                                <CardContent className="pt-8 pb-6">
                                     {steps.length === 0 ? (
                                         <p className="text-slate-500 text-center py-6">Aucune étape de workflow définie pour cette commande.</p>
                                     ) : (
@@ -499,21 +493,154 @@ export default function CommandTracking() {
                                 </CardContent>
                             </Card>
 
-                            {/* Order Notes */}
+                            {/* ── Two-column info cards ── */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {/* Order Details */}
+                                <Card className="border-none shadow-sm">
+                                    <CardHeader className="pb-3">
+                                        <CardTitle className="text-base flex items-center gap-2">
+                                            <Building2 className="w-4 h-4 text-slate-400" />
+                                            Détails de la Commande
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="space-y-3">
+                                        {[
+                                            { label: "Référence", value: selectedOrder.reference || `#${selectedOrder.id.slice(0, 8)}` },
+                                            { label: "Client", value: selectedOrder.clients?.full_name || "—" },
+                                            { label: "Société", value: selectedOrder.clients?.company_name || "—" },
+                                            { label: "Montant HT", value: selectedOrder.total_ht ? `${selectedOrder.total_ht.toLocaleString()} DT` : "—" },
+                                            { label: "Montant TTC", value: selectedOrder.total_ttc ? `${selectedOrder.total_ttc.toLocaleString()} DT` : "—" },
+                                            { label: "Date de création", value: format(new Date(selectedOrder.created_at), "dd MMM yyyy", { locale: fr }) },
+                                        ].map(({ label, value }) => (
+                                            <div key={label} className="flex justify-between items-center text-sm">
+                                                <span className="text-slate-500">{label} :</span>
+                                                <span className="font-semibold text-slate-900">{value}</span>
+                                            </div>
+                                        ))}
+                                        <div className="flex justify-between items-center text-sm pt-1">
+                                            <span className="text-slate-500">Statut :</span>
+                                            <span className={cn("inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold border", STATUS_CONFIG[selectedOrder.status]?.color)}>
+                                                <span className={cn("h-1.5 w-1.5 rounded-full", STATUS_CONFIG[selectedOrder.status]?.dot)} />
+                                                {STATUS_CONFIG[selectedOrder.status]?.label || selectedOrder.status}
+                                            </span>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+
+                                {/* Client & Delivery Info */}
+                                <Card className="border-none shadow-sm">
+                                    <CardHeader className="pb-3">
+                                        <CardTitle className="text-base flex items-center gap-2">
+                                            <Truck className="w-4 h-4 text-slate-400" />
+                                            {delivery ? "Informations de Livraison" : "Informations Client"}
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="space-y-3 text-sm">
+                                        {delivery ? (
+                                            <>
+                                                {selectedOrder.clients?.address && (
+                                                    <div>
+                                                        <span className="text-slate-500 block text-xs mb-1">Adresse de livraison :</span>
+                                                        <p className="font-semibold flex items-start gap-1">
+                                                            <MapPin className="w-3.5 h-3.5 text-slate-400 mt-0.5 shrink-0" />
+                                                            {selectedOrder.clients.address}{selectedOrder.clients.city ? `, ${selectedOrder.clients.city}` : ""}
+                                                        </p>
+                                                    </div>
+                                                )}
+                                                {delivery.scheduled_date && (
+                                                    <div className="flex justify-between">
+                                                        <span className="text-slate-500">Date prévue :</span>
+                                                        <span className="font-semibold">{format(new Date(delivery.scheduled_date), "dd MMM yyyy", { locale: fr })}</span>
+                                                    </div>
+                                                )}
+                                                {delivery.actual_date && (
+                                                    <div className="flex justify-between">
+                                                        <span className="text-slate-500">Date réelle :</span>
+                                                        <span className="font-semibold text-emerald-600">{format(new Date(delivery.actual_date), "dd MMM yyyy", { locale: fr })}</span>
+                                                    </div>
+                                                )}
+                                                <div className="flex justify-between">
+                                                    <span className="text-slate-500">Statut livraison :</span>
+                                                    <Badge variant="outline" className="text-xs">{delivery.status}</Badge>
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <div className="flex justify-between">
+                                                    <span className="text-slate-500">Nom :</span>
+                                                    <span className="font-semibold">{selectedOrder.clients?.full_name || "—"}</span>
+                                                </div>
+                                                {selectedOrder.clients?.email && (
+                                                    <div className="flex justify-between items-center">
+                                                        <span className="text-slate-500">Email :</span>
+                                                        <a href={`mailto:${selectedOrder.clients.email}`} className="font-semibold text-blue-600 flex items-center gap-1 text-xs">
+                                                            <Mail className="w-3 h-3" />{selectedOrder.clients.email}
+                                                        </a>
+                                                    </div>
+                                                )}
+                                                {selectedOrder.clients?.phone && (
+                                                    <div className="flex justify-between items-center">
+                                                        <span className="text-slate-500">Téléphone :</span>
+                                                        <a href={`tel:${selectedOrder.clients.phone}`} className="font-semibold flex items-center gap-1">
+                                                            <Phone className="w-3 h-3 text-slate-400" />{selectedOrder.clients.phone}
+                                                        </a>
+                                                    </div>
+                                                )}
+                                                {selectedOrder.clients?.address && (
+                                                    <div>
+                                                        <span className="text-slate-500 block text-xs mb-1">Adresse :</span>
+                                                        <p className="font-semibold flex items-start gap-1">
+                                                            <MapPin className="w-3.5 h-3.5 text-slate-400 mt-0.5 shrink-0" />
+                                                            {selectedOrder.clients.address}{selectedOrder.clients.city ? `, ${selectedOrder.clients.city}` : ""}
+                                                        </p>
+                                                    </div>
+                                                )}
+                                                <p className="text-center text-slate-400 text-xs pt-2 italic">
+                                                    Aucune livraison planifiée pour cette commande
+                                                </p>
+                                            </>
+                                        )}
+                                    </CardContent>
+                                </Card>
+                            </div>
+
+                            {/* ── Notes ── */}
                             {selectedOrder.notes && (
-                                <Card className="border-none shadow-sm bg-slate-50">
+                                <Card className="border-none shadow-sm bg-amber-50/60 border-amber-100">
                                     <CardContent className="pt-5">
-                                        <p className="text-xs font-bold text-slate-400 uppercase mb-2">Notes</p>
-                                        <p className="text-sm text-slate-600 italic">{selectedOrder.notes}</p>
+                                        <p className="text-xs font-bold text-amber-600 uppercase mb-2">Notes</p>
+                                        <p className="text-sm text-slate-700 italic">{selectedOrder.notes}</p>
                                     </CardContent>
                                 </Card>
                             )}
+
+                            {/* ── Legend ── */}
+                            <Card className="border-none shadow-sm">
+                                <CardHeader className="pb-3">
+                                    <CardTitle className="text-base">Légende des Statuts</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                        {[
+                                            { label: "Terminée", dot: "bg-emerald-500" },
+                                            { label: "En cours", dot: "bg-blue-500 animate-pulse" },
+                                            { label: "En retard", dot: "bg-red-500 animate-bounce" },
+                                            { label: "En attente", dot: "bg-slate-300" },
+                                        ].map(({ label, dot }) => (
+                                            <div key={label} className="flex items-center gap-2 text-sm">
+                                                <div className={cn("w-3.5 h-3.5 rounded-full shrink-0", dot)} />
+                                                <span className="text-slate-600">{label}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </CardContent>
+                            </Card>
                         </motion.div>
                     ) : null}
                 </AnimatePresence>
             </div>
 
-            {/* Justification Dialog */}
+            {/* ── Justification dialog ── */}
             <JustificationDialog
                 isOpen={!!selectedStepForJustify}
                 onClose={() => setSelectedStepForJustify(null)}
