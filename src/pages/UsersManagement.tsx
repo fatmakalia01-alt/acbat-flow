@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -355,6 +355,9 @@ const UserCard = ({
               <DialogContent className="max-w-sm">
                 <DialogHeader>
                   <DialogTitle>Ajouter un rôle à {user.full_name}</DialogTitle>
+                  <DialogDescription>
+                    Sélectionnez un nouveau rôle à attribuer à cet utilisateur pour modifier ses permissions.
+                  </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
                   <Select value={newRole} onValueChange={setNewRole}>
@@ -517,6 +520,9 @@ const UsersManagement = () => {
                 <DialogTitle className="flex items-center gap-2">
                   <Users className="h-5 w-5" /> Nouvel utilisateur
                 </DialogTitle>
+                <DialogDescription>
+                  Remplissez les informations ci-dessous pour créer un nouveau compte utilisateur avec un rôle spécifique.
+                </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
                 {[
