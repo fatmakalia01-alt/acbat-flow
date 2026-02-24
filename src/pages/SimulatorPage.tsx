@@ -213,65 +213,82 @@ async function executeAction(
             const { data, error } = await supabase.from("clients").insert({
                 full_name: "SimCorp ACBAT",
                 company_name: "SimCorp International",
-                email: "sim@acbat-test.tn",
+                email: `sim-${Date.now()}@acbat-test.tn`,
                 phone: "+216 99 000 000",
                 city: "Tunis",
                 address: "Zone Industrielle Simulateur, Bloc A",
             }).select("id").single();
             if (error) { addLog(`Erreur création client: ${error.message}`, "error"); return; }
             simState.clientId = data?.id || "";
-            addLog(`✓ Client créé — ID: ${data?.id?.slice(0, 8)}...`, "success", `full_name: 'SimCorp ACBAT' | city: 'Tunis'`);
+            addLog(`✓ Client créé — ID: ${data?.id?.slice(0, 8)}...`, "success");
             break;
         }
 
         case "create_quote": {
-            addLog("Génération devis brouillon dans `client_orders` (statut: brouillon)...", "info");
+            addLog("Génération devis avec articles réels...", "info");
             const clientId = simState.clientId;
-            if (!clientId) { addLog("Aucun client trouvé pour créer le devis.", "warning"); break; }
+            if (!clientId) { addLog("Aucun client trouvé.", "warning"); break; }
+
+            // Fetch some products to make it real
+            const { data: products } = await supabase.from("products").select("id, price_ht").limit(2);
+
             const ref = `DV-SIMU-${Date.now().toString().slice(-6)}`;
-            const { data, error } = await supabase.from("client_orders").insert({
+            const { data: order, error } = await supabase.from("client_orders").insert({
                 reference: ref,
                 client_id: clientId,
                 status: "brouillon",
-                total_ht: 12500,
-                tva_amount: 2375,
-                total_ttc: 14875,
-                notes: "Commande simulateur — test automatique",
+                total_ht: 0,
+                total_ttc: 0,
+                notes: "Simulation ACBAT Flow — Test in-depth",
             }).select("id").single();
-            if (error) { addLog(`Erreur création devis: ${error.message}`, "error"); return; }
-            simState.orderId = data?.id || "";
+
+            if (error || !order) { addLog(`Erreur création: ${error?.message}`, "error"); return; }
+            simState.orderId = order.id;
             simState.quoteId = ref;
-            addLog(`✓ Devis ${ref} créé — Montant: 14 875 TND TTC`, "success", `total_ht: 12500 | tva: 2375 | total_ttc: 14875`);
+
+            if (products && products.length > 0) {
+                const items = products.map(p => ({
+                    order_id: order.id,
+                    product_id: p.id,
+                    quantity: 2,
+                    unit_price_ht: p.price_ht,
+                    total_ht: p.price_ht * 2,
+                    total_ttc: (p.price_ht * 2) * 1.19
+                }));
+                await supabase.from("order_items").insert(items);
+                const totalHt = items.reduce((acc, i) => acc + i.total_ht, 0);
+                await supabase.from("client_orders").update({
+                    total_ht: totalHt,
+                    total_ttc: totalHt * 1.19
+                }).eq("id", order.id);
+            }
+
+            addLog(`✓ Devis ${ref} créé avec articles réels`, "success");
             break;
         }
 
         case "validate_quote":
-        case "send_quote":
-        case "followup_quote": {
+        case "send_quote": {
             addLog(`Mise à jour statut devis → 'en_validation'...`, "info");
             if (simState.orderId) {
                 await supabase.from("client_orders").update({ status: "en_validation" }).eq("id", simState.orderId);
-                addLog(`✓ Devis ${simState.quoteId} soumis à validation manager`, "success");
-            } else {
-                addLog("Devis non trouvé dans la session courante.", "warning");
+                addLog(`✓ Devis validé par commercial`, "success");
             }
             break;
         }
 
         case "create_order": {
-            addLog("Conversion devis → commande confirmée (statut: validee)...", "info");
+            addLog("Conversion devis → commande confirmée...", "info");
             if (simState.orderId) {
                 await supabase.from("client_orders").update({ status: "validee" }).eq("id", simState.orderId);
-                addLog(`✓ Commande ${simState.quoteId} validée et transmise aux services`, "success", `status: validee → prêt workflow`);
-            } else {
-                addLog("Aucun devis à convertir — création directe...", "warning");
+                addLog(`✓ Commande validée par Manager`, "success");
             }
             break;
         }
 
         case "start_workflow": {
-            addLog("Initialisation du workflow de suivi commande en base...", "info");
-            if (!simState.orderId) { addLog("Pas de commande active.", "warning"); break; }
+            addLog("Initialisation workflow réel (9 étapes)...", "info");
+            if (!simState.orderId) break;
 
             const workflowSteps = [
                 { step_name: "creation_commande", step_order: 1, status: "completed", completed_at: new Date().toISOString() },
@@ -285,33 +302,40 @@ async function executeAction(
                 { step_name: "cloture_archivage", step_order: 9, status: "pending" },
             ].map(s => ({ ...s, order_id: simState.orderId }));
 
-            const { error } = await supabase.from("order_workflow_steps").insert(workflowSteps);
-            if (error) { addLog(`Erreur workflow: ${error.message}`, "error"); return; }
+            await supabase.from("order_workflow_steps").insert(workflowSteps);
             await supabase.from("client_orders").update({ status: "en_cours" }).eq("id", simState.orderId);
-            addLog(`✓ Workflow 9 étapes initialisé — Commande en cours`, "success", `9 étapes créées dans order_workflow_steps`);
+            addLog(`✓ Workflow démarré — État: EN COURS`, "success");
             break;
         }
 
-        case "purchase_step": {
-            addLog("Service Achat — avancement étape 'commande_fournisseur'...", "info");
+        case "purchase_step":
+        case "create_po": {
+            addLog("Création ordre d'achat fournisseur lié...", "info");
             if (simState.orderId) {
+                const { data: supplier } = await supabase.from("suppliers").select("id").limit(1).single();
+                if (supplier) {
+                    await supabase.from("supplier_orders").insert({
+                        reference: `PO-SIMU-${simState.quoteId}`,
+                        supplier_id: supplier.id,
+                        client_order_id: simState.orderId,
+                        status: "commandé",
+                        total_amount: 5000
+                    });
+                }
                 await supabase.from("order_workflow_steps")
                     .update({ status: "completed", completed_at: new Date().toISOString() })
                     .eq("order_id", simState.orderId).eq("step_name", "commande_fournisseur");
                 await supabase.from("order_workflow_steps")
                     .update({ status: "in_progress", started_at: new Date().toISOString() })
                     .eq("order_id", simState.orderId).eq("step_name", "reception_marchandises");
-                addLog("✓ Ordre achat transmis fournisseur — Réception planifiée J+21", "success");
-            } else {
-                addLog("Simulation: Ordre d'achat fournisseur créé avec succès", "success");
+                addLog("✓ Commande fournisseur générée", "success");
             }
             break;
         }
 
         case "stock_step":
-        case "receive_goods":
-        case "update_stock": {
-            addLog("Service Logistique — réception marchandises et mise à jour stock...", "info");
+        case "receive_goods": {
+            addLog("Réception logistique et mise en stock...", "info");
             if (simState.orderId) {
                 await supabase.from("order_workflow_steps")
                     .update({ status: "completed", completed_at: new Date().toISOString() })
@@ -319,78 +343,94 @@ async function executeAction(
                 await supabase.from("order_workflow_steps")
                     .update({ status: "in_progress", started_at: new Date().toISOString() })
                     .eq("order_id", simState.orderId).eq("step_name", "preparation_technique");
+                addLog("✓ Marchandises reçues en entrepôt", "success");
             }
-            addLog("✓ Marchandises réceptionnées — Stock mis à jour", "success", "3 palettes | zone A-12 | scanné OKS");
             break;
         }
 
         case "technical_step":
-        case "plan_intervention":
-        case "do_intervention": {
-            addLog("Service Technique — préparation installation chantier...", "info");
+        case "plan_intervention": {
+            addLog("Création dossier chantier technique...", "info");
             if (simState.orderId) {
+                await supabase.from("chantiers").insert({
+                    name: `SIMU - ${simState.quoteId}`,
+                    reference: `CH-${simState.quoteId}`,
+                    order_id: simState.orderId,
+                    client_id: simState.clientId,
+                    status: "en_attente",
+                    planned_start: new Date().toISOString()
+                });
                 await supabase.from("order_workflow_steps")
                     .update({ status: "completed", completed_at: new Date().toISOString() })
                     .eq("order_id", simState.orderId).eq("step_name", "preparation_technique");
                 await supabase.from("order_workflow_steps")
                     .update({ status: "in_progress", started_at: new Date().toISOString() })
                     .eq("order_id", simState.orderId).eq("step_name", "livraison_installation");
+                addLog("✓ Dossier chantier initialisé", "success");
             }
-            addLog("✓ Chantier préparé — Équipe technique assignée", "success");
             break;
         }
 
-        case "installation_step": {
-            addLog("Technicien — Installation et montage sur site client...", "info");
-            addLog("✓ Montage terminé — PV technique signé", "success", "4h travaux | Technicien: SIM-TECH-01");
-            break;
-        }
-
-        case "assign_delivery":
-        case "start_delivery":
-        case "pod_photo":
-        case "sign_pv":
-        case "delivery_step": {
-            addLog("Service Livraison — planification et dispatch livreur...", "info");
+        case "delivery_step":
+        case "assign_delivery": {
+            addLog("Planification mission livraison...", "info");
             if (simState.orderId) {
+                await supabase.from("deliveries").insert({
+                    order_id: simState.orderId,
+                    status: "planifiee",
+                    scheduled_date: new Date().toISOString().split('T')[0]
+                });
+                addLog("✓ Mission livraison créée et assignée", "success");
+            }
+            break;
+        }
+
+        case "client_validate":
+        case "sign_pv": {
+            addLog("Validation client et signature PV (simulée)...", "info");
+            if (simState.orderId) {
+                await supabase.from("deliveries").update({
+                    status: "livree",
+                    pv_signed: true,
+                    actual_date: new Date().toISOString()
+                }).eq("order_id", simState.orderId);
+
                 await supabase.from("order_workflow_steps")
                     .update({ status: "completed", completed_at: new Date().toISOString() })
                     .eq("order_id", simState.orderId).eq("step_name", "livraison_installation");
-                await supabase.from("order_workflow_steps")
-                    .update({ status: "in_progress", started_at: new Date().toISOString() })
-                    .eq("order_id", simState.orderId).eq("step_name", "validation_client");
-            }
-            addLog("✓ Livraison effectuée — POD signé — Statut: livree", "success", "vehicle: 24TU5512 | distance: 18km");
-            break;
-        }
-
-        case "complete_delivery": {
-            addLog("Confirmation finale livraison validée...", "info");
-            addLog("✓ Livraison clôturée — Photo POD enregistrée", "success");
-            break;
-        }
-
-        case "client_validate": {
-            addLog("Portail Client — confirmation réception et validation...", "info");
-            if (simState.orderId) {
                 await supabase.from("order_workflow_steps")
                     .update({ status: "completed", completed_at: new Date().toISOString() })
                     .eq("order_id", simState.orderId).eq("step_name", "validation_client");
                 await supabase.from("order_workflow_steps")
                     .update({ status: "in_progress", started_at: new Date().toISOString() })
                     .eq("order_id", simState.orderId).eq("step_name", "facturation_paiement");
+                addLog("✓ Client a signé et validé la réception", "success");
             }
-            addLog("✓ CLIENT: 'Tout est conforme' — Validation confirmée", "success");
             break;
         }
 
         case "generate_invoice":
-        case "send_invoice":
-        case "send_reminder":
-        case "record_payment":
         case "invoice_step": {
-            addLog("Service Comptabilité — génération facture et suivi paiement...", "info");
+            addLog("Cycle financier: Facturation + Paiement...", "info");
             if (simState.orderId) {
+                const { data: inv } = await supabase.from("invoices").insert({
+                    order_id: simState.orderId,
+                    client_id: simState.clientId,
+                    reference: `FAC-SIMU-${simState.quoteId}`,
+                    status: "payee",
+                    total_ttc: 14875
+                }).select("id").single();
+
+                if (inv) {
+                    await supabase.from("payments").insert({
+                        invoice_id: inv.id,
+                        client_id: simState.clientId,
+                        amount: 14875,
+                        method: "virement",
+                        status: "complete"
+                    });
+                }
+
                 await supabase.from("order_workflow_steps")
                     .update({ status: "completed", completed_at: new Date().toISOString() })
                     .eq("order_id", simState.orderId).eq("step_name", "facturation_paiement");
@@ -398,76 +438,75 @@ async function executeAction(
                     .update({ status: "completed", completed_at: new Date().toISOString() })
                     .eq("order_id", simState.orderId).eq("step_name", "cloture_archivage");
                 await supabase.from("client_orders").update({ status: "terminee" }).eq("id", simState.orderId);
+                addLog("✓ Facture payée et dossier clos", "success");
             }
-            addLog("✓ Facture FA-SIMU émise — 14 875 TND TTC — Paiement reçu", "success", `ref: FA-${Date.now().toString().slice(-5)} | mode: virement`);
-            break;
-        }
-
-        case "close_financial": {
-            addLog("Dossier financier clôturé — archivage comptable...", "info");
-            addLog("✓ Commande archivée — Dossier complet", "success");
             break;
         }
 
         case "open_ticket": {
-            addLog("Création ticket SAV urgent par client...", "info");
-            const clientId = simState.clientId;
-            if (clientId) {
+            addLog("Création ticket SAV réel...", "info");
+            if (simState.clientId) {
                 const { data } = await supabase.from("sav_tickets").insert({
-                    client_id: clientId,
-                    subject: "[SIMU] Problème installation — appareil défaillant",
-                    description: "Le système ne démarre pas 48h après installation. Intervention urgente requise.",
-                    priority: "urgent",
+                    client_id: simState.clientId,
+                    order_id: simState.orderId || null,
+                    subject: "[SIMU] Dysfonctionnement système",
+                    description: "Simulation d'une panne signalée par le client après installation.",
+                    priority: "haute",
+                    status: "nouveau"
                 }).select("id").single();
                 simState.ticketId = data?.id || "";
-                addLog(`✓ Ticket SAV ouvert — Priorité URGENT — ID: ${data?.id?.slice(0, 8)}...`, "success");
-            } else {
-                addLog("✓ Ticket SAV simulé — Priorité: URGENT", "success");
+                addLog(`✓ Ticket SAV ouvert — ID: ${data?.id?.slice(0, 8)}`, "success");
             }
             break;
         }
+
+        default:
+            await DELAY(300);
+            addLog(`Action simulée: ${action}`, "info");
+    }
+}
 
         case "assign_ticket": {
-            addLog("Responsable SAV — prise en charge et assignation technicien...", "info");
-            if (simState.ticketId) {
-                await supabase.from("sav_tickets").update({ status: "en_cours" }).eq("id", simState.ticketId);
-            }
-            addLog("✓ Ticket assigné à TECH-SAV-01 — Délai: 4h", "success");
-            break;
-        }
+    addLog("Responsable SAV — prise en charge et assignation technicien...", "info");
+    if (simState.ticketId) {
+        await supabase.from("sav_tickets").update({ status: "en_cours" }).eq("id", simState.ticketId);
+    }
+    addLog("✓ Ticket assigné à TECH-SAV-01 — Délai: 4h", "success");
+    break;
+}
 
         case "close_ticket": {
-            addLog("Clôture ticket SAV et rapport client...", "info");
-            if (simState.ticketId) {
-                await supabase.from("sav_tickets").update({ status: "resolu" }).eq("id", simState.ticketId);
-            }
-            addLog("✓ Ticket SAV clôturé — Client satisfait ★★★★★", "success");
-            break;
-        }
+    addLog("Clôture ticket SAV et rapport client...", "info");
+    if (simState.ticketId) {
+        await supabase.from("sav_tickets").update({ status: "resolu" }).eq("id", simState.ticketId);
+    }
+    addLog("✓ Ticket SAV clôturé — Client satisfait ★★★★★", "success");
+    break;
+}
 
         case "detect_need":
         case "create_po":
         case "validate_po": {
-            addLog("Gestion achat import — commande fournisseur simulée...", "info");
-            addLog("✓ Bon de commande fournisseur BF-SIMU émis", "success", "fournisseur: Euro Cloison | délai: 30j");
-            break;
-        }
+    addLog("Gestion achat import — commande fournisseur simulée...", "info");
+    addLog("✓ Bon de commande fournisseur BF-SIMU émis", "success", "fournisseur: Euro Cloison | délai: 30j");
+    break;
+}
 
         case "view_kpis":
         case "check_delayed":
         case "monthly_report":
         case "stock_alert":
         case "sav_report": {
-            addLog("Analytics — lecture des indicateurs temps réel...", "info");
-            const { count: orders } = await supabase.from("client_orders").select("id", { count: "exact", head: true });
-            const { count: delayed } = await supabase.from("order_workflow_steps").select("id", { count: "exact", head: true }).eq("status", "delayed");
-            const { count: tickets } = await supabase.from("sav_tickets").select("id", { count: "exact", head: true });
-            addLog(`✓ KPIs lus: ${orders} commandes | ${delayed} retards | ${tickets} tickets SAV`, "success", `requêtes Supabase temps réel`);
-            break;
-        }
+    addLog("Analytics — lecture des indicateurs temps réel...", "info");
+    const { count: orders } = await supabase.from("client_orders").select("id", { count: "exact", head: true });
+    const { count: delayed } = await supabase.from("order_workflow_steps").select("id", { count: "exact", head: true }).eq("status", "delayed");
+    const { count: tickets } = await supabase.from("sav_tickets").select("id", { count: "exact", head: true });
+    addLog(`✓ KPIs lus: ${orders} commandes | ${delayed} retards | ${tickets} tickets SAV`, "success", `requêtes Supabase temps réel`);
+    break;
+}
 
         default:
-            addLog(`Action simulée: ${action}`, "info");
+addLog(`Action simulée: ${action}`, "info");
     }
 }
 
