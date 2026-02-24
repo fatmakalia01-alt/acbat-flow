@@ -46,6 +46,25 @@ function section(title) {
 
 const state = { clientId: null, orderId: null, ticketId: null, productId: null, deliveryId: null };
 
+// ─── AUTH ─────────────────────────────────────────────────────────────────────
+console.log("\n" + "═".repeat(60));
+console.log("  🔐 AUTHENTIFICATION");
+console.log("═".repeat(60));
+
+const { data: authData, error: authError } = await sb.auth.signInWithPassword({
+    email: "haithem.kalia@gmail.com",
+    password: "54372272Hk",
+});
+
+if (authError) {
+    console.log(`  ❌ Échec auth: ${authError.message}`);
+    console.log("     → Vérifiez que le seed a été exécuté dans Supabase.");
+    process.exit(1);
+} else {
+    console.log(`  ✅ Connecté en tant que manager (${authData.user.email})`)
+}
+
+
 // ═══ 1. COMMERCIAL ═══════════════════════════════════════════════════
 section("1️⃣  SERVICE COMMERCIAL");
 
