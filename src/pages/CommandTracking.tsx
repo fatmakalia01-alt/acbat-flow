@@ -316,7 +316,7 @@ export default function CommandTracking() {
                     <div>
                         <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-2">
                             <TrendingUp className="w-7 h-7 text-blue-500" />
-                            Suivi des Commandes
+                            Suivi de Commande
                         </h1>
                         <p className="text-slate-500 text-sm mt-1">
                             Visualisez l'avancement de vos commandes en temps réel
