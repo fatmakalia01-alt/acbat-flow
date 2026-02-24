@@ -140,12 +140,41 @@ export default function CommandTracking() {
 
     // ─── Fetch orders list ────────────────────────────────────────────────────
     const fetchOrders = useCallback(async () => {
+        if (!user) return;
         setListLoading(true);
         try {
-            const { data, error } = await supabase
+            let query = supabase
                 .from("client_orders")
-                .select("id, reference, status, total_ht, created_at, clients (full_name, company_name)")
-                .order("created_at", { ascending: false });
+                .select("id, reference, status, total_ht, created_at, clients!inner(id, full_name, company_name, user_id, commercial_id)");
+
+            // Apply role-based filtering
+            const isManagerOrAdmin = roles.some(r => ["manager", "directeur_exploitation", "responsable_achat", "responsable_logistique", "responsable_technique", "responsable_sav", "responsable_comptabilite", "responsable_showroom"].includes(r));
+
+            if (!isManagerOrAdmin) {
+                if (roles.includes("client")) {
+                    query = query.eq("clients.user_id", user.id);
+                } else if (roles.includes("commercial") || roles.includes("responsable_commercial")) {
+                    query = query.eq("clients.commercial_id", user.id);
+                } else if (roles.includes("technicien_montage") || roles.includes("livraison")) {
+                    // Filter orders that have an associated delivery assigned to this user
+                    const { data: deliveryOrders } = await supabase
+                        .from("deliveries")
+                        .select("order_id")
+                        .eq("technician_id", user.id);
+
+                    const orderIds = (deliveryOrders || []).map(d => d.order_id);
+                    if (orderIds.length > 0) {
+                        query = query.in("id", orderIds);
+                    } else {
+                        // Return empty if no assignments
+                        setOrders([]);
+                        setListLoading(false);
+                        return;
+                    }
+                }
+            }
+
+            const { data, error } = await query.order("created_at", { ascending: false });
             if (error) throw error;
 
             const withProgress: OrderSummary[] = await Promise.all(
@@ -160,12 +189,13 @@ export default function CommandTracking() {
                 })
             );
             setOrders(withProgress);
-        } catch {
+        } catch (err: any) {
+            console.error("Fetch orders error:", err);
             toast.error("Erreur lors du chargement des commandes");
         } finally {
             setListLoading(false);
         }
-    }, []);
+    }, [user, roles]);
 
     // ─── Fetch order detail ───────────────────────────────────────────────────
     const fetchDetail = useCallback(async (orderId: string) => {
