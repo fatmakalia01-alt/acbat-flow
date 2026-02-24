@@ -10,7 +10,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
 } from "recharts";
 import {
-  ShoppingCart, Users, TrendingUp, AlertTriangle,
+  ShoppingCart, Users, TrendingUp, AlertTriangle, ListTodo,
   UserCheck, UserX, Shield, Eye, CheckCircle2, Clock, Loader2
 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -61,7 +61,7 @@ const ACTIVE_STATUSES = [
 ];
 
 // ─── Horizontal Workflow Row ─────────────────────────────────────────────────
-const WorkflowRow = ({ order }: { order: any }) => {
+const WorkflowRow = React.forwardRef<HTMLDivElement, { order: any }>(({ order }, ref) => {
   const steps = order.order_workflow_steps || [];
   const getStep = (key: string) => steps.find((s: any) => s.step_name === key);
   const completed = steps.filter((s: any) => s.status === "completed").length;
@@ -69,7 +69,7 @@ const WorkflowRow = ({ order }: { order: any }) => {
   const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
 
   return (
-    <div className="border border-slate-100 rounded-xl p-4 bg-white hover:shadow-sm transition-shadow">
+    <div ref={ref} className="border border-slate-100 rounded-xl p-4 bg-white hover:shadow-sm transition-shadow">
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div>
@@ -140,7 +140,9 @@ const WorkflowRow = ({ order }: { order: any }) => {
       </div>
     </div>
   );
-};
+});
+
+WorkflowRow.displayName = "WorkflowRow";
 
 const Dashboard = React.forwardRef<HTMLDivElement, {}>(
 
@@ -360,7 +362,7 @@ const Dashboard = React.forwardRef<HTMLDivElement, {}>(
         )}
 
         {/* KPI Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           <Card className="shadow-card">
             <CardContent className="p-5 flex items-center gap-4">
               <div className="h-12 w-12 rounded-xl gradient-primary flex items-center justify-center">
@@ -372,6 +374,19 @@ const Dashboard = React.forwardRef<HTMLDivElement, {}>(
               </div>
             </CardContent>
           </Card>
+
+          <Card className="shadow-card">
+            <CardContent className="p-5 flex items-center gap-4">
+              <div className="h-12 w-12 rounded-xl bg-blue-500 flex items-center justify-center">
+                <ListTodo className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{activeOrders.length}</p>
+                <p className="text-xs text-muted-foreground">En cours</p>
+              </div>
+            </CardContent>
+          </Card>
+
           <Card className="shadow-card">
             <CardContent className="p-5 flex items-center gap-4">
               <div className="h-12 w-12 rounded-xl gradient-accent flex items-center justify-center">
@@ -406,6 +421,84 @@ const Dashboard = React.forwardRef<HTMLDivElement, {}>(
             </CardContent>
           </Card>
         </div>
+
+        {/* ── Workflow Overview (Moved up between KPIs and Charts) ── */}
+        <Card className="shadow-card border-l-4 border-l-blue-500">
+          <CardHeader className="pb-3 px-6 pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-base font-display flex items-center gap-2">
+                  <ListTodo className="w-5 h-5 text-blue-500" />
+                  Suivi des Commandes en Cours
+                </CardTitle>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Visualisation rapide des {activeOrders.length} commande(s) active(s)
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Dialog open={showAllOrders} onOpenChange={setShowAllOrders}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm" className="gap-2">
+                      <Eye className="h-4 w-4" />
+                      Aperçu complet
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>Toutes les commandes en cours ({activeOrders.length})</DialogTitle>
+                      <DialogDescription>
+                        Workflow en 9 étapes pour chaque commande active
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-3 mt-2">
+                      {activeOrders.length === 0 ? (
+                        <p className="text-sm text-muted-foreground text-center py-8">
+                          Aucune commande active pour l'instant
+                        </p>
+                      ) : (
+                        activeOrders.map((order: any) => (
+                          <WorkflowRow key={order.id} order={order} />
+                        ))
+                      )}
+                    </div>
+                    <div className="flex justify-end mt-4">
+                      <Button
+                        onClick={() => { setShowAllOrders(false); navigate("/tracking"); }}
+                        className="gap-2"
+                      >
+                        <Eye className="h-4 w-4" />
+                        Ouvrir Suivi Commandes
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="px-6 pb-6 pt-2">
+            {ordersLoading ? (
+              <div className="space-y-3">
+                {[1, 2, 3].map(i => <Skeleton key={i} className="h-20 w-full" />)}
+              </div>
+            ) : last5Orders.length === 0 ? (
+              <div className="text-center py-8">
+                <Clock className="h-10 w-10 text-muted-foreground mx-auto mb-2 opacity-40" />
+                <p className="text-sm text-muted-foreground">Aucune commande active en cours</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {last5Orders.map((order: any) => (
+                  <WorkflowRow key={order.id} order={order} />
+                ))}
+                {activeOrders.length > 5 && (
+                  <p className="text-xs text-center text-muted-foreground pt-1">
+                    + {activeOrders.length - 5} autre(s) commande(s) — cliquez sur <b>Aperçu complet</b>
+                  </p>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -504,80 +597,6 @@ const Dashboard = React.forwardRef<HTMLDivElement, {}>(
           </Card>
         </div>
 
-        {/* ── Workflow Overview ── */}
-        <Card className="shadow-card">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-base font-display">Suivi des Commandes en Cours</CardTitle>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  {activeOrders.length} commande(s) active(s) — 5 dernières affichées
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <Dialog open={showAllOrders} onOpenChange={setShowAllOrders}>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" size="sm" className="gap-2">
-                      <Eye className="h-4 w-4" />
-                      Aperçu complet
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-                    <DialogHeader>
-                      <DialogTitle>Toutes les commandes en cours ({activeOrders.length})</DialogTitle>
-                      <DialogDescription>
-                        Workflow en 9 étapes pour chaque commande active
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-3 mt-2">
-                      {activeOrders.length === 0 ? (
-                        <p className="text-sm text-muted-foreground text-center py-8">
-                          Aucune commande active pour l'instant
-                        </p>
-                      ) : (
-                        activeOrders.map((order: any) => (
-                          <WorkflowRow key={order.id} order={order} />
-                        ))
-                      )}
-                    </div>
-                    <div className="flex justify-end mt-4">
-                      <Button
-                        onClick={() => { setShowAllOrders(false); navigate("/command-tracking"); }}
-                        className="gap-2"
-                      >
-                        <Eye className="h-4 w-4" />
-                        Ouvrir Suivi Commandes
-                      </Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {ordersLoading ? (
-              <div className="space-y-3">
-                {[1, 2, 3].map(i => <Skeleton key={i} className="h-20 w-full" />)}
-              </div>
-            ) : last5Orders.length === 0 ? (
-              <div className="text-center py-8">
-                <Clock className="h-10 w-10 text-muted-foreground mx-auto mb-2 opacity-40" />
-                <p className="text-sm text-muted-foreground">Aucune commande active en cours</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {last5Orders.map((order: any) => (
-                  <WorkflowRow key={order.id} order={order} />
-                ))}
-                {activeOrders.length > 5 && (
-                  <p className="text-xs text-center text-muted-foreground pt-1">
-                    + {activeOrders.length - 5} autre(s) commande(s) — cliquez sur <b>Aperçu complet</b>
-                  </p>
-                )}
-              </div>
-            )}
-          </CardContent>
-        </Card>
       </div>
     );
   }
