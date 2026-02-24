@@ -25,7 +25,11 @@ function ProtectedRoute({ children, roles }: ProtectedRouteProps) {
   }
 
   if (!user) {
-    return React.createElement("div", { key: "redirect-login-wrapper" }, React.createElement(Navigate, { to: "/login", state: { from: location }, replace: true }));
+    return (
+      <div key="redirect-login-wrapper">
+        <Navigate to="/login" state={{ from: location }} replace />
+      </div>
+    );
   }
 
   if (roles && roles.length > 0 && !roles.some(r => userRoles.includes(r))) {
@@ -58,7 +62,11 @@ function ProtectedRoute({ children, roles }: ProtectedRouteProps) {
     );
   }
 
-  return React.createElement("div", { key: "protected-content-wrapper" }, children);
+  return (
+    <div key="protected-content-wrapper">
+      {children}
+    </div>
+  );
 }
 
 export default ProtectedRoute;
