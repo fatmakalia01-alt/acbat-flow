@@ -332,7 +332,7 @@ const Dashboard = React.forwardRef<HTMLDivElement, {}>(
                   <DialogHeader>
                     <DialogTitle>Activer le mode absence</DialogTitle>
                     <DialogDescription>
-                      Configurez le transfert de vos validations durant votre absence.
+                      Configurez le transfert de vos validations durant votre absence pour assurer la continuité de service.
                     </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4">
@@ -448,7 +448,7 @@ const Dashboard = React.forwardRef<HTMLDivElement, {}>(
                   <DialogHeader className="p-6 pb-2">
                     <DialogTitle>Toutes les commandes en cours ({activeOrders.length})</DialogTitle>
                     <DialogDescription>
-                      Workflow en 9 étapes pour chaque commande active
+                      Consultez l'état d'avancement de chaque commande active à travers les 9 étapes du workflow.
                     </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-3 p-6 mt-0">
