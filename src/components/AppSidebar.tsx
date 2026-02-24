@@ -36,38 +36,26 @@ const menuItems = [
   { icon: Settings, label: "Utilisateurs", path: "/users", roles: ["manager"] },
 ];
 
-export const AppSidebar = forwardRef<HTMLDivElement>((_props, ref) => {
-  const { profile, roles, user, signOut } = useAuth();
+export const SidebarContent = ({
+  collapsed,
+  onItemClick,
+  unreadCount
+}: {
+  collapsed: boolean;
+  onItemClick?: () => void;
+  unreadCount: number;
+}) => {
+  const { roles, signOut, profile } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [collapsed, setCollapsed] = useState(false);
-
-  // Unread notifications count
-  const { data: unreadCount = 0 } = useQuery({
-    queryKey: ["unread-notifications", user?.id],
-    queryFn: async () => {
-      if (!user) return 0;
-      const { count } = await supabase
-        .from("notifications")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", user.id)
-        .eq("read", false);
-      return count ?? 0;
-    },
-    enabled: !!user,
-    refetchInterval: 30000, // refetch every 30s
-  });
 
   const visibleItems = menuItems.filter(item =>
     item.roles.length === 0 || item.roles.some(r => roles.includes(r as any))
   );
 
   return (
-    <aside ref={ref} className={cn(
-      "h-screen bg-sidebar text-sidebar-foreground flex flex-col transition-all duration-300 sticky top-0",
-      collapsed ? "w-16" : "w-64"
-    )}>
-      <div className="flex items-center gap-3 p-4 border-b border-sidebar-border">
+    <div className="flex flex-col h-full bg-sidebar text-sidebar-foreground">
+      <div className="flex items-center gap-3 p-4 border-b border-sidebar-border h-[65px] shrink-0">
         <img src={acbatLogo} alt="ACBAT" className="h-9 w-9 rounded-lg object-cover flex-shrink-0" />
         {!collapsed && <span className="font-display font-bold text-lg">ACBAT</span>}
       </div>
@@ -79,7 +67,10 @@ export const AppSidebar = forwardRef<HTMLDivElement>((_props, ref) => {
           return (
             <button
               key={item.path}
-              onClick={() => navigate(item.path)}
+              onClick={() => {
+                navigate(item.path);
+                if (onItemClick) onItemClick();
+              }}
               className={cn(
                 "w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors hover:bg-sidebar-accent relative",
                 isActive && "bg-sidebar-accent text-sidebar-primary font-medium"
@@ -104,7 +95,7 @@ export const AppSidebar = forwardRef<HTMLDivElement>((_props, ref) => {
         })}
       </nav>
 
-      <div className="border-t border-sidebar-border p-3">
+      <div className="border-t border-sidebar-border p-3 shrink-0">
         {!collapsed && profile && (
           <div className="mb-3 px-1">
             <p className="text-sm font-medium truncate">{profile.full_name || "Utilisateur"}</p>
@@ -114,17 +105,52 @@ export const AppSidebar = forwardRef<HTMLDivElement>((_props, ref) => {
           </div>
         )}
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={() => setCollapsed(!collapsed)}
-            className="text-sidebar-foreground hover:bg-sidebar-accent">
-            {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-          </Button>
           {!collapsed && (
-            <Button variant="ghost" size="sm" onClick={signOut}
+            <Button variant="ghost" size="sm" onClick={() => {
+              signOut();
+              if (onItemClick) onItemClick();
+            }}
               className="text-sidebar-foreground hover:bg-sidebar-accent flex-1 justify-start gap-2">
               <LogOut className="h-4 w-4" /> Déconnexion
             </Button>
           )}
         </div>
+      </div>
+    </div>
+  );
+};
+
+export const AppSidebar = forwardRef<HTMLDivElement>((_props, ref) => {
+  const { user } = useAuth();
+  const [collapsed, setCollapsed] = useState(false);
+
+  const { data: unreadCount = 0 } = useQuery({
+    queryKey: ["unread-notifications", user?.id],
+    queryFn: async () => {
+      if (!user) return 0;
+      const { count } = await supabase
+        .from("notifications")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .eq("read", false);
+      return count ?? 0;
+    },
+    enabled: !!user,
+    refetchInterval: 30000,
+  });
+
+  return (
+    <aside ref={ref} className={cn(
+      "h-screen flex flex-col transition-all duration-300 sticky top-0 border-r border-sidebar-border overflow-hidden",
+      collapsed ? "w-16" : "w-64"
+    )}>
+      <SidebarContent collapsed={collapsed} unreadCount={unreadCount} />
+
+      <div className="absolute bottom-3 right-3">
+        <Button variant="ghost" size="icon" onClick={() => setCollapsed(!collapsed)}
+          className="h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent">
+          {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+        </Button>
       </div>
     </aside>
   );
