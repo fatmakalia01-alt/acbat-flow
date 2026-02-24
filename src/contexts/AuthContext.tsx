@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -37,105 +37,84 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [roles, setRoles] = useState<AppRole[]>([]);
-  // authLoading = on attend encore la session initiale
   const [authLoading, setAuthLoading] = useState(true);
-  // rolesLoading = on attend que les roles soient chargés depuis la DB
   const [rolesLoading, setRolesLoading] = useState(false);
   const [mockRole, setMockRole] = useState<AppRole | null>(null);
   const navigate = useNavigate();
+  
+  // Track current fetch to avoid duplicate concurrent calls
+  const fetchingForUserRef = useRef<string | null>(null);
 
-  const fetchWithTimeout = async (promise: Promise<any>, description: string, timeoutMs: number = 10000): Promise<any> => {
-    const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error(`Timeout API (${description}) après ${timeoutMs}ms`)), timeoutMs)
-    );
-    console.log(`AuthContext: Starting ${description}...`);
-    return Promise.race([promise, timeoutPromise]);
-  };
-
-  const fetchUserData = async (userId: string) => {
+  const fetchUserData = useCallback(async (userId: string) => {
+    // Skip if we're already fetching for this user
+    if (fetchingForUserRef.current === userId) {
+      console.log("AuthContext: fetchUserData skipped (already fetching for", userId, ")");
+      return;
+    }
+    
+    fetchingForUserRef.current = userId;
     console.log("AuthContext: fetchUserData starting for", userId);
     setRolesLoading(true);
+    
     try {
-      // 1. Récupérer le profil
-      const resProfile = await fetchWithTimeout(
-        supabase.from("profiles").select("*").eq("id", userId).single(),
-        "fetch profile"
-      );
-      const { data: profileData, error: profileError } = resProfile;
+      // Fetch profile and roles in parallel, using user_id (not id)
+      const [resProfile, resRoles] = await Promise.all([
+        supabase.from("profiles").select("*").eq("user_id", userId).maybeSingle(),
+        supabase.from("user_roles").select("role").eq("user_id", userId),
+      ]);
 
-      if (profileError) {
-        console.warn("AuthContext: Profile fetch error (might not exist yet):", profileError);
+      // Profile
+      if (resProfile.error) {
+        console.warn("AuthContext: Profile fetch error:", resProfile.error);
+      } else if (resProfile.data) {
+        console.log("AuthContext: Profile fetched OK");
+        setProfile(resProfile.data as Profile);
       } else {
-        console.log("AuthContext: Profile fetched:", !!profileData);
-        setProfile(profileData as Profile);
+        console.log("AuthContext: No profile found for user");
       }
 
-      // 2. Récupérer les rôles
-      const resRoles = await fetchWithTimeout(
-        supabase.from("user_roles").select("role").eq("user_id", userId),
-        "fetch roles"
-      );
-      const { data: rolesData, error: rolesError } = resRoles;
-
-      if (rolesError) {
-        console.error("AuthContext: Roles fetch error:", rolesError);
+      // Roles
+      if (resRoles.error) {
+        console.error("AuthContext: Roles fetch error:", resRoles.error);
         setRoles([]);
       } else {
-        const roleList = rolesData?.map((r: any) => r.role) || [];
+        const roleList = resRoles.data?.map((r: any) => r.role) || [];
         console.log("AuthContext: Roles fetched:", roleList);
         setRoles(roleList as AppRole[]);
       }
     } catch (err) {
       console.error("AuthContext: Error in fetchUserData:", err);
     } finally {
-      console.log("AuthContext: fetchUserData finished (rolesLoading -> false)");
+      fetchingForUserRef.current = null;
       setRolesLoading(false);
+      console.log("AuthContext: fetchUserData finished");
     }
-  };
+  }, []);
 
   useEffect(() => {
-    console.log("AuthContext: Initializing effect...");
-    console.log("AuthContext: Supabase URL:", import.meta.env.VITE_SUPABASE_URL);
-
+    console.log("AuthContext: Initializing...");
     let initialized = false;
 
-    // Failsafe: if Supabase doesn't respond in 15s, unblock the UI
     const failsafeTimer = setTimeout(() => {
       if (!initialized) {
-        console.error("Auth timeout: Supabase did not respond in 15s, unblocking UI via failsafe.");
+        console.error("Auth timeout: unblocking UI via failsafe.");
+        initialized = true;
         setAuthLoading(false);
         setRolesLoading(false);
       }
     }, 15000);
 
-    const markAsInitialized = () => {
+    const markInitialized = () => {
       if (!initialized) {
-        console.log("AuthContext: Mark as initialized (authLoading -> false)");
         initialized = true;
         setAuthLoading(false);
         clearTimeout(failsafeTimer);
       }
     };
 
-    // 1. Vérifier la session existante au démarrage (une seule fois)
-    console.log("AuthContext: getSession() call starting...");
-    supabase.auth.getSession().then(async ({ data: { session }, error }) => {
-      console.log("AuthContext: getSession() promise resolved", { session: !!session, error });
-      if (session) {
-        setSession(session);
-        setUser(session.user);
-        await fetchUserData(session.user.id);
-      }
-      markAsInitialized();
-    }).catch((err) => {
-      console.error("AuthContext: getSession() promise rejected:", err);
-      markAsInitialized();
-    });
-
-    // 2. Écouter les changements suivants (login/logout)
-    // IMPORTANT: onAuthStateChange peut déclencher SIGNED_IN avant que getSession ne résolve
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("AuthContext: onAuthStateChange event:", event, "session:", !!session);
+    // Listen for auth changes first
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: string, session: Session | null) => {
+      console.log("AuthContext: onAuthStateChange:", event, "session:", !!session);
 
       setSession(session);
       setUser(session?.user ?? null);
@@ -147,16 +126,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setRoles([]);
         setMockRole(null);
         setRolesLoading(false);
+        fetchingForUserRef.current = null;
       }
 
-      // Si on reçoit un événement auth, on peut considérer l'init terminée
-      markAsInitialized();
+      markInitialized();
+    });
+
+    // Then check existing session
+    supabase.auth.getSession().then(async ({ data: { session } }: any) => {
+      console.log("AuthContext: getSession resolved, session:", !!session);
+      if (session) {
+        setSession(session);
+        setUser(session.user);
+        await fetchUserData(session.user.id);
+      }
+      markInitialized();
+    }).catch((err: any) => {
+      console.error("AuthContext: getSession error:", err);
+      markInitialized();
     });
 
     return () => {
       subscription.unsubscribe();
+      clearTimeout(failsafeTimer);
     };
-  }, []);
+  }, [fetchUserData]);
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -177,7 +171,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const isManager = () => hasRole('manager');
   const isInternalStaff = () => getActiveRoles().some(r => r !== 'client');
 
-  // loading = true tant que l'auth OU les rôles ne sont pas encore résolus
   const loading = authLoading || rolesLoading;
 
   return (
