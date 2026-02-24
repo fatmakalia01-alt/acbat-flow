@@ -1,3 +1,4 @@
+import React from "react";
 import { motion } from "framer-motion";
 import {
     ShoppingCart, CheckCircle, Package, Warehouse,
@@ -49,104 +50,108 @@ interface WorkflowTimelineProps {
     steps: WorkflowStep[];
 }
 
-const WorkflowTimeline = ({ steps }: WorkflowTimelineProps) => {
-    const sorted = [...steps].sort((a, b) => a.step_order - b.step_order);
-    const completedCount = sorted.filter(s => s.status === "completed").length;
-    const progressPct = sorted.length > 0 ? (completedCount / sorted.length) * 100 : 0;
+const WorkflowTimeline = React.forwardRef<HTMLDivElement, WorkflowTimelineProps>(
+    ({ steps }, ref) => {
+        const sorted = [...steps].sort((a, b) => a.step_order - b.step_order);
+        const completedCount = sorted.filter(s => s.status === "completed").length;
+        const progressPct = sorted.length > 0 ? (completedCount / sorted.length) * 100 : 0;
 
-    return (
-        <div className="space-y-4">
-            {/* Progress bar */}
-            <div className="space-y-1">
-                <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>{completedCount} / {sorted.length} étapes complétées</span>
-                    <span>{Math.round(progressPct)}%</span>
-                </div>
-                <div className="h-2 bg-muted rounded-full overflow-hidden">
-                    <motion.div
-                        className="h-full rounded-full bg-gradient-to-r from-primary to-emerald-500"
-                        initial={{ width: 0 }}
-                        animate={{ width: `${progressPct}%` }}
-                        transition={{ duration: 0.8, ease: "easeOut" }}
-                    />
-                </div>
-            </div>
-
-            {/* Steps */}
-            <div className="relative">
-                {/* Vertical connector line */}
-                <div className="absolute left-[18px] top-5 bottom-5 w-0.5 bg-border" />
-                {/* Animated fill */}
-                <motion.div
-                    className="absolute left-[18px] top-5 w-0.5 bg-gradient-to-b from-primary to-emerald-500 origin-top"
-                    initial={{ scaleY: 0 }}
-                    animate={{ scaleY: progressPct / 100 }}
-                    transition={{ duration: 1, ease: "easeOut" }}
-                    style={{ height: "calc(100% - 40px)" }}
-                />
-
+        return (
+            <div ref={ref} className="space-y-4">
+                {/* Progress bar */}
                 <div className="space-y-1">
-                    {sorted.map((step, i) => {
-                        const config = stepConfig[step.step_name];
-                        const style = statusStyles[step.status] || statusStyles.pending;
-                        const Icon = config?.icon || Clock;
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>{completedCount} / {sorted.length} étapes complétées</span>
+                        <span>{Math.round(progressPct)}%</span>
+                    </div>
+                    <div className="h-2 bg-muted rounded-full overflow-hidden">
+                        <motion.div
+                            className="h-full rounded-full bg-gradient-to-r from-primary to-emerald-500"
+                            initial={{ width: 0 }}
+                            animate={{ width: `${progressPct}%` }}
+                            transition={{ duration: 0.8, ease: "easeOut" }}
+                        />
+                    </div>
+                </div>
 
-                        return (
-                            <motion.div
-                                key={step.id}
-                                initial={{ opacity: 0, x: -16 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{ delay: i * 0.07, duration: 0.4 }}
-                                className="flex items-start gap-4 relative pl-10 py-2.5"
-                            >
-                                {/* Icon bubble */}
-                                <div className={cn(
-                                    "absolute left-0 h-9 w-9 rounded-full flex items-center justify-center ring-2 bg-background flex-shrink-0",
-                                    style.ring
-                                )}>
-                                    <div className={cn("h-2.5 w-2.5 rounded-full absolute bottom-0 right-0", style.dot)} />
-                                    <Icon className={cn("h-4 w-4", step.status === "completed" ? "text-emerald-500" :
-                                        step.status === "in_progress" ? "text-blue-500" :
-                                            step.status === "delayed" ? "text-red-500" : "text-muted-foreground/50")} />
-                                </div>
+                {/* Steps */}
+                <div className="relative">
+                    {/* Vertical connector line */}
+                    <div className="absolute left-[18px] top-5 bottom-5 w-0.5 bg-border" />
+                    {/* Animated fill */}
+                    <motion.div
+                        className="absolute left-[18px] top-5 w-0.5 bg-gradient-to-b from-primary to-emerald-500 origin-top"
+                        initial={{ scaleY: 0 }}
+                        animate={{ scaleY: progressPct / 100 }}
+                        transition={{ duration: 1, ease: "easeOut" }}
+                        style={{ height: "calc(100% - 40px)" }}
+                    />
 
-                                {/* Content */}
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                        <span className={cn("text-sm font-medium", step.status === "pending" && "text-muted-foreground")}>
-                                            {config?.label || step.step_name}
-                                        </span>
-                                        <Badge className={cn("text-xs px-1.5 py-0.5", style.badge)}>
-                                            {statusLabels[step.status] || step.status}
-                                        </Badge>
-                                        {step.delay_days && step.delay_days > 0 && (
-                                            <Badge className="text-xs px-1.5 py-0.5 bg-red-100 text-red-700">
-                                                +{step.delay_days}j
+                    <div className="space-y-1">
+                        {sorted.map((step, i) => {
+                            const config = stepConfig[step.step_name];
+                            const style = statusStyles[step.status] || statusStyles.pending;
+                            const Icon = config?.icon || Clock;
+
+                            return (
+                                <motion.div
+                                    key={step.id}
+                                    initial={{ opacity: 0, x: -16 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: i * 0.07, duration: 0.4 }}
+                                    className="flex items-start gap-4 relative pl-10 py-2.5"
+                                >
+                                    {/* Icon bubble */}
+                                    <div className={cn(
+                                        "absolute left-0 h-9 w-9 rounded-full flex items-center justify-center ring-2 bg-background flex-shrink-0",
+                                        style.ring
+                                    )}>
+                                        <div className={cn("h-2.5 w-2.5 rounded-full absolute bottom-0 right-0", style.dot)} />
+                                        <Icon className={cn("h-4 w-4", step.status === "completed" ? "text-emerald-500" :
+                                            step.status === "in_progress" ? "text-blue-500" :
+                                                step.status === "delayed" ? "text-red-500" : "text-muted-foreground/50")} />
+                                    </div>
+
+                                    {/* Content */}
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            <span className={cn("text-sm font-medium", step.status === "pending" && "text-muted-foreground")}>
+                                                {config?.label || step.step_name}
+                                            </span>
+                                            <Badge className={cn("text-xs px-1.5 py-0.5", style.badge)}>
+                                                {statusLabels[step.status] || step.status}
                                             </Badge>
+                                            {step.delay_days && step.delay_days > 0 && (
+                                                <Badge className="text-xs px-1.5 py-0.5 bg-red-100 text-red-700">
+                                                    +{step.delay_days}j
+                                                </Badge>
+                                            )}
+                                        </div>
+                                        <div className="flex gap-3 mt-0.5 text-xs text-muted-foreground">
+                                            {config?.daysStandard && (
+                                                <span>Délai standard: {config.daysStandard}j</span>
+                                            )}
+                                            {step.completed_at && (
+                                                <span>Terminé: {format(new Date(step.completed_at), "dd/MM/yyyy", { locale: fr })}</span>
+                                            )}
+                                            {step.due_date && step.status !== "completed" && (
+                                                <span>Échéance: {format(new Date(step.due_date), "dd/MM/yyyy", { locale: fr })}</span>
+                                            )}
+                                        </div>
+                                        {step.notes && (
+                                            <p className="text-xs text-muted-foreground mt-1 italic">{step.notes}</p>
                                         )}
                                     </div>
-                                    <div className="flex gap-3 mt-0.5 text-xs text-muted-foreground">
-                                        {config?.daysStandard && (
-                                            <span>Délai standard: {config.daysStandard}j</span>
-                                        )}
-                                        {step.completed_at && (
-                                            <span>Terminé: {format(new Date(step.completed_at), "dd/MM/yyyy", { locale: fr })}</span>
-                                        )}
-                                        {step.due_date && step.status !== "completed" && (
-                                            <span>Échéance: {format(new Date(step.due_date), "dd/MM/yyyy", { locale: fr })}</span>
-                                        )}
-                                    </div>
-                                    {step.notes && (
-                                        <p className="text-xs text-muted-foreground mt-1 italic">{step.notes}</p>
-                                    )}
-                                </div>
-                            </motion.div>
-                        );
-                    })}
+                                </motion.div>
+                            );
+                        })}
+                    </div>
                 </div>
             </div>
-        </div>
-    );
-};
+        );
+    }
+);
+
+WorkflowTimeline.displayName = "WorkflowTimeline";
 
 export default WorkflowTimeline;
