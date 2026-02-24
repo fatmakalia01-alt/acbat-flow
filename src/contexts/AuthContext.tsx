@@ -38,117 +38,87 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [authLoading, setAuthLoading] = useState(true);
-  const [rolesLoading, setRolesLoading] = useState(false);
   const [mockRole, setMockRole] = useState<AppRole | null>(null);
   const navigate = useNavigate();
   
-  // Track current fetch to avoid duplicate concurrent calls
   const fetchingForUserRef = useRef<string | null>(null);
+  const dataLoadedRef = useRef(false);
 
   const fetchUserData = useCallback(async (userId: string) => {
-    // Skip if we're already fetching for this user
-    if (fetchingForUserRef.current === userId) {
-      console.log("AuthContext: fetchUserData skipped (already fetching for", userId, ")");
-      return;
-    }
-    
+    if (fetchingForUserRef.current === userId) return;
     fetchingForUserRef.current = userId;
-    console.log("AuthContext: fetchUserData starting for", userId);
-    setRolesLoading(true);
     
     try {
-      // Fetch profile and roles in parallel, using user_id (not id)
       const [resProfile, resRoles] = await Promise.all([
         supabase.from("profiles").select("*").eq("user_id", userId).maybeSingle(),
         supabase.from("user_roles").select("role").eq("user_id", userId),
       ]);
 
-      // Profile
-      if (resProfile.error) {
-        console.warn("AuthContext: Profile fetch error:", resProfile.error);
-      } else if (resProfile.data) {
-        console.log("AuthContext: Profile fetched OK");
+      if (resProfile.data) {
         setProfile(resProfile.data as Profile);
-      } else {
-        console.log("AuthContext: No profile found for user");
       }
 
-      // Roles
-      if (resRoles.error) {
-        console.error("AuthContext: Roles fetch error:", resRoles.error);
-        setRoles([]);
-      } else {
-        const roleList = resRoles.data?.map((r: any) => r.role) || [];
-        console.log("AuthContext: Roles fetched:", roleList);
-        setRoles(roleList as AppRole[]);
+      if (!resRoles.error && resRoles.data) {
+        const roleList = resRoles.data.map((r: any) => r.role) as AppRole[];
+        setRoles(roleList);
       }
+      
+      dataLoadedRef.current = true;
     } catch (err) {
-      console.error("AuthContext: Error in fetchUserData:", err);
+      console.error("AuthContext: fetchUserData error:", err);
     } finally {
       fetchingForUserRef.current = null;
-      setRolesLoading(false);
-      console.log("AuthContext: fetchUserData finished");
     }
   }, []);
 
   useEffect(() => {
-    console.log("AuthContext: Initializing...");
-    let initialized = false;
+    let mounted = true;
 
-    const failsafeTimer = setTimeout(() => {
-      if (!initialized) {
-        console.error("Auth timeout: unblocking UI via failsafe.");
-        initialized = true;
-        setAuthLoading(false);
-        setRolesLoading(false);
-      }
-    }, 15000);
-
-    const markInitialized = () => {
-      if (!initialized) {
-        initialized = true;
-        setAuthLoading(false);
-        clearTimeout(failsafeTimer);
+    // Fast init: get session synchronously from cache if possible
+    const initAuth = async () => {
+      try {
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        if (!mounted) return;
+        
+        if (currentSession?.user) {
+          setSession(currentSession);
+          setUser(currentSession.user);
+          await fetchUserData(currentSession.user.id);
+        }
+      } catch (err) {
+        console.error("AuthContext: getSession error:", err);
+      } finally {
+        if (mounted) setAuthLoading(false);
       }
     };
 
-    // Listen for auth changes first
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: string, session: Session | null) => {
-      console.log("AuthContext: onAuthStateChange:", event, "session:", !!session);
+    initAuth();
 
-      setSession(session);
-      setUser(session?.user ?? null);
+    // Listen for future auth changes (sign in/out)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
+      if (!mounted) return;
+      
+      setSession(newSession);
+      setUser(newSession?.user ?? null);
 
-      if (session?.user) {
-        await fetchUserData(session.user.id);
+      if (newSession?.user) {
+        // Don't await - fire and forget to avoid blocking
+        fetchUserData(newSession.user.id);
       } else {
         setProfile(null);
         setRoles([]);
         setMockRole(null);
-        setRolesLoading(false);
         fetchingForUserRef.current = null;
+        dataLoadedRef.current = false;
       }
 
-      markInitialized();
-    });
-
-    // Then check existing session
-    supabase.auth.getSession().then(async ({ data: { session } }: any) => {
-      console.log("AuthContext: getSession resolved, session:", !!session);
-      if (session) {
-        setSession(session);
-        setUser(session.user);
-        await fetchUserData(session.user.id);
-      }
-      markInitialized();
-    }).catch((err: any) => {
-      console.error("AuthContext: getSession error:", err);
-      markInitialized();
+      // If we were still loading (race with getSession), mark done
+      setAuthLoading(false);
     });
 
     return () => {
+      mounted = false;
       subscription.unsubscribe();
-      clearTimeout(failsafeTimer);
     };
   }, [fetchUserData]);
 
@@ -171,11 +141,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const isManager = () => hasRole('manager');
   const isInternalStaff = () => getActiveRoles().some(r => r !== 'client');
 
-  const loading = authLoading || rolesLoading;
-
   return (
     <AuthContext.Provider value={{
-      session, user, profile, roles: getActiveRoles(), mockRole, setMockRole, loading,
+      session, user, profile, roles: getActiveRoles(), mockRole, setMockRole, loading: authLoading,
       signIn, signOut, hasRole, isManager, isInternalStaff
     }}>
       {children}
