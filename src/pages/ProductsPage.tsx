@@ -10,7 +10,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Search, Pencil, Package, AlertTriangle, ArrowLeftRight } from "lucide-react";
+import { Plus, Search, Pencil, Package, AlertTriangle, ArrowLeftRight, RefreshCw } from "lucide-react";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const ProductsPage = () => {
@@ -20,10 +22,13 @@ const ProductsPage = () => {
     const [dialogOpen, setDialogOpen] = useState(false);
     const [editing, setEditing] = useState<any>(null);
     const [movingStock, setMovingStock] = useState<any>(null);
+    const [historyStock, setHistoryStock] = useState<any>(null);
+    const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
     const [movementForm, setMovementForm] = useState({ quantity: "1", type: "adjustment", reason: "" });
 
     const [brandDialogOpen, setBrandDialogOpen] = useState(false);
     const [newBrand, setNewBrand] = useState({ name: "", description: "" });
+    const [newCategory, setNewCategory] = useState({ name: "", description: "" });
 
     const emptyForm = {
         name: "", description: "", sku: "", price_ht: "", tva_rate: "19", brand_id: "",
@@ -39,16 +44,40 @@ const ProductsPage = () => {
         },
     });
 
+    const { data: categories = [] } = useQuery({
+        queryKey: ["product-categories"],
+        queryFn: async () => {
+            const { data, error } = await supabase.from("product_categories").select("*").order("name");
+            if (error) throw error;
+            return data;
+        },
+    });
+
     const { data: products = [], isLoading } = useQuery({
         queryKey: ["products"],
         queryFn: async () => {
             const { data, error } = await supabase
                 .from("products")
-                .select("*, stock(quantity, min_quantity, location), product_categories(name), brands(name)")
+                .select("*, stock(quantity, min_quantity, location), product_categories(id, name), brands(name)")
                 .order("name");
             if (error) throw error;
             return data;
         },
+    });
+
+    const { data: movements = [] } = useQuery({
+        queryKey: ["stock-movements", historyStock?.id],
+        queryFn: async () => {
+            if (!historyStock) return [];
+            const { data, error } = await supabase
+                .from("stock_movements")
+                .select("*")
+                .eq("product_id", historyStock.id)
+                .order("created_at", { ascending: false });
+            if (error) throw error;
+            return data;
+        },
+        enabled: !!historyStock,
     });
 
     const upsertProduct = useMutation({
@@ -60,7 +89,8 @@ const ProductsPage = () => {
                 sku: form.sku || null,
                 price_ht: parseFloat(form.price_ht) || 0,
                 tva_rate: parseFloat(form.tva_rate) || 19,
-                brand_id: form.brand_id || null,
+                brand_id: form.brand_id === "none" ? null : form.brand_id || null,
+                category_id: (form as any).category_id === "none" ? null : (form as any).category_id || null,
             };
             if (editing) {
                 const { error } = await supabase.from("products").update(payload).eq("id", editing.id);
@@ -95,6 +125,20 @@ const ProductsPage = () => {
         onError: (e: any) => toast({ title: "Erreur", description: e.message, variant: "destructive" }),
     });
 
+    const createCategory = useMutation({
+        mutationFn: async () => {
+            const { error } = await supabase.from("product_categories").insert(newCategory);
+            if (error) throw error;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["product-categories"] });
+            setCategoryDialogOpen(false);
+            setNewCategory({ name: "", description: "" });
+            toast({ title: "Catégorie ajoutée" });
+        },
+        onError: (e: any) => toast({ title: "Erreur", description: e.message, variant: "destructive" }),
+    });
+
     const recordMovement = useMutation({
         mutationFn: async () => {
             if (!movingStock) return;
@@ -125,7 +169,8 @@ const ProductsPage = () => {
             sku: p.sku || "", price_ht: p.price_ht?.toString() || "",
             tva_rate: p.tva_rate?.toString() || "19",
             brand_id: p.brand_id || "",
-        });
+            category_id: p.category_id || "",
+        } as any);
         setDialogOpen(true);
     };
 
@@ -146,8 +191,11 @@ const ProductsPage = () => {
                     <p className="text-muted-foreground text-sm">{products.length} produit(s)</p>
                 </div>
                 <div className="flex gap-2">
+                    <Button variant="outline" onClick={() => setCategoryDialogOpen(true)}>
+                        Catégories
+                    </Button>
                     <Button variant="outline" onClick={() => setBrandDialogOpen(true)}>
-                        Gérer les marques
+                        Marques
                     </Button>
                     <Button onClick={() => { setEditing(null); setForm(emptyForm); setDialogOpen(true); }}>
                         <Plus className="h-4 w-4 mr-2" /> Nouveau produit
@@ -255,8 +303,11 @@ const ProductsPage = () => {
                                                 <Button variant="ghost" size="icon" onClick={() => openEdit(p)}>
                                                     <Pencil className="h-4 w-4" />
                                                 </Button>
-                                                <Button variant="ghost" size="icon" onClick={() => setMovingStock(p)}>
+                                                <Button variant="ghost" size="icon" onClick={() => setMovingStock(p)} title="Mouvement">
                                                     <ArrowLeftRight className="h-4 w-4 text-blue-600" />
+                                                </Button>
+                                                <Button variant="ghost" size="icon" onClick={() => setHistoryStock(p)} title="Historique">
+                                                    <RefreshCw className="h-4 w-4 text-muted-foreground" />
                                                 </Button>
                                             </div>
                                         </TableCell>
@@ -302,6 +353,18 @@ const ProductsPage = () => {
                                 <Label>TVA (%)</Label>
                                 <Input type="number" value={form.tva_rate}
                                     onChange={e => setForm(p => ({ ...p, tva_rate: e.target.value }))} />
+                            </div>
+                            <div className="col-span-2">
+                                <Label>Catégorie</Label>
+                                <Select value={(form as any).category_id} onValueChange={v => setForm(p => ({ ...p, category_id: v } as any))}>
+                                    <SelectTrigger><SelectValue placeholder="Sélectionner une catégorie" /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="none">Aucune</SelectItem>
+                                        {categories.map((c: any) => (
+                                            <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                             </div>
                         </div>
                         <div>
@@ -381,6 +444,73 @@ const ProductsPage = () => {
                                 Ajouter la marque
                             </Button>
                         </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={categoryDialogOpen} onOpenChange={setCategoryDialogOpen}>
+                <DialogContent>
+                    <DialogHeader><DialogTitle>Gérer les catégories</DialogTitle></DialogHeader>
+                    <div className="space-y-4">
+                        <div className="space-y-2 max-h-[200px] overflow-y-auto pr-2">
+                            {categories.map((c: any) => (
+                                <div key={c.id} className="flex items-center justify-between p-2 border rounded-lg">
+                                    <span className="font-medium text-sm">{c.name}</span>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="pt-4 border-t space-y-3">
+                            <h4 className="text-sm font-bold">Ajouter une catégorie</h4>
+                            <div>
+                                <Label>Nom</Label>
+                                <Input value={newCategory.name} onChange={e => setNewCategory(p => ({ ...p, name: e.target.value }))} />
+                            </div>
+                            <Button onClick={() => createCategory.mutate()} disabled={!newCategory.name || createCategory.isPending} className="w-full">
+                                Ajouter la catégorie
+                            </Button>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={!!historyStock} onOpenChange={open => !open && setHistoryStock(null)}>
+                <DialogContent className="max-w-2xl">
+                    <DialogHeader>
+                        <DialogTitle>Historique — {historyStock?.name}</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Date</TableHead>
+                                    <TableHead>Type</TableHead>
+                                    <TableHead>Quantité</TableHead>
+                                    <TableHead>Raison</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {movements.length === 0 ? (
+                                    <TableRow><TableCell colSpan={4} className="text-center py-4 text-muted-foreground">Aucun mouvement</TableCell></TableRow>
+                                ) : movements.map((m: any) => (
+                                    <TableRow key={m.id}>
+                                        <TableCell className="text-xs">
+                                            {format(new Date(m.created_at), "dd/MM/yyyy HH:mm", { locale: fr })}
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge variant="outline" className={m.type === 'in' ? 'bg-emerald-50 text-emerald-700' : m.type === 'out' ? 'bg-red-50 text-red-700' : 'bg-blue-50 text-blue-700'}>
+                                                {m.type === 'in' ? 'Entrée' : m.type === 'out' ? 'Sortie' : 'Ajustement'}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell className="font-bold">
+                                            {m.quantity > 0 ? `+${m.quantity}` : m.quantity}
+                                        </TableCell>
+                                        <TableCell className="text-sm text-muted-foreground italic">
+                                            {m.reason || "—"}
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
                     </div>
                 </DialogContent>
             </Dialog>
