@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -402,6 +402,9 @@ const JobsitesPage = () => {
                         <DialogTitle>
                             {editing ? "Modifier le chantier" : "Nouveau chantier"}
                         </DialogTitle>
+                        <DialogDescription>
+                            Saisissez les informations relatives au lieu d'intervention et au client.
+                        </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4">
                         {/* Row 1 */}
@@ -538,6 +541,9 @@ const JobsitesPage = () => {
                             <Construction className="h-5 w-5" />
                             {selected?.reference} — {selected?.name}
                         </DialogTitle>
+                        <DialogDescription>
+                            Consultez les détails complets, l'équipe assignée et les notes techniques du chantier.
+                        </DialogDescription>
                     </DialogHeader>
                     {selected && (
                         <div className="space-y-4">
