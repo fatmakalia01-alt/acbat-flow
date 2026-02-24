@@ -59,7 +59,9 @@ const SCENARIOS = [
 ];
 
 export default function SimulatorPage() {
-    const { mockRole, setMockRole, roles } = useAuth();
+    const { roles } = useAuth();
+    // Local preview role — for visual simulation only, does NOT affect real auth/RLS
+    const [previewRole, setPreviewRole] = useState<string | null>(null);
     const [isRunning, setIsRunning] = useState(false);
     const [logs, setLogs] = useState<{ id: string; msg: string; type: 'info' | 'success' | 'error' | 'role' }[]>([]);
     const [currentStep, setCurrentStep] = useState(0);
@@ -69,10 +71,11 @@ export default function SimulatorPage() {
         setLogs(prev => [{ id: Math.random().toString(), msg, type }, ...prev]);
     };
 
-    const handleRoleSwitch = (roleId: any) => {
-        setMockRole(roleId === mockRole ? null : roleId);
-        addLog(`Perspective changée vers : ${roleId}`, 'role');
-        toast.info(`Mode vue : ${roleId}`);
+    const handleRoleSwitch = (roleId: string) => {
+        const next = roleId === previewRole ? null : roleId;
+        setPreviewRole(next);
+        addLog(next ? `Perspective changée vers : ${roleId}` : 'Mode vue désactivé', 'role');
+        toast.info(next ? `Mode vue : ${roleId}` : 'Mode vue désactivé');
     };
 
     const runSimulation = async (scenarioId: string) => {
@@ -98,8 +101,8 @@ export default function SimulatorPage() {
                 addLog("Devis #DV-2026-SIMU généré.", 'success');
 
                 // Step 3: Switch Perspective to Manager
-                handleRoleSwitch('manager');
-                addLog("Validation du devis par le Manager...", 'info');
+                setPreviewRole('manager');
+                addLog("[PREVIEW] Vue Manager — Validation du devis...", 'role');
                 await new Promise(r => setTimeout(r, 1000));
                 addLog("Devis validé.", 'success');
 
@@ -112,7 +115,7 @@ export default function SimulatorPage() {
             addLog("Erreur durant la simulation", 'error');
         } finally {
             setIsRunning(false);
-            setMockRole(null);
+            setPreviewRole(null);
         }
     };
 
@@ -267,7 +270,7 @@ export default function SimulatorPage() {
                                             onClick={() => handleRoleSwitch(role.id)}
                                             className={cn(
                                                 "flex items-center justify-between p-3 rounded-lg border transition-all duration-200 text-left group",
-                                                mockRole === role.id
+                                                previewRole === role.id
                                                     ? "border-primary bg-primary/5 ring-1 ring-primary/20"
                                                     : "border-slate-100 hover:bg-slate-50"
                                             )}
@@ -275,35 +278,35 @@ export default function SimulatorPage() {
                                             <div className="flex items-center gap-3">
                                                 <div className={cn("w-2 h-8 rounded-full", role.color)} />
                                                 <div>
-                                                    <p className={cn("text-sm font-bold", mockRole === role.id ? "text-primary" : "text-slate-700")}>
+                                                    <p className={cn("text-sm font-bold", previewRole === role.id ? "text-primary" : "text-slate-700")}>
                                                         {role.label}
                                                     </p>
-                                                    <p className="text-[10px] text-slate-400 uppercase tracking-tighter">Accès système complet</p>
+                                                    <p className="text-[10px] text-slate-400 uppercase tracking-tighter">Aperçu visuel uniquement</p>
                                                 </div>
                                             </div>
                                             <Eye className={cn(
                                                 "w-4 h-4 transition-opacity",
-                                                mockRole === role.id ? "opacity-100 text-primary" : "opacity-0 group-hover:opacity-40"
+                                                previewRole === role.id ? "opacity-100 text-primary" : "opacity-0 group-hover:opacity-40"
                                             )} />
                                         </button>
                                     ))}
                                 </div>
 
-                                {mockRole && (
-                                    <div className="mt-6 p-4 rounded-xl bg-amber-50 border border-amber-100 flex gap-3 anim-pulse">
+                                {previewRole && (
+                                    <div className="mt-6 p-4 rounded-xl bg-amber-50 border border-amber-100 flex gap-3">
                                         <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
                                         <div>
-                                            <p className="text-xs font-bold text-amber-900">MOCK_MODE_ACTIVE</p>
+                                            <p className="text-xs font-bold text-amber-900">MODE APERÇU ACTIF</p>
                                             <p className="text-[11px] text-amber-700 leading-tight mt-1">
-                                                Toutes les permissions RLS et l'interface sont simulées pour le rôle <strong>{ROLES.find(r => r.id === mockRole)?.label}</strong>.
+                                                Aperçu visuel du rôle <strong>{ROLES.find(r => r.id === previewRole)?.label}</strong>. Les données réelles et le RLS ne sont PAS affectés.
                                             </p>
                                             <Button
                                                 variant="link"
                                                 size="sm"
                                                 className="p-0 h-auto text-amber-900 font-bold decoration-amber-900 mt-2"
-                                                onClick={() => setMockRole(null)}
+                                                onClick={() => setPreviewRole(null)}
                                             >
-                                                Désactiver le mode vue
+                                                Désactiver l'aperçu
                                             </Button>
                                         </div>
                                     </div>
