@@ -148,13 +148,19 @@ export default function CommandTracking() {
                 .select("id, reference, status, total_ht, created_at, clients!inner(id, full_name, company_name, user_id, commercial_id)");
 
             // Apply role-based filtering
-            const isManagerOrAdmin = roles.some(r => ["manager", "directeur_exploitation", "responsable_achat", "responsable_logistique", "responsable_technique", "responsable_sav", "responsable_comptabilite", "responsable_showroom"].includes(r));
+            const isManagerOrAdmin = roles.some(r => [
+                "manager", "directeur_exploitation", "responsable_achat",
+                "responsable_logistique", "responsable_technique",
+                "responsable_sav", "responsable_comptabilite",
+                "responsable_showroom", "responsable_commercial"
+            ].includes(r));
 
             if (!isManagerOrAdmin) {
                 if (roles.includes("client")) {
                     query = query.eq("clients.user_id", user.id);
-                } else if (roles.includes("commercial") || roles.includes("responsable_commercial")) {
+                } else if (roles.includes("commercial")) {
                     query = query.eq("clients.commercial_id", user.id);
+                } else if (roles.includes("technicien_montage") || roles.includes("livraison")) {
                 } else if (roles.includes("technicien_montage") || roles.includes("livraison")) {
                     // Filter orders that have an associated delivery assigned to this user
                     const { data: deliveryOrders } = await supabase
