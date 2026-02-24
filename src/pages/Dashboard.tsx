@@ -307,10 +307,10 @@ const Dashboard = React.forwardRef<HTMLDivElement, {}>(
     };
 
     return (
-      <div ref={ref} className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
+      <div ref={ref} className="p-4 md:p-6 space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-display font-bold text-foreground">
+            <h1 className="text-xl md:text-2xl font-display font-bold text-foreground">
               Bonjour, {profile?.full_name || "Manager"} 👋
             </h1>
             <p className="text-muted-foreground text-sm">Vue d'ensemble de votre activité ACBAT</p>
@@ -320,7 +320,7 @@ const Dashboard = React.forwardRef<HTMLDivElement, {}>(
               <DialogTrigger asChild>
                 <Button
                   variant={delegationActive ? "destructive" : "outline"}
-                  className="gap-2"
+                  className="gap-2 w-full sm:w-auto"
                   onClick={delegationActive ? toggleDelegation : undefined}
                 >
                   {delegationActive ? <UserX className="h-4 w-4" /> : <Shield className="h-4 w-4" />}
@@ -328,7 +328,7 @@ const Dashboard = React.forwardRef<HTMLDivElement, {}>(
                 </Button>
               </DialogTrigger>
               {!delegationActive && (
-                <DialogContent>
+                <DialogContent className="sm:max-w-[425px]">
                   <DialogHeader>
                     <DialogTitle>Activer le mode absence</DialogTitle>
                     <DialogDescription>
@@ -355,77 +355,79 @@ const Dashboard = React.forwardRef<HTMLDivElement, {}>(
         </div>
 
         {delegationActive && (
-          <div className="bg-secondary/10 border border-secondary/30 rounded-lg p-3 flex items-center gap-3">
-            <UserCheck className="h-5 w-5 text-secondary" />
+          <div className="bg-secondary/10 border border-secondary/30 rounded-lg p-3 flex items-start gap-3">
+            <UserCheck className="h-5 w-5 text-secondary shrink-0 mt-0.5" />
             <p className="text-sm font-medium">Mode absence actif — Validations déléguées au Directeur d'Exploitation</p>
           </div>
         )}
 
         {/* KPI Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           <Card className="shadow-card">
-            <CardContent className="p-5 flex items-center gap-4">
-              <div className="h-12 w-12 rounded-xl gradient-primary flex items-center justify-center">
-                <ShoppingCart className="h-6 w-6 text-primary-foreground" />
+            <CardContent className="p-4 flex items-center gap-4">
+              <div className="h-10 w-10 md:h-12 md:w-12 rounded-xl gradient-primary flex items-center justify-center shrink-0">
+                <ShoppingCart className="h-5 w-5 md:h-6 md:w-6 text-primary-foreground" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{stats.orders}</p>
-                <p className="text-xs text-muted-foreground">Commandes totales</p>
+                <p className="text-xl md:text-2xl font-bold">{stats.orders}</p>
+                <p className="text-[10px] md:text-xs text-muted-foreground uppercase tracking-wider font-semibold">Commandes totales</p>
               </div>
             </CardContent>
           </Card>
 
           <Card className="shadow-card">
-            <CardContent className="p-5 flex items-center gap-4">
-              <div className="h-12 w-12 rounded-xl bg-blue-500 flex items-center justify-center">
-                <ListTodo className="h-6 w-6 text-white" />
+            <CardContent className="p-4 flex items-center gap-4">
+              <div className="h-10 w-10 md:h-12 md:w-12 rounded-xl bg-blue-500 flex items-center justify-center shrink-0">
+                <ListTodo className="h-5 w-5 md:h-6 md:w-6 text-white" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{activeOrders.length}</p>
-                <p className="text-xs text-muted-foreground">En cours</p>
+                <p className="text-xl md:text-2xl font-bold">{activeOrders.length}</p>
+                <p className="text-[10px] md:text-xs text-muted-foreground uppercase tracking-wider font-semibold">En cours</p>
               </div>
             </CardContent>
           </Card>
 
           <Card className="shadow-card">
-            <CardContent className="p-5 flex items-center gap-4">
-              <div className="h-12 w-12 rounded-xl gradient-accent flex items-center justify-center">
-                <Users className="h-6 w-6 text-primary-foreground" />
+            <CardContent className="p-4 flex items-center gap-4">
+              <div className="h-10 w-10 md:h-12 md:w-12 rounded-xl gradient-accent flex items-center justify-center shrink-0">
+                <Users className="h-5 w-5 md:h-6 md:w-6 text-primary-foreground" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{stats.clients}</p>
-                <p className="text-xs text-muted-foreground">Clients actifs</p>
+                <p className="text-xl md:text-2xl font-bold">{stats.clients}</p>
+                <p className="text-[10px] md:text-xs text-muted-foreground uppercase tracking-wider font-semibold">Clients actifs</p>
               </div>
             </CardContent>
           </Card>
+
           <Card className="shadow-card">
-            <CardContent className="p-5 flex items-center gap-4">
-              <div className="h-12 w-12 rounded-xl bg-success flex items-center justify-center">
-                <TrendingUp className="h-6 w-6 text-primary-foreground" />
+            <CardContent className="p-4 flex items-center gap-4">
+              <div className="h-10 w-10 md:h-12 md:w-12 rounded-xl bg-success flex items-center justify-center shrink-0">
+                <TrendingUp className="h-5 w-5 md:h-6 md:w-6 text-primary-foreground" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{formatCA(Number(currentMonthCA))}</p>
-                <p className="text-xs text-muted-foreground">CA ce mois (TND)</p>
+                <p className="text-xl md:text-2xl font-bold">{formatCA(Number(currentMonthCA))}</p>
+                <p className="text-[10px] md:text-xs text-muted-foreground uppercase tracking-wider font-semibold">CA ce mois (TND)</p>
               </div>
             </CardContent>
           </Card>
+
           <Card className="shadow-card">
-            <CardContent className="p-5 flex items-center gap-4">
-              <div className="h-12 w-12 rounded-xl bg-destructive flex items-center justify-center">
-                <AlertTriangle className="h-6 w-6 text-primary-foreground" />
+            <CardContent className="p-4 flex items-center gap-4">
+              <div className="h-10 w-10 md:h-12 md:w-12 rounded-xl bg-destructive flex items-center justify-center shrink-0">
+                <AlertTriangle className="h-5 w-5 md:h-6 md:w-6 text-primary-foreground" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{stats.delayed}</p>
-                <p className="text-xs text-muted-foreground">Retards</p>
+                <p className="text-xl md:text-2xl font-bold">{stats.delayed}</p>
+                <p className="text-[10px] md:text-xs text-muted-foreground uppercase tracking-wider font-semibold">Retards</p>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* ── Workflow Overview (Moved up between KPIs and Charts) ── */}
-        <Card className="shadow-card border-l-4 border-l-blue-500">
-          <CardHeader className="pb-3 px-6 pt-6">
-            <div className="flex items-center justify-between">
+        {/* ── Workflow Overview ── */}
+        <Card className="shadow-card border-l-4 border-l-blue-500 overflow-hidden">
+          <CardHeader className="pb-3 px-4 md:px-6 pt-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <CardTitle className="text-base font-display flex items-center gap-2">
                   <ListTodo className="w-5 h-5 text-blue-500" />
@@ -435,47 +437,45 @@ const Dashboard = React.forwardRef<HTMLDivElement, {}>(
                   Visualisation rapide des {activeOrders.length} commande(s) active(s)
                 </p>
               </div>
-              <div className="flex items-center gap-2">
-                <Dialog open={showAllOrders} onOpenChange={setShowAllOrders}>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" size="sm" className="gap-2">
+              <Dialog open={showAllOrders} onOpenChange={setShowAllOrders}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-2 w-full sm:w-auto">
+                    <Eye className="h-4 w-4" />
+                    Aperçu complet
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-4xl w-[95vw] max-h-[90vh] overflow-y-auto rounded-xl p-0">
+                  <DialogHeader className="p-6 pb-2">
+                    <DialogTitle>Toutes les commandes en cours ({activeOrders.length})</DialogTitle>
+                    <DialogDescription>
+                      Workflow en 9 étapes pour chaque commande active
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-3 p-6 mt-0">
+                    {activeOrders.length === 0 ? (
+                      <p className="text-sm text-muted-foreground text-center py-8">
+                        Aucune commande active pour l'instant
+                      </p>
+                    ) : (
+                      activeOrders.map((order: any) => (
+                        <WorkflowRow key={order.id} order={order} />
+                      ))
+                    )}
+                  </div>
+                  <div className="p-6 pt-0 flex justify-end">
+                    <Button
+                      onClick={() => { setShowAllOrders(false); navigate("/tracking"); }}
+                      className="gap-2 w-full sm:w-auto"
+                    >
                       <Eye className="h-4 w-4" />
-                      Aperçu complet
+                      Ouvrir Suivi Commandes
                     </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-                    <DialogHeader>
-                      <DialogTitle>Toutes les commandes en cours ({activeOrders.length})</DialogTitle>
-                      <DialogDescription>
-                        Workflow en 9 étapes pour chaque commande active
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-3 mt-2">
-                      {activeOrders.length === 0 ? (
-                        <p className="text-sm text-muted-foreground text-center py-8">
-                          Aucune commande active pour l'instant
-                        </p>
-                      ) : (
-                        activeOrders.map((order: any) => (
-                          <WorkflowRow key={order.id} order={order} />
-                        ))
-                      )}
-                    </div>
-                    <div className="flex justify-end mt-4">
-                      <Button
-                        onClick={() => { setShowAllOrders(false); navigate("/tracking"); }}
-                        className="gap-2"
-                      >
-                        <Eye className="h-4 w-4" />
-                        Ouvrir Suivi Commandes
-                      </Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
             </div>
           </CardHeader>
-          <CardContent className="px-6 pb-6 pt-2">
+          <CardContent className="px-4 md:px-6 pb-6 pt-2">
             {ordersLoading ? (
               <div className="space-y-3">
                 {[1, 2, 3].map(i => <Skeleton key={i} className="h-20 w-full" />)}
@@ -507,21 +507,23 @@ const Dashboard = React.forwardRef<HTMLDivElement, {}>(
             <CardHeader className="pb-2">
               <CardTitle className="text-base font-display">Évolution CA (12 mois)</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-4">
               {caLoading ? (
-                <Skeleton className="h-[280px] w-full" />
+                <Skeleton className="h-[220px] md:h-[280px] w-full" />
               ) : (
-                <ResponsiveContainer width="100%" height={280}>
-                  <LineChart data={caEvolution}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis dataKey="mois" tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" />
-                    <YAxis tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))"
-                      tickFormatter={v => `${v / 1000}K`} />
-                    <Tooltip formatter={(v: number) => [`${v.toLocaleString()} TND`, "CA"]} />
-                    <Line type="monotone" dataKey="ca" stroke="hsl(28, 100%, 48%)" strokeWidth={3}
-                      dot={{ r: 4, fill: "hsl(28, 100%, 48%)" }} />
-                  </LineChart>
-                </ResponsiveContainer>
+                <div className="h-[220px] md:h-[280px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={caEvolution}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="mois" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
+                      <YAxis tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))"
+                        tickFormatter={v => `${v / 1000}K`} width={35} />
+                      <Tooltip formatter={(v: number) => [`${v.toLocaleString()} TND`, "CA"]} />
+                      <Line type="monotone" dataKey="ca" stroke="hsl(28, 100%, 48%)" strokeWidth={2}
+                        dot={{ r: 3, fill: "hsl(28, 100%, 48%)" }} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
               )}
             </CardContent>
           </Card>
@@ -531,17 +533,19 @@ const Dashboard = React.forwardRef<HTMLDivElement, {}>(
             <CardHeader className="pb-2">
               <CardTitle className="text-base font-display">Répartition par statut</CardTitle>
             </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={280}>
-                <PieChart>
-                  <Pie data={statusData} cx="50%" cy="50%" innerRadius={60} outerRadius={100}
-                    dataKey="value" label={({ name, value }) => `${name}: ${value}`}>
-                    {statusData.map((entry: any, i: number) => <Cell key={i} fill={entry.color} />)}
-                  </Pie>
-                  <Tooltip />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
+            <CardContent className="pt-4">
+              <div className="h-[300px] md:h-[280px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={statusData} cx="50%" cy="50%" innerRadius={50} outerRadius={80}
+                      dataKey="value" label={({ name }) => name}>
+                      {statusData.map((entry: any, i: number) => <Cell key={i} fill={entry.color} />)}
+                    </Pie>
+                    <Tooltip />
+                    <Legend wrapperStyle={{ fontSize: 10 }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
             </CardContent>
           </Card>
 
@@ -550,21 +554,23 @@ const Dashboard = React.forwardRef<HTMLDivElement, {}>(
             <CardHeader className="pb-2">
               <CardTitle className="text-base font-display">Top 5 Commerciaux</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-4">
               {topLoading ? (
-                <Skeleton className="h-[280px] w-full" />
+                <Skeleton className="h-[220px] md:h-[280px] w-full" />
               ) : (
-                <ResponsiveContainer width="100%" height={280}>
-                  <BarChart data={topCommerciaux} layout="vertical">
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis type="number" tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))"
-                      tickFormatter={v => `${v / 1000}K`} />
-                    <YAxis type="category" dataKey="nom" tick={{ fontSize: 12 }}
-                      stroke="hsl(var(--muted-foreground))" width={80} />
-                    <Tooltip formatter={(v: number) => [`${v.toLocaleString()} TND`, "CA"]} />
-                    <Bar dataKey="ca" fill="hsl(205, 50%, 21%)" radius={[0, 6, 6, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
+                <div className="h-[220px] md:h-[280px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={topCommerciaux} layout="vertical">
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis type="number" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))"
+                        tickFormatter={v => `${v / 1000}K`} />
+                      <YAxis type="category" dataKey="nom" tick={{ fontSize: 10 }}
+                        stroke="hsl(var(--muted-foreground))" width={70} />
+                      <Tooltip formatter={(v: number) => [`${v.toLocaleString()} TND`, "CA"]} />
+                      <Bar dataKey="ca" fill="hsl(205, 50%, 21%)" radius={[0, 4, 4, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
               )}
             </CardContent>
           </Card>
@@ -574,29 +580,28 @@ const Dashboard = React.forwardRef<HTMLDivElement, {}>(
             <CardHeader className="pb-2">
               <CardTitle className="text-base font-display">Taux de résolution SAV</CardTitle>
             </CardHeader>
-            <CardContent className="flex items-center justify-center">
+            <CardContent className="flex items-center justify-center p-6 pt-8">
               <div className="text-center space-y-4">
                 <div className="relative inline-flex items-center justify-center">
-                  <svg className="w-36 h-36">
-                    <circle cx="72" cy="72" r="60" fill="none" stroke="hsl(var(--border))" strokeWidth="12" />
+                  <svg className="w-32 h-32 md:w-36 md:h-36">
+                    <circle cx="64" cy="64" r="54" className="md:cx-72 md:cy-72 md:r-60" fill="none" stroke="hsl(var(--border))" strokeWidth="10" />
                     {satisfactionRate !== null && (
-                      <circle cx="72" cy="72" r="60" fill="none" stroke="hsl(122, 39%, 49%)" strokeWidth="12"
-                        strokeDasharray={`${satisfactionDash} ${CIRC}`} strokeLinecap="round"
-                        transform="rotate(-90 72 72)" />
+                      <circle cx="64" cy="64" r="54" className="md:cx-72 md:cy-72 md:r-60" fill="none" stroke="hsl(122, 39%, 49%)" strokeWidth="10"
+                        strokeDasharray={`${(satisfactionRate / 100) * 339} 339`} strokeLinecap="round"
+                        transform="rotate(-90 64 64)" />
                     )}
                   </svg>
-                  <span className="absolute text-3xl font-bold">
+                  <span className="absolute text-2xl md:text-3xl font-bold">
                     {satisfactionRate !== null ? `${satisfactionRate}%` : "N/A"}
                   </span>
                 </div>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-xs md:text-sm text-muted-foreground">
                   {savStats ? `${savStats.total} ticket(s) SAV traité(s)` : "Aucun ticket SAV encore"}
                 </p>
               </div>
             </CardContent>
           </Card>
         </div>
-
       </div>
     );
   }
