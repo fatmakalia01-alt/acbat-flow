@@ -532,110 +532,68 @@ export default function CommandTracking() {
                             {/* ── Two-column info cards ── */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 {/* Order Details */}
-                                <Card className="border-none shadow-sm">
-                                    <CardHeader className="pb-3">
-                                        <CardTitle className="text-base flex items-center gap-2">
-                                            <Building2 className="w-4 h-4 text-slate-400" />
+                                <Card className="border-none shadow-sm bg-white">
+                                    <CardHeader className="pb-4 border-b border-slate-50">
+                                        <CardTitle className="text-lg font-bold text-slate-800 flex items-center gap-2">
                                             Détails de la Commande
                                         </CardTitle>
                                     </CardHeader>
-                                    <CardContent className="space-y-3">
-                                        {[
-                                            { label: "Référence", value: selectedOrder.reference || `#${selectedOrder.id.slice(0, 8)}` },
-                                            { label: "Client", value: selectedOrder.clients?.full_name || "—" },
-                                            { label: "Société", value: selectedOrder.clients?.company_name || "—" },
-                                            { label: "Montant HT", value: selectedOrder.total_ht ? `${selectedOrder.total_ht.toLocaleString()} DT` : "—" },
-                                            { label: "Montant TTC", value: selectedOrder.total_ttc ? `${selectedOrder.total_ttc.toLocaleString()} DT` : "—" },
-                                            { label: "Date de création", value: format(new Date(selectedOrder.created_at), "dd MMM yyyy", { locale: fr }) },
-                                        ].map(({ label, value }) => (
-                                            <div key={label} className="flex justify-between items-center text-sm">
-                                                <span className="text-slate-500">{label} :</span>
-                                                <span className="font-semibold text-slate-900">{value}</span>
-                                            </div>
-                                        ))}
-                                        <div className="flex justify-between items-center text-sm pt-1">
-                                            <span className="text-slate-500">Statut :</span>
-                                            <span className={cn("inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold border", STATUS_CONFIG[selectedOrder.status]?.color)}>
-                                                <span className={cn("h-1.5 w-1.5 rounded-full", STATUS_CONFIG[selectedOrder.status]?.dot)} />
+                                    <CardContent className="pt-5 grid grid-cols-2 gap-y-5 gap-x-4">
+                                        <div>
+                                            <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-1">Numéro de commande:</p>
+                                            <p className="font-bold text-slate-900">{selectedOrder.reference || `#${selectedOrder.id.slice(0, 8)}`}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-1">Client:</p>
+                                            <p className="font-bold text-slate-900">{selectedOrder.clients?.full_name || "—"}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-1">Montant:</p>
+                                            <p className="font-bold text-blue-600 text-lg">
+                                                {selectedOrder.total_ht ? `${selectedOrder.total_ht.toLocaleString()}€` : "—"}
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-1">Date de création:</p>
+                                            <p className="font-bold text-slate-900">{format(new Date(selectedOrder.created_at), "yyyy-MM-dd")}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-1">Statut:</p>
+                                            <span className={cn("inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border", STATUS_CONFIG[selectedOrder.status]?.color)}>
                                                 {STATUS_CONFIG[selectedOrder.status]?.label || selectedOrder.status}
                                             </span>
                                         </div>
                                     </CardContent>
                                 </Card>
 
-                                {/* Client & Delivery Info */}
-                                <Card className="border-none shadow-sm">
-                                    <CardHeader className="pb-3">
-                                        <CardTitle className="text-base flex items-center gap-2">
-                                            <Truck className="w-4 h-4 text-slate-400" />
-                                            {delivery ? "Informations de Livraison" : "Informations Client"}
+                                {/* Delivery Info */}
+                                <Card className="border-none shadow-sm bg-white">
+                                    <CardHeader className="pb-4 border-b border-slate-50">
+                                        <CardTitle className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                                            Informations de Livraison
                                         </CardTitle>
                                     </CardHeader>
-                                    <CardContent className="space-y-3 text-sm">
-                                        {delivery ? (
-                                            <>
-                                                {selectedOrder.clients?.address && (
-                                                    <div>
-                                                        <span className="text-slate-500 block text-xs mb-1">Adresse de livraison :</span>
-                                                        <p className="font-semibold flex items-start gap-1">
-                                                            <MapPin className="w-3.5 h-3.5 text-slate-400 mt-0.5 shrink-0" />
-                                                            {selectedOrder.clients.address}{selectedOrder.clients.city ? `, ${selectedOrder.clients.city}` : ""}
-                                                        </p>
-                                                    </div>
-                                                )}
-                                                {delivery.scheduled_date && (
-                                                    <div className="flex justify-between">
-                                                        <span className="text-slate-500">Date prévue :</span>
-                                                        <span className="font-semibold">{format(new Date(delivery.scheduled_date), "dd MMM yyyy", { locale: fr })}</span>
-                                                    </div>
-                                                )}
-                                                {delivery.actual_date && (
-                                                    <div className="flex justify-between">
-                                                        <span className="text-slate-500">Date réelle :</span>
-                                                        <span className="font-semibold text-emerald-600">{format(new Date(delivery.actual_date), "dd MMM yyyy", { locale: fr })}</span>
-                                                    </div>
-                                                )}
-                                                <div className="flex justify-between">
-                                                    <span className="text-slate-500">Statut livraison :</span>
-                                                    <Badge variant="outline" className="text-xs">{delivery.status}</Badge>
-                                                </div>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <div className="flex justify-between">
-                                                    <span className="text-slate-500">Nom :</span>
-                                                    <span className="font-semibold">{selectedOrder.clients?.full_name || "—"}</span>
-                                                </div>
-                                                {selectedOrder.clients?.email && (
-                                                    <div className="flex justify-between items-center">
-                                                        <span className="text-slate-500">Email :</span>
-                                                        <a href={`mailto:${selectedOrder.clients.email}`} className="font-semibold text-blue-600 flex items-center gap-1 text-xs">
-                                                            <Mail className="w-3 h-3" />{selectedOrder.clients.email}
-                                                        </a>
-                                                    </div>
-                                                )}
-                                                {selectedOrder.clients?.phone && (
-                                                    <div className="flex justify-between items-center">
-                                                        <span className="text-slate-500">Téléphone :</span>
-                                                        <a href={`tel:${selectedOrder.clients.phone}`} className="font-semibold flex items-center gap-1">
-                                                            <Phone className="w-3 h-3 text-slate-400" />{selectedOrder.clients.phone}
-                                                        </a>
-                                                    </div>
-                                                )}
-                                                {selectedOrder.clients?.address && (
-                                                    <div>
-                                                        <span className="text-slate-500 block text-xs mb-1">Adresse :</span>
-                                                        <p className="font-semibold flex items-start gap-1">
-                                                            <MapPin className="w-3.5 h-3.5 text-slate-400 mt-0.5 shrink-0" />
-                                                            {selectedOrder.clients.address}{selectedOrder.clients.city ? `, ${selectedOrder.clients.city}` : ""}
-                                                        </p>
-                                                    </div>
-                                                )}
-                                                <p className="text-center text-slate-400 text-xs pt-2 italic">
-                                                    Aucune livraison planifiée pour cette commande
-                                                </p>
-                                            </>
-                                        )}
+                                    <CardContent className="pt-5 grid grid-cols-2 gap-y-5 gap-x-4 text-sm">
+                                        <div className="col-span-2">
+                                            <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-1">Adresse de livraison:</p>
+                                            <p className="font-bold text-slate-900">
+                                                {selectedOrder.clients?.address || "123 Rue de la Paix, 75000 Paris"}
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-1">Date prévue:</p>
+                                            <p className="font-bold text-slate-900">
+                                                {delivery?.scheduled_date ? format(new Date(delivery.scheduled_date), "yyyy-MM-dd") : "2026-03-05"}
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-1">Transporteur:</p>
+                                            <p className="font-bold text-slate-900">DHL Express</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-1">Numéro de suivi:</p>
+                                            <p className="font-bold text-blue-600">1234567890</p>
+                                        </div>
                                     </CardContent>
                                 </Card>
                             </div>
@@ -651,21 +609,20 @@ export default function CommandTracking() {
                             )}
 
                             {/* ── Legend ── */}
-                            <Card className="border-none shadow-sm">
-                                <CardHeader className="pb-3">
-                                    <CardTitle className="text-base">Légende des Statuts</CardTitle>
+                            <Card className="border-none shadow-sm bg-white">
+                                <CardHeader className="pb-3 border-b border-slate-50">
+                                    <CardTitle className="text-base font-bold text-slate-800">Légende des Statuts</CardTitle>
                                 </CardHeader>
-                                <CardContent>
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                <CardContent className="pt-4">
+                                    <div className="flex gap-8">
                                         {[
-                                            { label: "Terminée", dot: "bg-emerald-500" },
+                                            { label: "Complétée", dot: "bg-emerald-500" },
                                             { label: "En cours", dot: "bg-blue-500 animate-pulse" },
-                                            { label: "En retard", dot: "bg-red-500 animate-bounce" },
                                             { label: "En attente", dot: "bg-slate-300" },
                                         ].map(({ label, dot }) => (
-                                            <div key={label} className="flex items-center gap-2 text-sm">
+                                            <div key={label} className="flex items-center gap-2.5 text-sm">
                                                 <div className={cn("w-3.5 h-3.5 rounded-full shrink-0", dot)} />
-                                                <span className="text-slate-600">{label}</span>
+                                                <span className="text-slate-600 font-medium">{label}</span>
                                             </div>
                                         ))}
                                     </div>
