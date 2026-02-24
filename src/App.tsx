@@ -82,7 +82,7 @@ function App() {
                 <Route path="stock-movements" element={<ProtectedRoute roles={["manager", "responsable_logistique", "directeur_exploitation"]}><StockMovements /></ProtectedRoute>} />
                 <Route path="delivery" element={<ProtectedRoute roles={["manager", "responsable_logistique", "livraison"]}><DeliveryPage /></ProtectedRoute>} />
                 <Route path="users" element={<ProtectedRoute roles={["manager"]}><UsersManagement /></ProtectedRoute>} />
-                <Route path="tracking" element={<ProtectedRoute roles={["manager", "directeur_exploitation", "responsable_commercial", "commercial", "responsable_achat", "responsable_logistique", "responsable_technique", "technicien_montage", "responsable_sav", "responsable_comptabilite"]}><CommandTracking /></ProtectedRoute>} />
+                <Route path="tracking" element={<ProtectedRoute roles={["manager", "directeur_exploitation", "responsable_commercial", "commercial", "responsable_achat", "responsable_logistique", "responsable_technique", "technicien_montage", "responsable_sav", "responsable_comptabilite", "livraison", "client"]}><CommandTracking /></ProtectedRoute>} />
                 <Route path="simulator" element={<ProtectedRoute roles={["manager", "directeur_exploitation"]}><SimulatorPage /></ProtectedRoute>} />
                 <Route path="my-orders" element={<ProtectedRoute roles={["client"]}><ClientPortal /></ProtectedRoute>} />
                 <Route path="*" element={<NotFound />} />
