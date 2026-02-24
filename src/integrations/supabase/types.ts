@@ -607,6 +607,7 @@ export type Database = {
           id: string
           notes: string | null
           order_id: string
+          responsible_role: Database["public"]["Enums"]["app_role"] | null
           started_at: string | null
           status: Database["public"]["Enums"]["workflow_step_status"]
           step_name: Database["public"]["Enums"]["workflow_step_name"]
@@ -625,6 +626,7 @@ export type Database = {
           id?: string
           notes?: string | null
           order_id: string
+          responsible_role?: Database["public"]["Enums"]["app_role"] | null
           started_at?: string | null
           status?: Database["public"]["Enums"]["workflow_step_status"]
           step_name: Database["public"]["Enums"]["workflow_step_name"]
@@ -643,6 +645,7 @@ export type Database = {
           id?: string
           notes?: string | null
           order_id?: string
+          responsible_role?: Database["public"]["Enums"]["app_role"] | null
           started_at?: string | null
           status?: Database["public"]["Enums"]["workflow_step_status"]
           step_name?: Database["public"]["Enums"]["workflow_step_name"]
@@ -1423,11 +1426,48 @@ export type Database = {
         }
         Relationships: []
       }
+      workflow_justifications: {
+        Row: {
+          blamed_role: Database["public"]["Enums"]["app_role"] | null
+          content: string
+          created_at: string
+          id: string
+          justified_by: string
+          step_id: string
+        }
+        Insert: {
+          blamed_role?: Database["public"]["Enums"]["app_role"] | null
+          content: string
+          created_at?: string
+          id?: string
+          justified_by: string
+          step_id: string
+        }
+        Update: {
+          blamed_role?: Database["public"]["Enums"]["app_role"] | null
+          content?: string
+          created_at?: string
+          id?: string
+          justified_by?: string
+          step_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workflow_justifications_step_id_fkey"
+            columns: ["step_id"]
+            isOneToOne: false
+            referencedRelation: "order_workflow_steps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      check_workflow_deadlines: { Args: never; Returns: undefined }
+      current_user_has_role: { Args: { _role: string }; Returns: boolean }
       get_ca_evolution_12months: {
         Args: never
         Returns: {
@@ -1436,6 +1476,7 @@ export type Database = {
         }[]
       }
       get_current_month_ca: { Args: never; Returns: number }
+      get_my_role: { Args: never; Returns: string[] }
       get_orders_status_distribution: {
         Args: never
         Returns: {
@@ -1459,6 +1500,18 @@ export type Database = {
       }
       is_internal_staff: { Args: { _user_id: string }; Returns: boolean }
       is_manager: { Args: { _user_id: string }; Returns: boolean }
+      is_manager_absent: { Args: never; Returns: boolean }
+      is_staff: { Args: { _user_id: string }; Returns: boolean }
+      notify_management: {
+        Args: {
+          p_alert_level?: Database["public"]["Enums"]["alert_level"]
+          p_message: string
+          p_order_id: string
+          p_title: string
+          p_type?: Database["public"]["Enums"]["notification_type"]
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       alert_level: "jaune" | "rouge" | "bleue" | "rouge_clignotant"
