@@ -328,7 +328,12 @@ const ProductsPage = () => {
 
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
                 <DialogContent>
-                    <DialogHeader><DialogTitle>{editing ? "Modifier" : "Nouveau produit"}</DialogTitle></DialogHeader>
+                    <DialogHeader>
+                        <DialogTitle>{editing ? "Modifier" : "Nouveau produit"}</DialogTitle>
+                        <DialogDescription>
+                            Remplissez les informations ci-dessous pour {editing ? "mettre à jour" : "ajouter"} un produit dans votre catalogue.
+                        </DialogDescription>
+                    </DialogHeader>
                     <div className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
                             <div className="col-span-2">
@@ -396,6 +401,9 @@ const ProductsPage = () => {
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>Mouvement de stock — {movingStock?.name}</DialogTitle>
+                        <DialogDescription>
+                            Enregistrez une entrée, une sortie ou un ajustement de stock pour ce produit.
+                        </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
@@ -432,7 +440,12 @@ const ProductsPage = () => {
 
             <Dialog open={brandDialogOpen} onOpenChange={setBrandDialogOpen}>
                 <DialogContent>
-                    <DialogHeader><DialogTitle>Gérer les marques</DialogTitle></DialogHeader>
+                    <DialogHeader>
+                        <DialogTitle>Gérer les marques</DialogTitle>
+                        <DialogDescription>
+                            Consultez la liste des marques existantes ou ajoutez-en une nouvelle.
+                        </DialogDescription>
+                    </DialogHeader>
                     <div className="space-y-4">
                         <div className="space-y-2">
                             {brands.map((b: any) => (
@@ -462,7 +475,12 @@ const ProductsPage = () => {
 
             <Dialog open={categoryDialogOpen} onOpenChange={setCategoryDialogOpen}>
                 <DialogContent>
-                    <DialogHeader><DialogTitle>Gérer les catégories</DialogTitle></DialogHeader>
+                    <DialogHeader>
+                        <DialogTitle>Gérer les catégories</DialogTitle>
+                        <DialogDescription>
+                            Organisez vos produits en définissant des catégories personnalisées.
+                        </DialogDescription>
+                    </DialogHeader>
                     <div className="space-y-4">
                         <div className="space-y-2 max-h-[200px] overflow-y-auto pr-2">
                             {categories.map((c: any) => (
@@ -489,6 +507,9 @@ const ProductsPage = () => {
                 <DialogContent className="max-w-2xl">
                     <DialogHeader>
                         <DialogTitle>Historique — {historyStock?.name}</DialogTitle>
+                        <DialogDescription>
+                            Liste complète des mouvements de stock effectués sur ce produit.
+                        </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4">
                         <Table>
