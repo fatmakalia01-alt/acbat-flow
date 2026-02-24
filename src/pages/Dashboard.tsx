@@ -579,7 +579,6 @@ const Dashboard = React.forwardRef<HTMLDivElement, {}>(
           </CardContent>
         </Card>
       </div>
-    </div>
     );
   }
 );
