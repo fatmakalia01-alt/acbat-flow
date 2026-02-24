@@ -37,7 +37,6 @@ const HomeRedirect = () => {
   const { roles, loading } = useAuth();
   if (loading) return null;
 
-  // Définir la page d'atterrissage prioritaire selon le premier rôle trouvé
   const getLandingPage = (userRoles: string[]) => {
     if (userRoles.includes("manager") || userRoles.includes("directeur_exploitation") || userRoles.includes("responsable_showroom")) return "/dashboard";
     if (userRoles.includes("client")) return "/my-orders";
@@ -47,89 +46,53 @@ const HomeRedirect = () => {
     if (userRoles.includes("responsable_achat")) return "/products";
     if (userRoles.includes("responsable_sav")) return "/sav";
     if (userRoles.includes("responsable_comptabilite")) return "/accounting";
-
-    // Par défaut, essayer le dashboard (ProtectedRoute gérera l'accès refusé si nécessaire)
     return "/dashboard";
   };
 
-  const to = getLandingPage(roles);
-  console.log("HomeRedirect: Redirecting user with roles", roles, "to", to);
-
-  return React.createElement("div", { key: "home-redirect-wrapper" }, React.createElement(Navigate, { to, replace: true }));
+  return <Navigate to={getLandingPage(roles)} replace />;
 };
 
-console.log("APP VERSION: FIXED_REF_v10_REMAP_OUTLET");
-
 function App() {
-  // We use React.createElement to evade automatic JSX ref injection by the lovable-tagger
-  return React.createElement(
-    QueryClientProvider,
-    {
-      client: queryClient, children: React.createElement(
-        TooltipProvider,
-        {
-          children: React.createElement(
-            React.Fragment,
-            null,
-            [
-              React.createElement(Toaster, { key: "toaster" }),
-              React.createElement(Sonner, { key: "sonner" }),
-              React.createElement(
-                BrowserRouter,
-                {
-                  key: "router",
-                  future: { v7_startTransition: true, v7_relativeSplatPath: true },
-                  children: React.createElement(
-                    AuthProvider,
-                    {
-                      children: React.createElement(
-                        Routes,
-                        {
-                          children: [
-                            React.createElement(Route, { key: "login", path: "/login", element: React.createElement(Login, null) }),
-                            React.createElement(
-                              Route,
-                              { key: "root", path: "/", element: React.createElement(AppLayout, null) },
-                              [
-                                React.createElement(Route, { key: "home", index: true, element: React.createElement(HomeRedirect, null) }),
-                                React.createElement(Route, { key: "dashboard", path: "dashboard", element: React.createElement(ProtectedRoute, { roles: ["manager", "directeur_exploitation", "responsable_showroom"], children: React.createElement(Dashboard, null) }) }),
-                                React.createElement(Route, { key: "orders", path: "orders", element: React.createElement(ProtectedRoute, { roles: ["manager", "directeur_exploitation", "responsable_commercial", "commercial", "responsable_showroom"], children: React.createElement(OrdersManagement, null) }) }),
-                                React.createElement(Route, { key: "clients", path: "clients", element: React.createElement(ProtectedRoute, { roles: ["manager", "directeur_exploitation", "responsable_commercial", "commercial", "responsable_showroom"], children: React.createElement(ClientsManagement, null) }) }),
-                                React.createElement(Route, { key: "quotes", path: "quotes", element: React.createElement(ProtectedRoute, { roles: ["manager", "responsable_commercial", "commercial", "responsable_showroom"], children: React.createElement(QuotesManagement, null) }) }),
-                                React.createElement(Route, { key: "accounting", path: "accounting", element: React.createElement(ProtectedRoute, { roles: ["manager", "directeur_exploitation", "responsable_comptabilite"], children: React.createElement(AccountingPage, null) }) }),
-                                React.createElement(Route, { key: "products", path: "products", element: React.createElement(ProtectedRoute, { roles: ["manager", "responsable_achat", "responsable_logistique"], children: React.createElement(ProductsPage, null) }) }),
-                                React.createElement(Route, { key: "purchase-orders", path: "purchase-orders", element: React.createElement(ProtectedRoute, { roles: ["manager", "responsable_achat", "directeur_exploitation"], children: React.createElement(PurchaseOrdersPage, null) }) }),
-                                React.createElement(Route, { key: "logistics", path: "logistics", element: React.createElement(ProtectedRoute, { roles: ["manager", "responsable_logistique", "responsable_achat"], children: React.createElement(LogisticsPage, null) }) }),
-                                React.createElement(Route, { key: "technical", path: "technical", element: React.createElement(ProtectedRoute, { roles: ["manager", "responsable_technique", "technicien_montage"], children: React.createElement(TechnicalPage, null) }) }),
-                                React.createElement(Route, { key: "chantiers", path: "chantiers", element: React.createElement(ProtectedRoute, { roles: ["manager", "responsable_technique", "directeur_exploitation"], children: React.createElement(JobsitesPage, null) }) }),
-                                React.createElement(Route, { key: "sav", path: "sav", element: React.createElement(ProtectedRoute, { roles: ["manager", "responsable_sav"], children: React.createElement(SavPage, null) }) }),
-                                React.createElement(Route, { key: "notifications", path: "notifications", element: React.createElement(ProtectedRoute, { children: React.createElement(NotificationsPage, null) }) }),
-                                React.createElement(Route, { key: "analytics", path: "analytics", element: React.createElement(ProtectedRoute, { roles: ["manager", "directeur_exploitation"], children: React.createElement(AnalyticsPage, null) }) }),
-                                React.createElement(Route, { key: "delegations", path: "delegations", element: React.createElement(ProtectedRoute, { roles: ["manager", "directeur_exploitation"], children: React.createElement(DelegationPage, null) }) }),
-                                React.createElement(Route, { key: "suppliers", path: "suppliers", element: React.createElement(ProtectedRoute, { roles: ["manager", "responsable_achat", "directeur_exploitation"], children: React.createElement(SuppliersPage, null) }) }),
-                                React.createElement(Route, { key: "stock-movements", path: "stock-movements", element: React.createElement(ProtectedRoute, { roles: ["manager", "responsable_logistique", "directeur_exploitation"], children: React.createElement(StockMovements, null) }) }),
-                                React.createElement(Route, { key: "delivery", path: "delivery", element: React.createElement(ProtectedRoute, { roles: ["manager", "responsable_logistique", "livraison"], children: React.createElement(DeliveryPage, null) }) }),
-                                React.createElement(Route, { key: "users", path: "users", element: React.createElement(ProtectedRoute, { roles: ["manager"], children: React.createElement(UsersManagement, null) }) }),
-                                React.createElement(Route, { key: "tracking", path: "tracking", element: React.createElement(ProtectedRoute, { roles: ["manager", "directeur_exploitation", "responsable_commercial", "commercial", "responsable_achat", "responsable_logistique", "responsable_technique", "technicien_montage", "responsable_sav", "responsable_comptabilite"], children: React.createElement(CommandTracking, null) }) }),
-                                React.createElement(Route, { key: "simulator", path: "simulator", element: React.createElement(ProtectedRoute, { roles: ["manager", "directeur_exploitation"], children: React.createElement(SimulatorPage, null) }) }),
-                                React.createElement(Route, { key: "my-orders", path: "my-orders", element: React.createElement(ProtectedRoute, { roles: ["client"], children: React.createElement(ClientPortal, null) }) }),
-                                React.createElement(Route, { key: "notfound", path: "*", element: React.createElement(NotFound, null) })
-                              ]
-                            )
-                          ]
-                        }
-                      )
-                    }
-                  )
-                }
-              )
-            ]
-          )
-        }
-      )
-    }
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+          <AuthProvider>
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route path="/" element={<AppLayout />}>
+                <Route index element={<HomeRedirect />} />
+                <Route path="dashboard" element={<ProtectedRoute roles={["manager", "directeur_exploitation", "responsable_showroom"]}><Dashboard /></ProtectedRoute>} />
+                <Route path="orders" element={<ProtectedRoute roles={["manager", "directeur_exploitation", "responsable_commercial", "commercial", "responsable_showroom"]}><OrdersManagement /></ProtectedRoute>} />
+                <Route path="clients" element={<ProtectedRoute roles={["manager", "directeur_exploitation", "responsable_commercial", "commercial", "responsable_showroom"]}><ClientsManagement /></ProtectedRoute>} />
+                <Route path="quotes" element={<ProtectedRoute roles={["manager", "responsable_commercial", "commercial", "responsable_showroom"]}><QuotesManagement /></ProtectedRoute>} />
+                <Route path="accounting" element={<ProtectedRoute roles={["manager", "directeur_exploitation", "responsable_comptabilite"]}><AccountingPage /></ProtectedRoute>} />
+                <Route path="products" element={<ProtectedRoute roles={["manager", "responsable_achat", "responsable_logistique"]}><ProductsPage /></ProtectedRoute>} />
+                <Route path="purchase-orders" element={<ProtectedRoute roles={["manager", "responsable_achat", "directeur_exploitation"]}><PurchaseOrdersPage /></ProtectedRoute>} />
+                <Route path="logistics" element={<ProtectedRoute roles={["manager", "responsable_logistique", "responsable_achat"]}><LogisticsPage /></ProtectedRoute>} />
+                <Route path="technical" element={<ProtectedRoute roles={["manager", "responsable_technique", "technicien_montage"]}><TechnicalPage /></ProtectedRoute>} />
+                <Route path="chantiers" element={<ProtectedRoute roles={["manager", "responsable_technique", "directeur_exploitation"]}><JobsitesPage /></ProtectedRoute>} />
+                <Route path="sav" element={<ProtectedRoute roles={["manager", "responsable_sav"]}><SavPage /></ProtectedRoute>} />
+                <Route path="notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
+                <Route path="analytics" element={<ProtectedRoute roles={["manager", "directeur_exploitation"]}><AnalyticsPage /></ProtectedRoute>} />
+                <Route path="delegations" element={<ProtectedRoute roles={["manager", "directeur_exploitation"]}><DelegationPage /></ProtectedRoute>} />
+                <Route path="suppliers" element={<ProtectedRoute roles={["manager", "responsable_achat", "directeur_exploitation"]}><SuppliersPage /></ProtectedRoute>} />
+                <Route path="stock-movements" element={<ProtectedRoute roles={["manager", "responsable_logistique", "directeur_exploitation"]}><StockMovements /></ProtectedRoute>} />
+                <Route path="delivery" element={<ProtectedRoute roles={["manager", "responsable_logistique", "livraison"]}><DeliveryPage /></ProtectedRoute>} />
+                <Route path="users" element={<ProtectedRoute roles={["manager"]}><UsersManagement /></ProtectedRoute>} />
+                <Route path="tracking" element={<ProtectedRoute roles={["manager", "directeur_exploitation", "responsable_commercial", "commercial", "responsable_achat", "responsable_logistique", "responsable_technique", "technicien_montage", "responsable_sav", "responsable_comptabilite"]}><CommandTracking /></ProtectedRoute>} />
+                <Route path="simulator" element={<ProtectedRoute roles={["manager", "directeur_exploitation"]}><SimulatorPage /></ProtectedRoute>} />
+                <Route path="my-orders" element={<ProtectedRoute roles={["client"]}><ClientPortal /></ProtectedRoute>} />
+                <Route path="*" element={<NotFound />} />
+              </Route>
+            </Routes>
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
   );
 }
 
 export default App;
-
