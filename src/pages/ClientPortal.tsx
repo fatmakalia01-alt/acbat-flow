@@ -291,14 +291,31 @@ const ClientPortal = () => {
                       </Button>
                     )}
 
-                    {/* Bon de livraison placeholder */}
-                    <Button variant="outline" className="justify-start gap-2 h-auto py-3" disabled>
-                      <Download className="h-4 w-4 text-muted-foreground" />
-                      <div className="text-left">
-                        <p className="text-sm font-medium text-muted-foreground">Bon de livraison</p>
-                        <p className="text-xs text-muted-foreground">Après livraison</p>
-                      </div>
-                    </Button>
+                    {/* Bon de livraison */}
+                    {selectedOrder.items && selectedOrder.items.length > 0 ? (
+                      <PDFDownloadLink
+                        document={<OrderPDF order={selectedOrder} items={selectedOrder.items} type="livraison" />}
+                        fileName={`BL_${selectedOrder.reference}.pdf`}
+                      >
+                        {({ loading }) => (
+                          <Button variant="outline" className="justify-start gap-2 h-auto py-3 w-full" disabled={loading}>
+                            <Download className="h-4 w-4 text-secondary" />
+                            <div className="text-left">
+                              <p className="text-sm font-medium">Bon de livraison</p>
+                              <p className="text-xs text-muted-foreground">{loading ? "Génération..." : "PDF"}</p>
+                            </div>
+                          </Button>
+                        )}
+                      </PDFDownloadLink>
+                    ) : (
+                      <Button variant="outline" className="justify-start gap-2 h-auto py-3" disabled>
+                        <Download className="h-4 w-4 text-muted-foreground" />
+                        <div className="text-left">
+                          <p className="text-sm font-medium text-muted-foreground">Bon de livraison</p>
+                          <p className="text-xs text-muted-foreground">Après livraison</p>
+                        </div>
+                      </Button>
+                    )}
 
                     {/* Facture PDF */}
                     {selectedOrder.items && selectedOrder.items.length > 0 && (
