@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -590,10 +590,10 @@ const PurchaseOrdersPage = () => {
                                                 <button
                                                     onClick={() => updateStatus.mutate({ id: selected.id, status: s })}
                                                     className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${isCurrent
-                                                            ? `${STATUS_COLORS[s]} ring-2 ring-primary`
-                                                            : isDone
-                                                                ? `${STATUS_COLORS[s]} opacity-80`
-                                                                : "bg-muted text-muted-foreground border-muted opacity-50"
+                                                        ? `${STATUS_COLORS[s]} ring-2 ring-primary`
+                                                        : isDone
+                                                            ? `${STATUS_COLORS[s]} opacity-80`
+                                                            : "bg-muted text-muted-foreground border-muted opacity-50"
                                                         }`}
                                                 >
                                                     {STATUS_ICONS[s]}
