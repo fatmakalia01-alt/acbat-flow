@@ -9,6 +9,7 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-    // Simple pass-through fetch handler to satisfy PWA requirements
-    event.respondWith(fetch(event.request));
+    // PWA requires a fetch handler for installability.
+    // By not calling event.respondWith(), we let the browser handle the request naturally.
+    // This avoids CORS issues that can occur when the SW simplifies the fetch context.
 });
