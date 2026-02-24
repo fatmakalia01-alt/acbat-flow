@@ -161,7 +161,6 @@ export default function CommandTracking() {
                 } else if (roles.includes("commercial")) {
                     query = query.eq("clients.commercial_id", user.id);
                 } else if (roles.includes("technicien_montage") || roles.includes("livraison")) {
-                } else if (roles.includes("technicien_montage") || roles.includes("livraison")) {
                     // Filter orders that have an associated delivery assigned to this user
                     const { data: deliveryOrders } = await supabase
                         .from("deliveries")
@@ -311,20 +310,14 @@ export default function CommandTracking() {
         <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
 
             {/* ── Header ────────────────────────────────────────────────────── */}
-            <div className="bg-white border-b border-slate-100 px-6 py-5">
-                <div className="max-w-screen-2xl mx-auto flex items-center justify-between flex-wrap gap-4">
-                    <div>
-                        <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-2">
-                            <TrendingUp className="w-7 h-7 text-blue-500" />
-                            Suivi de Commande
-                        </h1>
-                        <p className="text-slate-500 text-sm mt-1">
-                            Visualisez l'avancement de vos commandes en temps réel
-                        </p>
-                    </div>
-                    <Button variant="outline" size="sm" onClick={fetchOrders} className="gap-2">
-                        <RefreshCw className="w-4 h-4" /> Actualiser
-                    </Button>
+            <div className="bg-white border-b border-slate-100 px-6 py-8">
+                <div className="max-w-screen-xl mx-auto">
+                    <h1 className="text-4xl font-black text-slate-900 tracking-tight">
+                        Suivi des Commandes
+                    </h1>
+                    <p className="text-slate-500 text-lg mt-2 font-medium">
+                        Visualisez l'avancement de vos commandes en temps réel
+                    </p>
                 </div>
             </div>
 
@@ -427,97 +420,29 @@ export default function CommandTracking() {
                             className="space-y-6"
                         >
 
-                            {/* ── Order Header Card ── */}
-                            <Card className="border-none shadow-md overflow-hidden">
-                                <CardHeader className="bg-gradient-to-r from-slate-900 to-slate-800 text-white pb-5">
-                                    <div className="flex items-start justify-between flex-wrap gap-3">
-                                        <div>
-                                            <p className="text-slate-400 text-xs font-semibold uppercase tracking-widest mb-1">Suivi de Commande</p>
-                                            <CardTitle className="text-2xl font-black">
-                                                {selectedOrder.reference || `#${selectedOrder.id.slice(0, 8)}`}
-                                            </CardTitle>
-                                            <p className="text-slate-300 text-sm mt-1">
-                                                {selectedOrder.clients?.full_name || "Client inconnu"}
-                                                {selectedOrder.clients?.company_name && ` — ${selectedOrder.clients.company_name}`}
-                                            </p>
-                                        </div>
-                                        <div className="flex flex-col items-end gap-2">
-                                            <span className={cn("inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-bold uppercase tracking-wide", STATUS_CONFIG[selectedOrder.status]?.color || "bg-slate-100 text-slate-700")}>
-                                                <span className={cn("h-2 w-2 rounded-full", STATUS_CONFIG[selectedOrder.status]?.dot)} />
-                                                {STATUS_CONFIG[selectedOrder.status]?.label || selectedOrder.status}
-                                            </span>
-                                            {selectedOrder.total_ht != null && (
-                                                <span className="text-white font-black text-xl">
-                                                    {selectedOrder.total_ht.toLocaleString()} <span className="text-slate-300 text-sm font-normal">DT HT</span>
-                                                </span>
+                            {/* ── Main Tracking Card ── */}
+                            <Card className="border-none shadow-xl shadow-slate-200/50 overflow-hidden bg-white rounded-2xl">
+                                <CardContent className="p-8">
+                                    <div className="flex justify-start mb-6">
+                                        <div className="flex flex-wrap gap-2">
+                                            {selectedOrder.status === "brouillon" && canAdvance && (
+                                                <Button onClick={handleLaunch} size="sm" className="bg-blue-600 hover:bg-blue-700 gap-2 rounded-lg">
+                                                    <Play className="w-4 h-4" /> Lancer la commande
+                                                </Button>
                                             )}
+                                            {selectedOrder.status === "en_validation" && canValidate && (
+                                                <Button onClick={handleConfirm} size="sm" className="bg-emerald-600 hover:bg-emerald-700 gap-2 rounded-lg">
+                                                    <CheckCircle2 className="w-4 h-4" /> Confirmer & Valider
+                                                </Button>
+                                            )}
+                                            <Button variant="ghost" size="sm" onClick={() => fetchDetail(selectedOrderId!)} className="text-slate-400 hover:text-slate-600">
+                                                <RefreshCw className="w-4 h-4" />
+                                            </Button>
                                         </div>
                                     </div>
 
-                                    {/* Action buttons */}
-                                    <div className="flex flex-wrap gap-2 mt-4">
-                                        {selectedOrder.status === "brouillon" && canAdvance && (
-                                            <Button onClick={handleLaunch} size="sm" className="bg-blue-500 hover:bg-blue-600 gap-2">
-                                                <Play className="w-4 h-4" /> Lancer la commande
-                                            </Button>
-                                        )}
-                                        {selectedOrder.status === "en_validation" && canValidate && (
-                                            <Button onClick={handleConfirm} size="sm" className="bg-emerald-500 hover:bg-emerald-600 gap-2">
-                                                <CheckCircle2 className="w-4 h-4" /> Confirmer & Valider
-                                            </Button>
-                                        )}
-                                        {selectedOrder.status === "en_validation" && !canValidate && (
-                                            <Badge variant="outline" className="text-amber-700 border-amber-200 bg-amber-50/80 py-1.5 px-3 h-auto text-xs">
-                                                ⏳ En attente de validation {isManagerAbsent ? "— Directeur Exploitation" : "— Manager"}
-                                            </Badge>
-                                        )}
-                                        <Button variant="outline" size="sm" onClick={() => fetchDetail(selectedOrderId!)} className="gap-2 bg-white/10 border-white/20 text-white hover:bg-white/20 ml-auto">
-                                            <RefreshCw className="w-3 h-3" /> Rafraîchir
-                                        </Button>
-                                    </div>
-                                </CardHeader>
-
-                                {/* Created date */}
-                                <CardContent className="py-3 bg-slate-50 flex items-center gap-2 text-xs text-slate-500">
-                                    <Calendar className="w-3.5 h-3.5" />
-                                    Créée le {format(new Date(selectedOrder.created_at), "dd MMMM yyyy 'à' HH:mm", { locale: fr })}
-                                </CardContent>
-                            </Card>
-
-                            {/* ── Delay Alert ── */}
-                            {steps.some(s => s.status === "delayed") && (
-                                <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-                                    <Card className="border-red-200 bg-red-50 shadow-sm">
-                                        <CardContent className="pt-5">
-                                            <div className="flex items-start gap-3">
-                                                <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
-                                                <div>
-                                                    <h3 className="font-bold text-red-900">⚠️ Alerte Retard</h3>
-                                                    <p className="text-red-700 text-sm mt-0.5">
-                                                        {steps.filter(s => s.status === "delayed").length} étape(s) dépassent leur délai et nécessitent une justification.
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </CardContent>
-                                    </Card>
-                                </motion.div>
-                            )}
-
-                            {/* ── Animated Timeline ── */}
-                            <Card className="border-none shadow-md">
-                                <CardHeader className="border-b bg-white">
-                                    <div className="flex items-center justify-between">
-                                        <CardTitle className="text-lg flex items-center gap-2">
-                                            Avancement du Workflow
-                                        </CardTitle>
-                                        <Badge variant="secondary" className="font-normal">
-                                            {steps.filter(s => s.status === "completed").length} / {steps.length} étapes
-                                        </Badge>
-                                    </div>
-                                </CardHeader>
-                                <CardContent className="pt-8 pb-6">
                                     {steps.length === 0 ? (
-                                        <p className="text-slate-500 text-center py-6">Aucune étape de workflow définie pour cette commande.</p>
+                                        <p className="text-slate-500 text-center py-12">Aucun workflow actif.</p>
                                     ) : (
                                         <AnimatedTimeline
                                             steps={steps}
@@ -530,36 +455,36 @@ export default function CommandTracking() {
                             </Card>
 
                             {/* ── Two-column info cards ── */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
                                 {/* Order Details */}
-                                <Card className="border-none shadow-sm bg-white">
+                                <Card className="border-none shadow-lg shadow-slate-200/40 bg-white rounded-xl overflow-hidden">
                                     <CardHeader className="pb-4 border-b border-slate-50">
-                                        <CardTitle className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                                            Détails de la Commande
+                                        <CardTitle className="text-lg font-bold text-slate-800">
+                                            Détail de la Commande
                                         </CardTitle>
                                     </CardHeader>
-                                    <CardContent className="pt-5 grid grid-cols-2 gap-y-5 gap-x-4">
-                                        <div>
-                                            <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-1">Numéro de commande:</p>
-                                            <p className="font-bold text-slate-900">{selectedOrder.reference || `#${selectedOrder.id.slice(0, 8)}`}</p>
+                                    <CardContent className="pt-6 space-y-4">
+                                        <div className="flex justify-between items-center border-b border-slate-50 pb-2">
+                                            <span className="text-slate-500 text-sm font-medium uppercase tracking-tight">Numéro de commande:</span>
+                                            <span className="font-bold text-slate-800 tracking-tight">{selectedOrder.reference || `#${selectedOrder.id.slice(0, 8)}`}</span>
                                         </div>
-                                        <div>
-                                            <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-1">Client:</p>
-                                            <p className="font-bold text-slate-900">{selectedOrder.clients?.full_name || "—"}</p>
+                                        <div className="flex justify-between items-center border-b border-slate-50 pb-2">
+                                            <span className="text-slate-500 text-sm font-medium uppercase tracking-tight">Client:</span>
+                                            <span className="font-bold text-slate-800 tracking-tight">{selectedOrder.clients?.full_name || "—"}</span>
                                         </div>
-                                        <div>
-                                            <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-1">Montant:</p>
-                                            <p className="font-bold text-blue-600 text-lg">
+                                        <div className="flex justify-between items-center border-b border-slate-50 pb-2">
+                                            <span className="text-slate-500 text-sm font-medium uppercase tracking-tight">Montant:</span>
+                                            <span className="font-black text-slate-900 text-lg">
                                                 {selectedOrder.total_ht ? `${selectedOrder.total_ht.toLocaleString()}€` : "—"}
-                                            </p>
+                                            </span>
                                         </div>
-                                        <div>
-                                            <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-1">Date de création:</p>
-                                            <p className="font-bold text-slate-900">{format(new Date(selectedOrder.created_at), "yyyy-MM-dd")}</p>
+                                        <div className="flex justify-between items-center border-b border-slate-50 pb-2">
+                                            <span className="text-slate-500 text-sm font-medium uppercase tracking-tight">Date de création:</span>
+                                            <span className="font-bold text-slate-800 tracking-tight">{format(new Date(selectedOrder.created_at), "yyyy-MM-dd")}</span>
                                         </div>
-                                        <div>
-                                            <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-1">Statut:</p>
-                                            <span className={cn("inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border", STATUS_CONFIG[selectedOrder.status]?.color)}>
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-slate-500 text-sm font-medium uppercase tracking-tight">Statut:</span>
+                                            <span className={cn("px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider", STATUS_CONFIG[selectedOrder.status]?.color)}>
                                                 {STATUS_CONFIG[selectedOrder.status]?.label || selectedOrder.status}
                                             </span>
                                         </div>
@@ -567,62 +492,52 @@ export default function CommandTracking() {
                                 </Card>
 
                                 {/* Delivery Info */}
-                                <Card className="border-none shadow-sm bg-white">
+                                <Card className="border-none shadow-lg shadow-slate-200/40 bg-white rounded-xl overflow-hidden">
                                     <CardHeader className="pb-4 border-b border-slate-50">
-                                        <CardTitle className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                                        <CardTitle className="text-lg font-bold text-slate-800">
                                             Informations de Livraison
                                         </CardTitle>
                                     </CardHeader>
-                                    <CardContent className="pt-5 grid grid-cols-2 gap-y-5 gap-x-4 text-sm">
-                                        <div className="col-span-2">
-                                            <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-1">Adresse de livraison:</p>
-                                            <p className="font-bold text-slate-900">
+                                    <CardContent className="pt-6 space-y-4">
+                                        <div className="border-b border-slate-50 pb-2">
+                                            <span className="text-slate-500 text-sm font-medium uppercase tracking-tight block mb-1">Adresse de livraison:</span>
+                                            <span className="font-bold text-slate-800 tracking-tight leading-tight block">
                                                 {selectedOrder.clients?.address || "123 Rue de la Paix, 75000 Paris"}
-                                            </p>
+                                            </span>
                                         </div>
-                                        <div>
-                                            <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-1">Date prévue:</p>
-                                            <p className="font-bold text-slate-900">
+                                        <div className="flex justify-between items-center border-b border-slate-50 pb-2">
+                                            <span className="text-slate-500 text-sm font-medium uppercase tracking-tight">Date prévue:</span>
+                                            <span className="font-bold text-slate-800 tracking-tight">
                                                 {delivery?.scheduled_date ? format(new Date(delivery.scheduled_date), "yyyy-MM-dd") : "2026-03-05"}
-                                            </p>
+                                            </span>
                                         </div>
-                                        <div>
-                                            <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-1">Transporteur:</p>
-                                            <p className="font-bold text-slate-900">DHL Express</p>
+                                        <div className="flex justify-between items-center border-b border-slate-50 pb-2">
+                                            <span className="text-slate-500 text-sm font-medium uppercase tracking-tight">Transporteur:</span>
+                                            <span className="font-bold text-slate-800 tracking-tight">DHL Express</span>
                                         </div>
-                                        <div>
-                                            <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-1">Numéro de suivi:</p>
-                                            <p className="font-bold text-blue-600">1234567890</p>
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-slate-500 text-sm font-medium uppercase tracking-tight">Numéro de suivi:</span>
+                                            <span className="font-bold text-blue-600 decoration-blue-600 underline">1234567890</span>
                                         </div>
                                     </CardContent>
                                 </Card>
                             </div>
 
-                            {/* ── Notes ── */}
-                            {selectedOrder.notes && (
-                                <Card className="border-none shadow-sm bg-amber-50/60 border-amber-100">
-                                    <CardContent className="pt-5">
-                                        <p className="text-xs font-bold text-amber-600 uppercase mb-2">Notes</p>
-                                        <p className="text-sm text-slate-700 italic">{selectedOrder.notes}</p>
-                                    </CardContent>
-                                </Card>
-                            )}
-
                             {/* ── Legend ── */}
-                            <Card className="border-none shadow-sm bg-white">
-                                <CardHeader className="pb-3 border-b border-slate-50">
+                            <Card className="border-none shadow-md bg-white rounded-xl mt-8">
+                                <CardHeader className="py-4 border-b border-slate-50">
                                     <CardTitle className="text-base font-bold text-slate-800">Légende des Statuts</CardTitle>
                                 </CardHeader>
-                                <CardContent className="pt-4">
-                                    <div className="flex gap-8">
+                                <CardContent className="py-6">
+                                    <div className="flex gap-12">
                                         {[
                                             { label: "Complétée", dot: "bg-emerald-500" },
-                                            { label: "En cours", dot: "bg-blue-500 animate-pulse" },
+                                            { label: "En cours", dot: "bg-blue-500" },
                                             { label: "En attente", dot: "bg-slate-300" },
                                         ].map(({ label, dot }) => (
-                                            <div key={label} className="flex items-center gap-2.5 text-sm">
-                                                <div className={cn("w-3.5 h-3.5 rounded-full shrink-0", dot)} />
-                                                <span className="text-slate-600 font-medium">{label}</span>
+                                            <div key={label} className="flex items-center gap-3">
+                                                <div className={cn("w-4 h-4 rounded-full shadow-sm", dot)} />
+                                                <span className="text-slate-600 font-bold text-sm">{label}</span>
                                             </div>
                                         ))}
                                     </div>
