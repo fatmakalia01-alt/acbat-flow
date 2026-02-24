@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
 interface OrderPDFProps {
     order: any;
     items: any[];
-    type: 'devis' | 'facture';
+    type: 'devis' | 'facture' | 'livraison';
 }
 
 const OrderPDF = ({ order, items, type }: OrderPDFProps) => {
@@ -120,7 +120,9 @@ const OrderPDF = ({ order, items, type }: OrderPDFProps) => {
                 <View style={styles.header}>
                     <Text style={{ fontSize: 12, fontWeight: 'bold' }}>ACBAT Flow</Text>
                     <View style={styles.titleContainer}>
-                        <Text style={styles.title}>{isQuote ? 'DEVIS' : 'FACTURE'}</Text>
+                        <Text style={styles.title}>
+                            {type === 'devis' ? 'DEVIS' : type === 'facture' ? 'FACTURE' : 'BON DE LIVRAISON'}
+                        </Text>
                         <Text>N° {order.reference}</Text>
                         <Text>Date: {format(new Date(order.created_at || new Date()), 'dd/MM/yyyy', { locale: fr })}</Text>
                     </View>
