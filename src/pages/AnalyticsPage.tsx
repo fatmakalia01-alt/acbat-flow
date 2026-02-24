@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -77,39 +77,44 @@ function generateInsights(data: {
 // ── Helpers ───────────────────────────────────────
 const MONTHS_FR = ["Jan", "Fév", "Mar", "Avr", "Mai", "Jun", "Jul", "Aoû", "Sep", "Oct", "Nov", "Déc"];
 
-const KPICard = ({
-    title, value, sub, icon: Icon, trend, color = "text-primary"
-}: {
+interface KPICardProps {
     title: string; value: string; sub?: string;
     icon: any; trend?: number; color?: string;
-}) => (
-    <Card className="relative overflow-hidden">
-        <CardContent className="p-5">
-            <div className="flex items-start justify-between">
-                <div>
-                    <p className="text-sm text-muted-foreground mb-1">{title}</p>
-                    <p className={`text-2xl font-bold ${color}`}>{value}</p>
-                    {sub && <p className="text-xs text-muted-foreground mt-1">{sub}</p>}
+}
+const KPICard = React.forwardRef<HTMLDivElement, KPICardProps>(
+    ({ title, value, sub, icon: Icon, trend, color = "text-primary" }, ref) => (
+        <Card ref={ref} className="relative overflow-hidden">
+            <CardContent className="p-5">
+                <div className="flex items-start justify-between">
+                    <div>
+                        <p className="text-sm text-muted-foreground mb-1">{title}</p>
+                        <p className={`text-2xl font-bold ${color}`}>{value}</p>
+                        {sub && <p className="text-xs text-muted-foreground mt-1">{sub}</p>}
+                    </div>
+                    <div className="p-2.5 rounded-xl bg-primary/10">
+                        <Icon className="h-5 w-5 text-primary" />
+                    </div>
                 </div>
-                <div className="p-2.5 rounded-xl bg-primary/10">
-                    <Icon className="h-5 w-5 text-primary" />
-                </div>
-            </div>
-            {trend !== undefined && (
-                <div className={`flex items-center gap-1 mt-3 text-xs font-medium ${trend >= 0 ? "text-emerald-500" : "text-red-500"}`}>
-                    {trend >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-                    {trend >= 0 ? "+" : ""}{trend.toFixed(1)}% vs mois dernier
-                </div>
-            )}
-        </CardContent>
-    </Card>
+                {trend !== undefined && (
+                    <div className={`flex items-center gap-1 mt-3 text-xs font-medium ${trend >= 0 ? "text-emerald-500" : "text-red-500"}`}>
+                        {trend >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                        {trend >= 0 ? "+" : ""}{trend.toFixed(1)}% vs mois dernier
+                    </div>
+                )}
+            </CardContent>
+        </Card>
+    ),
 );
+KPICard.displayName = "KPICard";
 
-const InsightIcon = ({ type }: { type: "success" | "warning" | "info" }) => {
-    if (type === "success") return <CheckCircle2 className="h-4 w-4 text-emerald-500 flex-shrink-0 mt-0.5" />;
-    if (type === "warning") return <AlertTriangle className="h-4 w-4 text-amber-500 flex-shrink-0 mt-0.5" />;
-    return <Lightbulb className="h-4 w-4 text-blue-500 flex-shrink-0 mt-0.5" />;
-};
+const InsightIcon = React.forwardRef<SVGSVGElement, { type: "success" | "warning" | "info" }>(
+    ({ type }, ref) => {
+        if (type === "success") return <CheckCircle2 ref={ref} className="h-4 w-4 text-emerald-500 flex-shrink-0 mt-0.5" />;
+        if (type === "warning") return <AlertTriangle ref={ref} className="h-4 w-4 text-amber-500 flex-shrink-0 mt-0.5" />;
+        return <Lightbulb ref={ref} className="h-4 w-4 text-blue-500 flex-shrink-0 mt-0.5" />;
+    },
+);
+InsightIcon.displayName = "InsightIcon";
 
 // ── Main Page ─────────────────────────────────────
 const AnalyticsPage = () => {
@@ -250,8 +255,8 @@ const AnalyticsPage = () => {
                                 key={p}
                                 onClick={() => setPeriod(p)}
                                 className={`px-3 py-1.5 transition-colors ${period === p
-                                        ? "bg-primary text-primary-foreground font-medium"
-                                        : "text-muted-foreground hover:bg-muted"
+                                    ? "bg-primary text-primary-foreground font-medium"
+                                    : "text-muted-foreground hover:bg-muted"
                                     }`}
                             >
                                 {p === "6m" ? "6 mois" : "12 mois"}
