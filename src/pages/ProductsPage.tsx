@@ -172,6 +172,7 @@ const ProductsPage = () => {
             tva_rate: p.tva_rate?.toString() || "19",
             brand_id: p.brand_id || "",
             category_id: p.category_id || "",
+            unit: p.unit || "unité",
         } as any);
         setDialogOpen(true);
     };
