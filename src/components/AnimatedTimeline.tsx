@@ -12,6 +12,7 @@ import { fr } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 
 // ─── Step configuration: icons, labels and standard durations ─────────────────
+// ─── Step configuration: icons, labels and standard durations ─────────────────
 const STEP_CONFIG: Record<string, {
     icon: React.FC<any>;
     label: string;
@@ -22,68 +23,68 @@ const STEP_CONFIG: Record<string, {
     accentText: string;
     accentBorder: string;
 }> = {
-    creation_commande: {
+    commande_creee: {
         icon: ShoppingCart, label: "Commande Créée",
-        description: "Enregistrement dans le système",
-        daysStandard: 1,
-        accent: "bg-blue-500", accentLight: "bg-blue-50",
-        accentText: "text-blue-600", accentBorder: "border-blue-200",
-    },
-    validation_commerciale: {
-        icon: ShieldCheck, label: "Vérification",
-        description: "Contrôle technique et financier",
-        daysStandard: 1,
-        accent: "bg-indigo-500", accentLight: "bg-indigo-50",
-        accentText: "text-indigo-600", accentBorder: "border-indigo-200",
-    },
-    commande_fournisseur: {
-        icon: CheckCircle, label: "Confirmation",
-        description: "Validation des approvisionnements",
-        daysStandard: 2,
-        accent: "bg-violet-500", accentLight: "bg-violet-50",
-        accentText: "text-violet-600", accentBorder: "border-violet-200",
-    },
-    reception_marchandises: {
-        icon: Package, label: "Préparation",
-        description: "Mise en kit des articles",
-        daysStandard: 3,
-        accent: "bg-amber-500", accentLight: "bg-amber-50",
-        accentText: "text-amber-600", accentBorder: "border-amber-200",
-    },
-    preparation_technique: {
-        icon: Scale, label: "Qualité",
-        description: "Test et vérification conformité",
+        description: "Commande enregistrée dans le système",
         daysStandard: 1,
         accent: "bg-emerald-500", accentLight: "bg-emerald-50",
-        accentText: "text-emerald-600", accentBorder: "border-emerald-200",
+        accentText: "text-emerald-700", accentBorder: "border-emerald-200",
     },
-    livraison_installation: {
-        icon: Briefcase, label: "Emballage",
-        description: "Conditionnement sécurisé",
-        daysStandard: 1,
-        accent: "bg-slate-500", accentLight: "bg-slate-50",
-        accentText: "text-slate-600", accentBorder: "border-slate-200",
+    verification: {
+        icon: ShieldCheck, label: "Vérification",
+        description: "Vérification des stocks et disponibilité",
+        daysStandard: 2,
+        accent: "bg-emerald-500", accentLight: "bg-emerald-50",
+        accentText: "text-emerald-700", accentBorder: "border-emerald-200",
     },
-    validation_client: {
-        icon: Truck, label: "Expédition",
-        description: "Sortie de nos entrepôts",
+    confirmation: {
+        icon: CheckCircle, label: "Confirmation",
+        description: "Confirmation auprès du client",
         daysStandard: 1,
-        accent: "bg-blue-600", accentLight: "bg-blue-50",
+        accent: "bg-emerald-500", accentLight: "bg-emerald-50",
+        accentText: "text-emerald-700", accentBorder: "border-emerald-200",
+    },
+    preparation: {
+        icon: Package, label: "Préparation",
+        description: "Préparation des articles",
+        daysStandard: 3,
+        accent: "bg-blue-500", accentLight: "bg-blue-50",
         accentText: "text-blue-700", accentBorder: "border-blue-200",
     },
-    facturation_paiement: {
-        icon: Navigation, label: "Transport",
-        description: "En cours de livraison",
-        daysStandard: 2,
-        accent: "bg-cyan-500", accentLight: "bg-cyan-50",
-        accentText: "text-cyan-600", accentBorder: "border-cyan-200",
-    },
-    cloture_archivage: {
-        icon: Home, label: "Livraison",
-        description: "Remise finale au client",
+    qualite: {
+        icon: ClipboardCheck, label: "Qualité",
+        description: "Contrôle qualité des articles",
         daysStandard: 1,
-        accent: "bg-green-600", accentLight: "bg-green-50",
-        accentText: "text-green-700", accentBorder: "border-green-200",
+        accent: "bg-slate-300", accentLight: "bg-slate-50",
+        accentText: "text-slate-600", accentBorder: "border-slate-200",
+    },
+    emballage: {
+        icon: Archive, label: "Emballage",
+        description: "Emballage et étiquetage",
+        daysStandard: 1,
+        accent: "bg-slate-300", accentLight: "bg-slate-50",
+        accentText: "text-slate-600", accentBorder: "border-slate-200",
+    },
+    expedition: {
+        icon: Truck, label: "Expédition",
+        description: "Remise au transporteur",
+        daysStandard: 1,
+        accent: "bg-slate-300", accentLight: "bg-slate-50",
+        accentText: "text-slate-600", accentBorder: "border-slate-200",
+    },
+    transport: {
+        icon: Navigation, label: "Transport",
+        description: "En transit vers le client",
+        daysStandard: 3,
+        accent: "bg-slate-300", accentLight: "bg-slate-50",
+        accentText: "text-slate-600", accentBorder: "border-slate-200",
+    },
+    livraison: {
+        icon: Home, label: "Livraison",
+        description: "Livraison et réception",
+        daysStandard: 1,
+        accent: "bg-slate-300", accentLight: "bg-slate-50",
+        accentText: "text-slate-600", accentBorder: "border-slate-200",
     },
 };
 
@@ -150,9 +151,9 @@ export const AnimatedTimeline = React.forwardRef<HTMLDivElement, AnimatedTimelin
                     </div>
 
                     {/* Animated progress bar */}
-                    <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
+                    <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
                         <motion.div
-                            className="h-full rounded-full bg-emerald-500"
+                            className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-blue-500"
                             initial={{ width: 0 }}
                             animate={{ width: `${progressPct}%` }}
                             transition={{ duration: 1.2, ease: "circOut" }}
@@ -389,16 +390,18 @@ export const AnimatedTimeline = React.forwardRef<HTMLDivElement, AnimatedTimelin
                 {/* ── Summary footer ──────────────────────────────────────────── */}
                 {activeStep && (
                     <motion.div
-                        className="pt-6 border-t border-slate-100 flex flex-col gap-2"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
+                        className="p-4 rounded-xl bg-blue-50/50 border border-blue-100 flex flex-col gap-1.5"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.5 }}
                     >
-                        <p className="text-sm font-bold text-slate-900">
-                            Étape actuelle: {cfgActive?.label ?? activeStep.step_name} (étape {sorted.indexOf(activeStep) + 1} sur {sorted.length})
+                        <p className="text-sm">
+                            <span className="font-bold text-slate-900 leading-none">Étape actuelle: </span>
+                            <span className="text-slate-600">{cfgActive?.label ?? activeStep.step_name} (étape {sorted.indexOf(activeStep) + 1} sur {sorted.length})</span>
                         </p>
-                        <p className="text-sm text-slate-500 font-medium">
-                            Délai estimé: Livraison prévue le 2026-03-05
+                        <p className="text-sm">
+                            <span className="font-bold text-slate-900 leading-none">Délai estimé: </span>
+                            <span className="text-slate-600 font-medium">Livraison prévue le 2026-03-05</span>
                         </p>
                     </motion.div>
                 )}
