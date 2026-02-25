@@ -52,7 +52,19 @@ interface WorkflowTimelineProps {
 
 const WorkflowTimeline = React.forwardRef<HTMLDivElement, WorkflowTimelineProps>(
     ({ steps }, ref) => {
-        const sorted = [...steps].sort((a, b) => a.step_order - b.step_order);
+        // Deduplicate by step_order — keep the most advanced status per step
+        const statusPriority: Record<string, number> = { completed: 4, in_progress: 3, delayed: 2, blocked: 1, pending: 0 };
+        const deduped = Object.values(
+            steps.reduce((acc, step) => {
+                const key = `${step.step_order}`;
+                const existing = acc[key];
+                if (!existing || (statusPriority[step.status] ?? 0) > (statusPriority[existing.status] ?? 0)) {
+                    acc[key] = step;
+                }
+                return acc;
+            }, {} as Record<string, WorkflowStep>)
+        );
+        const sorted = deduped.sort((a, b) => a.step_order - b.step_order);
         const completedCount = sorted.filter(s => s.status === "completed").length;
         const progressPct = sorted.length > 0 ? (completedCount / sorted.length) * 100 : 0;
 
