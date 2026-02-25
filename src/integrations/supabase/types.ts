@@ -303,6 +303,7 @@ export type Database = {
       }
       delay_reports: {
         Row: {
+<<<<<<< HEAD
           id: string
           step_id: string | null
           order_id: string | null
@@ -328,6 +329,33 @@ export type Database = {
           cause_text?: string
           blamed_role?: string | null
           created_at?: string | null
+=======
+          blamed_role: string | null
+          cause_text: string
+          created_at: string | null
+          id: string
+          order_id: string | null
+          reported_by: string | null
+          step_id: string | null
+        }
+        Insert: {
+          blamed_role?: string | null
+          cause_text: string
+          created_at?: string | null
+          id?: string
+          order_id?: string | null
+          reported_by?: string | null
+          step_id?: string | null
+        }
+        Update: {
+          blamed_role?: string | null
+          cause_text?: string
+          created_at?: string | null
+          id?: string
+          order_id?: string | null
+          reported_by?: string | null
+          step_id?: string | null
+>>>>>>> 5c8621455a4b4de9195e2e3e942de50ee8f150f1
         }
         Relationships: [
           {
@@ -338,6 +366,7 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+<<<<<<< HEAD
             foreignKeyName: "delay_reports_reported_by_fkey"
             columns: ["reported_by"]
             isOneToOne: false
@@ -345,6 +374,8 @@ export type Database = {
             referencedColumns: ["user_id"]
           },
           {
+=======
+>>>>>>> 5c8621455a4b4de9195e2e3e942de50ee8f150f1
             foreignKeyName: "delay_reports_step_id_fkey"
             columns: ["step_id"]
             isOneToOne: false
@@ -550,6 +581,8 @@ export type Database = {
       }
       notifications: {
         Row: {
+          action_required: boolean | null
+          action_type: string | null
           alert_level: Database["public"]["Enums"]["alert_level"] | null
           created_at: string
           id: string
@@ -558,13 +591,18 @@ export type Database = {
           read_at: string | null
           related_order_id: string | null
           related_step_id: string | null
+<<<<<<< HEAD
           action_required: boolean | null
           action_type: string | null
+=======
+>>>>>>> 5c8621455a4b4de9195e2e3e942de50ee8f150f1
           title: string
           type: Database["public"]["Enums"]["notification_type"]
           user_id: string
         }
         Insert: {
+          action_required?: boolean | null
+          action_type?: string | null
           alert_level?: Database["public"]["Enums"]["alert_level"] | null
           created_at?: string
           id?: string
@@ -573,13 +611,18 @@ export type Database = {
           read_at?: string | null
           related_order_id?: string | null
           related_step_id?: string | null
+<<<<<<< HEAD
           action_required?: boolean | null
           action_type?: string | null
+=======
+>>>>>>> 5c8621455a4b4de9195e2e3e942de50ee8f150f1
           title: string
           type?: Database["public"]["Enums"]["notification_type"]
           user_id: string
         }
         Update: {
+          action_required?: boolean | null
+          action_type?: string | null
           alert_level?: Database["public"]["Enums"]["alert_level"] | null
           created_at?: string
           id?: string
@@ -588,8 +631,11 @@ export type Database = {
           read_at?: string | null
           related_order_id?: string | null
           related_step_id?: string | null
+<<<<<<< HEAD
           action_required?: boolean | null
           action_type?: string | null
+=======
+>>>>>>> 5c8621455a4b4de9195e2e3e942de50ee8f150f1
           title?: string
           type?: Database["public"]["Enums"]["notification_type"]
           user_id?: string
@@ -600,6 +646,13 @@ export type Database = {
             columns: ["related_order_id"]
             isOneToOne: false
             referencedRelation: "client_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_related_step_id_fkey"
+            columns: ["related_step_id"]
+            isOneToOne: false
+            referencedRelation: "order_workflow_steps"
             referencedColumns: ["id"]
           },
         ]
@@ -661,13 +714,17 @@ export type Database = {
       order_workflow_steps: {
         Row: {
           assigned_to: string | null
+          blamed_service: string | null
           completed_at: string | null
           created_at: string
+          deadline_set_at: string | null
+          delay_cause: string | null
           delay_days: number | null
           delay_justified_at: string | null
           delay_justified_by: string | null
           delay_reason: string | null
           due_date: string | null
+          estimated_duration_days: number | null
           id: string
           notes: string | null
           order_id: string
@@ -684,13 +741,17 @@ export type Database = {
         }
         Insert: {
           assigned_to?: string | null
+          blamed_service?: string | null
           completed_at?: string | null
           created_at?: string
+          deadline_set_at?: string | null
+          delay_cause?: string | null
           delay_days?: number | null
           delay_justified_at?: string | null
           delay_justified_by?: string | null
           delay_reason?: string | null
           due_date?: string | null
+          estimated_duration_days?: number | null
           id?: string
           notes?: string | null
           order_id: string
@@ -707,13 +768,17 @@ export type Database = {
         }
         Update: {
           assigned_to?: string | null
+          blamed_service?: string | null
           completed_at?: string | null
           created_at?: string
+          deadline_set_at?: string | null
+          delay_cause?: string | null
           delay_days?: number | null
           delay_justified_at?: string | null
           delay_justified_by?: string | null
           delay_reason?: string | null
           due_date?: string | null
+          estimated_duration_days?: number | null
           id?: string
           notes?: string | null
           order_id?: string
@@ -833,6 +898,7 @@ export type Database = {
           sku: string | null
           supplier_id: string | null
           tva_rate: number | null
+          unit: string | null
           updated_at: string
         }
         Insert: {
@@ -848,6 +914,7 @@ export type Database = {
           sku?: string | null
           supplier_id?: string | null
           tva_rate?: number | null
+          unit?: string | null
           updated_at?: string
         }
         Update: {
@@ -863,6 +930,7 @@ export type Database = {
           sku?: string | null
           supplier_id?: string | null
           tva_rate?: number | null
+          unit?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -1542,6 +1610,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_overdue_workflow_steps: { Args: never; Returns: number }
       check_workflow_deadlines: { Args: never; Returns: undefined }
       current_user_has_role: { Args: { _role: string }; Returns: boolean }
       get_ca_evolution_12months: {
@@ -1578,13 +1647,37 @@ export type Database = {
       is_manager: { Args: { _user_id: string }; Returns: boolean }
       is_manager_absent: { Args: never; Returns: boolean }
       is_staff: { Args: { _user_id: string }; Returns: boolean }
-      notify_management: {
+      notify_management:
+        | {
+            Args: {
+              p_alert_level?: Database["public"]["Enums"]["alert_level"]
+              p_message: string
+              p_order_id: string
+              p_title: string
+              p_type?: Database["public"]["Enums"]["notification_type"]
+            }
+            Returns: undefined
+          }
+        | {
+            Args: {
+              p_message: string
+              p_order_id?: string
+              p_step_id?: string
+              p_title: string
+              p_type: string
+            }
+            Returns: undefined
+          }
+      notify_users_by_role: {
         Args: {
-          p_alert_level?: Database["public"]["Enums"]["alert_level"]
+          p_action_required?: boolean
+          p_action_type?: string
           p_message: string
-          p_order_id: string
+          p_order_id?: string
+          p_role: string
+          p_step_id?: string
           p_title: string
-          p_type?: Database["public"]["Enums"]["notification_type"]
+          p_type: string
         }
         Returns: undefined
       }
@@ -1625,6 +1718,7 @@ export type Database = {
       | "transition"
       | "urgente"
       order_status:
+<<<<<<< HEAD
       | "brouillon"
       | "en_validation"
       | "validee"
@@ -1644,6 +1738,29 @@ export type Database = {
       | "carte_bancaire"
       | "traite_bancaire"
       payment_status: "en_attente" | "confirme" | "rejete"
+=======
+        | "brouillon"
+        | "en_validation"
+        | "validee"
+        | "en_commande_fournisseur"
+        | "en_reception"
+        | "en_preparation"
+        | "en_livraison"
+        | "livree"
+        | "en_facturation"
+        | "payee"
+        | "cloturee"
+        | "annulee"
+        | "en_cours"
+        | "terminee"
+      payment_method:
+        | "especes"
+        | "cheque"
+        | "virement"
+        | "carte_bancaire"
+        | "traite_bancaire"
+      payment_status: "en_attente" | "confirme" | "rejete" | "complete"
+>>>>>>> 5c8621455a4b4de9195e2e3e942de50ee8f150f1
       purchase_order_status:
       | "brouillon"
       | "en_commande"
@@ -1853,6 +1970,8 @@ export const Constants = {
         "payee",
         "cloturee",
         "annulee",
+        "en_cours",
+        "terminee",
       ],
       payment_method: [
         "especes",
@@ -1861,7 +1980,7 @@ export const Constants = {
         "carte_bancaire",
         "traite_bancaire",
       ],
-      payment_status: ["en_attente", "confirme", "rejete"],
+      payment_status: ["en_attente", "confirme", "rejete", "complete"],
       purchase_order_status: [
         "brouillon",
         "en_commande",
