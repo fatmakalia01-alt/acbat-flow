@@ -13,7 +13,6 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { JustificationDialog } from "@/components/JustificationDialog";
 import { DelayReportDialog } from "@/components/DelayReportDialog";
-import { useDeadlineMonitor } from "@/hooks/useDeadlineMonitor";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -257,8 +256,26 @@ export default function CommandTracking() {
 
     const [selectedStepForDelay, setSelectedStepForDelay] = useState<WorkflowStep | null>(null);
 
-    // Monitoring
-    useDeadlineMonitor();
+    // ─── URL Params Actions ───────────────────────────────────────────────────
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        const orderId = params.get("orderId");
+        const reportStepId = params.get("reportStepId");
+
+        if (orderId && reportStepId && steps.length > 0) {
+            const step = steps.find(s => s.id === reportStepId);
+            if (step) {
+                // Ensure we select the order first so fetchDetail has run (handled by selectedOrderId effect)
+                if (selectedOrderId !== orderId) {
+                    setSelectedOrderId(orderId);
+                } else {
+                    setSelectedStepForDelay(step);
+                    // Clear params to avoid reopening on refresh
+                    window.history.replaceState({}, "", window.location.pathname + `?orderId=${orderId}`);
+                }
+            }
+        }
+    }, [location.search, steps, selectedOrderId]);
 
     // ─── Filters ──────────────────────────────────────────────────────────────
     useEffect(() => {
@@ -376,6 +393,19 @@ export default function CommandTracking() {
                 p_order_id: step.order_id,
                 p_step_id: nextStep.id,
             });
+
+            // Step 5: Notify the service that just finished (confirmation of handoff)
+            const prevRole = STEP_ROLE_MAP[step.step_name];
+            if (prevRole) {
+                await supabase.rpc("notify_users_by_role" as any, {
+                    p_role: prevRole,
+                    p_title: `✅ Transfert confirmé — ${orderRef}`,
+                    p_message: `Votre étape est terminée. La commande a été transmise à "${nextLabel}"${deadlineDays ? ` avec un délai de ${deadlineDays}j` : ""}.`,
+                    p_type: "info",
+                    p_order_id: step.order_id,
+                    p_step_id: step.id,
+                });
+            }
 
             toast.success(`Étape terminée — "${nextLabel}" démarre${deadlineDays ? ` (${deadlineDays}j)` : ""}`);
         } else {
