@@ -1,15 +1,22 @@
-import React from "react";
+import React, { useState } from "react";
 import { motion } from "framer-motion";
 import {
     ShoppingCart, CheckCircle, Package, Warehouse,
     Wrench, Truck, ClipboardCheck, CreditCard, Archive,
     Clock, AlertCircle, Play, MessageSquare, CheckCheck,
-    Loader2, ShieldCheck, Scale, Briefcase, Navigation, Home
+    Loader2, ShieldCheck, Scale, Briefcase, Navigation, Home,
+    ArrowRight, Users, CalendarClock
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+    Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter
+} from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
 
 // ─── Step configuration ────────────────────────────────────────────────────────
 const STEP_CONFIG: Record<string, {
@@ -17,97 +24,116 @@ const STEP_CONFIG: Record<string, {
     label: string;
     description: string;
     daysStandard: number;
+    responsible: string[];
 }> = {
     commande_creee: {
         icon: ShoppingCart, label: "Commande Créée",
         description: "Commande enregistrée dans le système",
         daysStandard: 1,
+        responsible: ["Responsable Commercial"],
     },
     verification: {
         icon: ShieldCheck, label: "Vérification",
         description: "Vérification des stocks et disponibilité",
         daysStandard: 2,
+        responsible: ["Responsable Logistique"],
     },
     confirmation: {
         icon: CheckCircle, label: "Confirmation",
         description: "Confirmation auprès du client",
         daysStandard: 1,
+        responsible: ["Commercial", "Responsable Commercial"],
     },
     preparation: {
         icon: Package, label: "Préparation",
         description: "Préparation des articles",
         daysStandard: 3,
+        responsible: ["Responsable Technique"],
     },
     qualite: {
         icon: ClipboardCheck, label: "Qualité",
         description: "Contrôle qualité des articles",
         daysStandard: 1,
+        responsible: ["Responsable Technique"],
     },
     emballage: {
         icon: Archive, label: "Emballage",
         description: "Emballage et étiquetage",
         daysStandard: 1,
+        responsible: ["Responsable Logistique"],
     },
     expedition: {
         icon: Truck, label: "Expédition",
         description: "Remise au transporteur",
         daysStandard: 1,
+        responsible: ["Responsable Logistique"],
     },
     transport: {
         icon: Navigation, label: "Transport",
         description: "En transit vers le client",
         daysStandard: 3,
+        responsible: ["Responsable Logistique"],
     },
     livraison: {
         icon: Home, label: "Livraison",
         description: "Livraison et réception",
         daysStandard: 1,
+        responsible: ["Technicien Montage", "Responsable Logistique"],
     },
-    // legacy mapping for DB step names
+    // ── DB step names ─────────────────────────────────────────────────────────
     creation_commande: {
-        icon: ShoppingCart, label: "Commande Créée",
+        icon: ShoppingCart, label: "Création",
         description: "Commande enregistrée dans le système",
         daysStandard: 1,
+        responsible: ["Responsable Commercial"],
     },
     validation_commerciale: {
-        icon: CheckCircle, label: "Confirmation",
+        icon: CheckCircle, label: "Validation",
         description: "Validation commerciale de la commande",
         daysStandard: 1,
+        responsible: ["Responsable Logistique", "Responsable Technique"],
     },
     commande_fournisseur: {
-        icon: Briefcase, label: "Cmd. Fournisseur",
+        icon: Briefcase, label: "Fournisseur",
         description: "Commande passée au fournisseur",
         daysStandard: 2,
+        responsible: ["Responsable Achat"],
     },
     reception_marchandises: {
         icon: Warehouse, label: "Réception",
         description: "Réception des marchandises",
         daysStandard: 2,
+        responsible: ["Responsable Logistique"],
     },
     preparation_technique: {
         icon: Wrench, label: "Préparation",
         description: "Préparation technique des articles",
         daysStandard: 3,
+        responsible: ["Responsable Technique"],
     },
     livraison_installation: {
         icon: Truck, label: "Livraison",
         description: "Livraison et installation chez le client",
         daysStandard: 1,
+        responsible: ["Responsable Logistique", "Technicien Montage"],
     },
     validation_client: {
         icon: CheckCheck, label: "Validation client",
         description: "Réception confirmée par le client",
         daysStandard: 1,
+        responsible: ["Responsable SAV", "Commercial"],
     },
     facturation_paiement: {
         icon: CreditCard, label: "Facturation",
         description: "Facturation et encaissement",
         daysStandard: 2,
+        responsible: ["Responsable Comptabilité"],
     },
     cloture_archivage: {
         icon: Archive, label: "Clôture",
         description: "Clôture et archivage du dossier",
         daysStandard: 1,
+        responsible: ["Manager", "Responsable Commercial"],
     },
 };
 
@@ -127,7 +153,7 @@ export interface WorkflowStep {
 
 interface AnimatedTimelineProps {
     steps: WorkflowStep[];
-    onCompleteStep?: (stepId: string) => void;
+    onCompleteStep?: (stepId: string, deadlineDays?: number | null) => void;
     onJustifyStep?: (stepId: string) => void;
     canAdvance?: boolean;
 }
@@ -141,6 +167,131 @@ const STATUS_BADGE: Record<string, { label: string; cls: string }> = {
     pending: { label: "En attente", cls: "bg-slate-100 text-slate-500 border border-slate-200" },
 };
 
+// ─── Handoff Dialog ────────────────────────────────────────────────────────────
+interface HandoffDialogProps {
+    open: boolean;
+    currentStep: WorkflowStep | null;
+    nextStep: WorkflowStep | null;
+    onConfirm: (deadlineDays: number | null) => void;
+    onCancel: () => void;
+    confirming: boolean;
+}
+
+const HandoffDialog = ({ open, currentStep, nextStep, onConfirm, onCancel, confirming }: HandoffDialogProps) => {
+    const currentCfg = currentStep ? (STEP_CONFIG[currentStep.step_name] ?? null) : null;
+    const nextCfg = nextStep ? (STEP_CONFIG[nextStep.step_name] ?? null) : null;
+    const NextIcon = nextCfg?.icon ?? Clock;
+    const [deadlineDays, setDeadlineDays] = useState<string>("");
+
+    return (
+        <Dialog open={open} onOpenChange={(v) => !v && onCancel()}>
+            <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2 text-slate-800">
+                        <CheckCheck className="w-5 h-5 text-emerald-600" />
+                        Confirmer la finalisation
+                    </DialogTitle>
+                    <DialogDescription className="text-slate-500">
+                        Vous êtes sur le point de marquer cette étape comme terminée et de passer au service suivant.
+                    </DialogDescription>
+                </DialogHeader>
+
+                <div className="py-2 space-y-4">
+                    {/* Current → Next visual */}
+                    <div className="flex items-center gap-3">
+                        {/* Current step */}
+                        <div className="flex-1 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-center">
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 mb-1">Étape actuelle</p>
+                            <p className="font-bold text-slate-800 text-sm">{currentCfg?.label ?? currentStep?.step_name}</p>
+                            <p className="text-xs text-slate-500 mt-0.5">{currentCfg?.description}</p>
+                        </div>
+
+                        <ArrowRight className="w-5 h-5 text-slate-400 flex-shrink-0" />
+
+                        {/* Next step */}
+                        {nextStep ? (
+                            <div className="flex-1 rounded-xl border border-blue-200 bg-blue-50 p-3 text-center">
+                                <p className="text-[10px] font-bold uppercase tracking-wider text-blue-600 mb-1">Étape suivante</p>
+                                <p className="font-bold text-slate-800 text-sm">{nextCfg?.label ?? nextStep.step_name}</p>
+                                <p className="text-xs text-slate-500 mt-0.5">{nextCfg?.description}</p>
+                            </div>
+                        ) : (
+                            <div className="flex-1 rounded-xl border border-slate-200 bg-slate-50 p-3 text-center">
+                                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Fin du workflow</p>
+                                <p className="font-bold text-slate-600 text-sm">Dernière étape</p>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Deadline input for next step */}
+                    {nextStep && (
+                        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 space-y-2">
+                            <div className="flex items-center gap-1.5 text-amber-700">
+                                <CalendarClock className="w-4 h-4" />
+                                <Label className="text-sm font-semibold text-amber-700">
+                                    Délai de traitement du service suivant (jours) <span className="text-red-500">*</span>
+                                </Label>
+                            </div>
+                            <Input
+                                type="number"
+                                min="1"
+                                max="365"
+                                placeholder="Ex: 3"
+                                value={deadlineDays}
+                                onChange={e => setDeadlineDays(e.target.value)}
+                                className="bg-white border-amber-300 focus:border-amber-500"
+                            />
+                            <p className="text-xs text-amber-600">
+                                Le service récepteur doit respecter ce délai. Une alerte sera déclenchée en cas de dépassement.
+                            </p>
+                        </div>
+                    )}
+
+                    {/* Next step responsible services */}
+                    {nextStep && nextCfg?.responsible && nextCfg.responsible.length > 0 && (
+                        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-2">
+                            <div className="flex items-center gap-1.5 text-slate-700">
+                                <Users className="w-4 h-4" />
+                                <span className="text-sm font-semibold">Services responsables de l'étape suivante</span>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                                {nextCfg.responsible.map((r, i) => (
+                                    <Badge key={i} className="bg-blue-100 text-blue-800 border border-blue-200 px-2.5 py-1 text-xs font-medium">
+                                        {r}
+                                    </Badge>
+                                ))}
+                            </div>
+                            <p className="text-xs text-slate-500 mt-1">
+                                Ces services seront notifiés et devront mettre à jour l'état de la commande.
+                            </p>
+                        </div>
+                    )}
+                </div>
+
+                <DialogFooter className="gap-2">
+                    <Button variant="outline" onClick={onCancel} disabled={confirming}>
+                        Annuler
+                    </Button>
+                    <Button
+                        onClick={() => {
+                            const days = deadlineDays ? parseInt(deadlineDays, 10) : null;
+                            onConfirm(days && days > 0 ? days : null);
+                            setDeadlineDays("");
+                        }}
+                        disabled={confirming || (!!nextStep && !deadlineDays)}
+                        className="bg-emerald-600 hover:bg-emerald-700 gap-2"
+                    >
+                        {confirming
+                            ? <><Loader2 className="w-4 h-4 animate-spin" /> Finalisation…</>
+                            : <><CheckCheck className="w-4 h-4" /> Confirmer et transférer</>
+                        }
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+};
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 export const AnimatedTimeline = React.forwardRef<HTMLDivElement, AnimatedTimelineProps>(
     ({ steps, onCompleteStep, onJustifyStep, canAdvance = false }, ref) => {
@@ -151,8 +302,27 @@ export const AnimatedTimeline = React.forwardRef<HTMLDivElement, AnimatedTimelin
         const activeStep = sorted.find(s => s.status === "in_progress" || s.status === "delayed")
             || sorted.find(s => s.status === "pending")
             || sorted[sorted.length - 1];
-
         const cfgActive = activeStep ? STEP_CONFIG[activeStep.step_name] : null;
+
+        // ── Handoff dialog state ──────────────────────────────────────────────
+        const [pendingStepId, setPendingStepId] = useState<string | null>(null);
+        const [confirming, setConfirming] = useState(false);
+
+        const pendingStep = pendingStepId ? sorted.find(s => s.id === pendingStepId) ?? null : null;
+        const nextStep = pendingStep
+            ? sorted.find(s => s.step_order === pendingStep.step_order + 1) ?? null
+            : null;
+
+        const handleConfirmHandoff = async (deadlineDays: number | null) => {
+            if (!pendingStepId || !onCompleteStep) return;
+            setConfirming(true);
+            try {
+                await onCompleteStep(pendingStepId, deadlineDays);
+            } finally {
+                setConfirming(false);
+                setPendingStepId(null);
+            }
+        };
 
         return (
             <div ref={ref} className="w-full space-y-6">
@@ -189,6 +359,7 @@ export const AnimatedTimeline = React.forwardRef<HTMLDivElement, AnimatedTimelin
                             label: step.step_name.replace(/_/g, " "),
                             description: "",
                             daysStandard: 0,
+                            responsible: [],
                         };
                         const Icon = cfg.icon;
                         const badge = STATUS_BADGE[step.status] ?? STATUS_BADGE.pending;
@@ -200,21 +371,18 @@ export const AnimatedTimeline = React.forwardRef<HTMLDivElement, AnimatedTimelin
                         const isPending = step.status === "pending";
                         const isLast = index === sorted.length - 1;
 
-                        // Circle color
                         const circleBg = isCompleted ? "bg-emerald-500"
                             : isInProgress ? "bg-blue-500"
                                 : isDelayed ? "bg-red-500"
                                     : isBlocked ? "bg-orange-500"
                                         : "bg-slate-200";
 
-                        // Card border/bg
                         const cardCls = isInProgress ? "bg-blue-50/60 border-blue-200"
                             : isDelayed ? "bg-red-50 border-red-200"
                                 : isBlocked ? "bg-orange-50 border-orange-200"
                                     : isCompleted ? "bg-white border-slate-100"
                                         : "bg-white border-slate-100 opacity-75";
 
-                        // Display date (completed_at or started_at)
                         const displayDate = step.completed_at || step.started_at || null;
 
                         return (
@@ -227,7 +395,6 @@ export const AnimatedTimeline = React.forwardRef<HTMLDivElement, AnimatedTimelin
                             >
                                 {/* ── Left: circle + connector ── */}
                                 <div className="flex flex-col items-center w-9 flex-shrink-0">
-                                    {/* Circle */}
                                     <div className={cn(
                                         "w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 z-10 transition-all duration-300",
                                         circleBg,
@@ -251,19 +418,17 @@ export const AnimatedTimeline = React.forwardRef<HTMLDivElement, AnimatedTimelin
                                                 <Icon className="w-4 h-4 text-white" />
                                             </motion.div>
                                         ) : (
-                                            /* For pending/blocked: show step number */
                                             <span className="text-xs font-bold text-slate-500">
                                                 {index + 1}
                                             </span>
                                         )}
                                     </div>
 
-                                    {/* Connector line */}
                                     {!isLast && (
                                         <motion.div
                                             className={cn(
                                                 "w-0.5 flex-1 my-1 rounded-full min-h-[1.5rem]",
-                                                isCompleted ? "bg-emerald-300" : "bg-slate-150 bg-slate-200"
+                                                isCompleted ? "bg-emerald-300" : "bg-slate-200"
                                             )}
                                             initial={{ scaleY: 0 }}
                                             animate={{ scaleY: 1 }}
@@ -280,7 +445,7 @@ export const AnimatedTimeline = React.forwardRef<HTMLDivElement, AnimatedTimelin
                                 )}>
                                     {/* Top row: title + date & duration */}
                                     <div className="flex items-start justify-between gap-2">
-                                        <div className="min-w-0">
+                                        <div className="min-w-0 flex-1">
                                             <h3 className={cn(
                                                 "font-bold text-sm leading-tight",
                                                 isCompleted && "text-slate-800",
@@ -294,6 +459,20 @@ export const AnimatedTimeline = React.forwardRef<HTMLDivElement, AnimatedTimelin
                                             <p className="text-slate-400 text-xs mt-0.5 leading-snug">
                                                 {cfg.description}
                                             </p>
+                                            {/* Responsible services */}
+                                            {cfg.responsible && cfg.responsible.length > 0 && (
+                                                <div className="flex items-center gap-1 mt-1.5 flex-wrap">
+                                                    <Users className="w-3 h-3 text-slate-400 flex-shrink-0" />
+                                                    {cfg.responsible.map((r, idx) => (
+                                                        <span
+                                                            key={idx}
+                                                            className="text-[10px] font-medium text-slate-500 bg-slate-100 rounded px-1.5 py-0.5 leading-tight"
+                                                        >
+                                                            {r}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
 
                                         <div className="text-right flex-shrink-0 space-y-0.5">
@@ -334,7 +513,6 @@ export const AnimatedTimeline = React.forwardRef<HTMLDivElement, AnimatedTimelin
 
                                     {/* Bottom row: status badge + actions */}
                                     <div className="flex items-center justify-between mt-3 flex-wrap gap-2">
-                                        {/* Status badge — bottom left */}
                                         <span className={cn(
                                             "inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold",
                                             badge.cls
@@ -342,14 +520,13 @@ export const AnimatedTimeline = React.forwardRef<HTMLDivElement, AnimatedTimelin
                                             {badge.label}
                                         </span>
 
-                                        {/* Action buttons */}
                                         {(isInProgress || isDelayed) && (
                                             <div className="flex gap-2 flex-wrap">
                                                 {canAdvance && isInProgress && onCompleteStep && (
                                                     <Button
                                                         size="sm"
                                                         className="bg-emerald-600 hover:bg-emerald-700 gap-1.5 h-7 text-xs px-3"
-                                                        onClick={() => onCompleteStep(step.id)}
+                                                        onClick={() => setPendingStepId(step.id)}
                                                     >
                                                         <Play className="w-3 h-3" />
                                                         Marquer terminée
@@ -413,6 +590,16 @@ export const AnimatedTimeline = React.forwardRef<HTMLDivElement, AnimatedTimelin
                         </div>
                     ))}
                 </div>
+
+                {/* ── Handoff Dialog ────────────────────────────────────────────── */}
+                <HandoffDialog
+                    open={!!pendingStepId}
+                    currentStep={pendingStep}
+                    nextStep={nextStep}
+                    onConfirm={(days) => handleConfirmHandoff(days)}
+                    onCancel={() => { setPendingStepId(null); }}
+                    confirming={confirming}
+                />
             </div>
         );
     }
