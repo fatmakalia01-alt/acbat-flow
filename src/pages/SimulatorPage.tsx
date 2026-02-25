@@ -239,6 +239,7 @@ async function executeAction(
                 total_ht: 0,
                 total_ttc: 0,
                 notes: "Simulation ACBAT Flow — Test in-depth",
+                initial_delay_days: 3,
             }).select("id").single();
 
             if (error || !order) { addLog(`Erreur création: ${error?.message}`, "error"); return; }
