@@ -4,6 +4,31 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- Block Lovable WebSocket connections -->
+  <script>
+    (function () {
+      var OriginalWebSocket = window.WebSocket;
+      window.WebSocket = function (url, protocols) {
+        if (typeof url === 'string' && url.includes('lovableproject.com')) {
+          // Silently discard - return a dummy non-connecting socket
+          var dummy = Object.create(OriginalWebSocket.prototype);
+          Object.defineProperty(dummy, 'readyState', { get: function () { return 3; } }); // CLOSED
+          Object.defineProperty(dummy, 'url', { get: function () { return url; } });
+          dummy.send = function () { };
+          dummy.close = function () { };
+          dummy.addEventListener = function () { };
+          dummy.removeEventListener = function () { };
+          return dummy;
+        }
+        return protocols ? new OriginalWebSocket(url, protocols) : new OriginalWebSocket(url);
+      };
+      window.WebSocket.prototype = OriginalWebSocket.prototype;
+      window.WebSocket.CONNECTING = 0;
+      window.WebSocket.OPEN = 1;
+      window.WebSocket.CLOSING = 2;
+      window.WebSocket.CLOSED = 3;
+    })();
+  </script>
   <!-- TODO: Set the document title to the name of your application -->
   <title>ACBAT Flow</title>
   <meta name="description" content="Application de gestion ACBAT Flow">
@@ -13,16 +38,10 @@
   <link rel="apple-touch-icon" href="/icon.jpeg">
 
   <meta property="og:type" content="website" />
-  <meta property="og:image"
-    content="https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/98ed7b0b-9245-4e1e-ac04-36d438e3dcd1/id-preview-69d5ba3b--ede15fe1-3512-49ad-a8c6-94cdd67d3105.lovable.app-1771763925349.png">
-
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:site" content="@Lovable" />
-  <meta name="twitter:image"
-    content="https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/98ed7b0b-9245-4e1e-ac04-36d438e3dcd1/id-preview-69d5ba3b--ede15fe1-3512-49ad-a8c6-94cdd67d3105.lovable.app-1771763925349.png">
   <meta property="og:title" content="ACBAT Flow">
-  <meta name="twitter:title" content="ACBAT Flow">
   <meta property="og:description" content="Application de gestion ACBAT Flow">
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="ACBAT Flow">
   <meta name="twitter:description" content="Application de gestion ACBAT Flow">
 </head>
 
@@ -30,6 +49,46 @@
   <div id="root"></div>
   <script type="module" src="/src/main.tsx"></script>
   <script>
+    // Suppress unavoidable platform/sandboxing console warnings
+    const originalWarn = console.warn;
+    console.warn = (...args) => {
+      const msg = args[0]?.toString() || "";
+      if (
+        msg.includes("Unrecognized feature") ||
+        msg.includes("iframe which has both allow-scripts and allow-same-origin") ||
+        msg.includes("RudderStack")
+      ) {
+        return;
+      }
+      originalWarn.apply(console, args);
+    };
+
+    // Aggressively remove Lovable watermark/badge
+    const removeWatermark = () => {
+      const selectors = [
+        '#lovable-badge',
+        '.lovable-badge',
+        '[data-lovable-tag]',
+        'div[style*="z-index: 9999"]',
+        'div[style*="lovable"]'
+      ];
+      selectors.forEach(selector => {
+        document.querySelectorAll(selector).forEach(el => {
+          if (el.innerText?.toLowerCase().includes('lovable') || el.id === 'lovable-badge') {
+            el.remove();
+          }
+        });
+      });
+    };
+
+    // Use MutationObserver for late-injected elements
+    const observer = new MutationObserver(removeWatermark);
+    observer.observe(document.documentElement, { childList: true, subtree: true });
+
+    // Initial cleanup
+    window.addEventListener('DOMContentLoaded', removeWatermark);
+    window.addEventListener('load', removeWatermark);
+
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js');
