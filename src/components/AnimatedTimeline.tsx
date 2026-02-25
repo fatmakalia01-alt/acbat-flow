@@ -133,9 +133,25 @@ const STEP_CONFIG: Record<string, {
         icon: Archive, label: "Clôture",
         description: "Clôture et archivage du dossier",
         daysStandard: 1,
-        responsible: ["Manager", "Responsable Commercial"],
+        responsible: ["manager", "responsable_commercial"],
     },
 };
+
+const ROLE_LABELS: Record<string, string> = {
+    responsable_commercial: "Responsable Commercial",
+    responsable_logistique: "Responsable Logistique",
+    responsable_technique: "Responsable Technique",
+    responsable_achat: "Responsable Achat",
+    responsable_sav: "Responsable SAV",
+    responsable_comptabilite: "Responsable Comptabilité",
+    technicien_montage: "Technicien Montage",
+    commercial: "Commercial",
+    manager: "Manager",
+    directeur_exploitation: "Directeur d'Exploitation",
+    livraison: "Livreur",
+};
+
+const WORKFLOW_ROLES = Object.entries(ROLE_LABELS).map(([value, label]) => ({ value, label }));
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 export interface WorkflowStep {
@@ -154,13 +170,16 @@ export interface WorkflowStep {
     deadline_set_at?: string | null;
     delay_cause?: string | null;
     blamed_service?: string | null;
+    responsible_role?: string | null;
 }
 
 interface AnimatedTimelineProps {
     steps: WorkflowStep[];
-    onCompleteStep?: (stepId: string, deadlineDays?: number | null) => void;
+    onCompleteStep?: (stepId: string, nextRole: string | null) => void;
+    onConfirmReception?: (stepId: string) => void;
     onJustifyStep?: (stepId: string) => void;
     canAdvance?: boolean;
+    userRoles?: string[];
 }
 
 // ─── Status badge config ───────────────────────────────────────────────────────
@@ -173,11 +192,13 @@ const STATUS_BADGE: Record<string, { label: string; cls: string }> = {
 };
 
 // ─── Handoff Dialog ────────────────────────────────────────────────────────────
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 interface HandoffDialogProps {
     open: boolean;
     currentStep: WorkflowStep | null;
     nextStep: WorkflowStep | null;
-    onConfirm: (deadlineDays: number | null) => void;
+    onConfirm: (nextRole: string | null) => void;
     onCancel: () => void;
     confirming: boolean;
 }
@@ -185,8 +206,14 @@ interface HandoffDialogProps {
 const HandoffDialog = ({ open, currentStep, nextStep, onConfirm, onCancel, confirming }: HandoffDialogProps) => {
     const currentCfg = currentStep ? (STEP_CONFIG[currentStep.step_name] ?? null) : null;
     const nextCfg = nextStep ? (STEP_CONFIG[nextStep.step_name] ?? null) : null;
-    const NextIcon = nextCfg?.icon ?? Clock;
-    const [deadlineDays, setDeadlineDays] = useState<string>("");
+    const [nextRole, setNextRole] = useState<string>("");
+
+    // Set default role from config when nextStep changes
+    React.useEffect(() => {
+        if (nextCfg?.responsible && nextCfg.responsible.length > 0) {
+            setNextRole(nextCfg.responsible[0]);
+        }
+    }, [nextStep, nextCfg]);
 
     return (
         <Dialog open={open} onOpenChange={(v) => !v && onCancel()}>
@@ -194,80 +221,57 @@ const HandoffDialog = ({ open, currentStep, nextStep, onConfirm, onCancel, confi
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2 text-slate-800">
                         <CheckCheck className="w-5 h-5 text-emerald-600" />
-                        Confirmer la finalisation
+                        Transférer au service suivant
                     </DialogTitle>
                     <DialogDescription className="text-slate-500">
-                        Vous êtes sur le point de marquer cette étape comme terminée et de passer au service suivant.
+                        Sélectionnez le service responsable de l'étape suivante.
                     </DialogDescription>
                 </DialogHeader>
 
                 <div className="py-2 space-y-4">
                     {/* Current → Next visual */}
                     <div className="flex items-center gap-3">
-                        {/* Current step */}
                         <div className="flex-1 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-center">
-                            <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 mb-1">Étape actuelle</p>
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 mb-1">Terminé</p>
                             <p className="font-bold text-slate-800 text-sm">{currentCfg?.label ?? currentStep?.step_name}</p>
-                            <p className="text-xs text-slate-500 mt-0.5">{currentCfg?.description}</p>
                         </div>
 
                         <ArrowRight className="w-5 h-5 text-slate-400 flex-shrink-0" />
 
-                        {/* Next step */}
                         {nextStep ? (
                             <div className="flex-1 rounded-xl border border-blue-200 bg-blue-50 p-3 text-center">
-                                <p className="text-[10px] font-bold uppercase tracking-wider text-blue-600 mb-1">Étape suivante</p>
+                                <p className="text-[10px] font-bold uppercase tracking-wider text-blue-600 mb-1">À suivre</p>
                                 <p className="font-bold text-slate-800 text-sm">{nextCfg?.label ?? nextStep.step_name}</p>
-                                <p className="text-xs text-slate-500 mt-0.5">{nextCfg?.description}</p>
                             </div>
                         ) : (
                             <div className="flex-1 rounded-xl border border-slate-200 bg-slate-50 p-3 text-center">
-                                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Fin du workflow</p>
+                                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Fin</p>
                                 <p className="font-bold text-slate-600 text-sm">Dernière étape</p>
                             </div>
                         )}
                     </div>
 
-                    {/* Deadline input for next step */}
+                    {/* Service selection for next step */}
                     {nextStep && (
-                        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 space-y-2">
-                            <div className="flex items-center gap-1.5 text-amber-700">
-                                <CalendarClock className="w-4 h-4" />
-                                <Label className="text-sm font-semibold text-amber-700">
-                                    Délai de traitement du service suivant (jours) <span className="text-red-500">*</span>
+                        <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 space-y-2">
+                            <div className="flex items-center gap-1.5 text-blue-700">
+                                <Users className="w-4 h-4" />
+                                <Label className="text-sm font-semibold text-blue-700">
+                                    Service responsable suivant <span className="text-red-500">*</span>
                                 </Label>
                             </div>
-                            <Input
-                                type="number"
-                                min="1"
-                                max="365"
-                                placeholder="Ex: 3"
-                                value={deadlineDays}
-                                onChange={e => setDeadlineDays(e.target.value)}
-                                className="bg-white border-amber-300 focus:border-amber-500"
-                            />
-                            <p className="text-xs text-amber-600">
-                                Le service récepteur doit respecter ce délai. Une alerte sera déclenchée en cas de dépassement.
-                            </p>
-                        </div>
-                    )}
-
-                    {/* Next step responsible services */}
-                    {nextStep && nextCfg?.responsible && nextCfg.responsible.length > 0 && (
-                        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-2">
-                            <div className="flex items-center gap-1.5 text-slate-700">
-                                <Users className="w-4 h-4" />
-                                <span className="text-sm font-semibold">Services responsables de l'étape suivante</span>
-                            </div>
-                            <div className="flex flex-wrap gap-2">
-                                {nextCfg.responsible.map((r, i) => (
-                                    <Badge key={i} className="bg-blue-100 text-blue-800 border border-blue-200 px-2.5 py-1 text-xs font-medium">
-                                        {r}
-                                    </Badge>
-                                ))}
-                            </div>
-                            <p className="text-xs text-slate-500 mt-1">
-                                Ces services seront notifiés et devront mettre à jour l'état de la commande.
+                            <Select value={nextRole} onValueChange={setNextRole}>
+                                <SelectTrigger className="bg-white border-blue-300">
+                                    <SelectValue placeholder="Sélectionner un service..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {WORKFLOW_ROLES.map(r => (
+                                        <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <p className="text-xs text-blue-600">
+                                Le service sélectionné recevra une notification pour valider la réception et fixer son délai.
                             </p>
                         </div>
                     )}
@@ -279,16 +283,15 @@ const HandoffDialog = ({ open, currentStep, nextStep, onConfirm, onCancel, confi
                     </Button>
                     <Button
                         onClick={() => {
-                            const days = deadlineDays ? parseInt(deadlineDays, 10) : null;
-                            onConfirm(days && days > 0 ? days : null);
-                            setDeadlineDays("");
+                            onConfirm(nextRole || null);
+                            setNextRole("");
                         }}
-                        disabled={confirming || (!!nextStep && !deadlineDays)}
+                        disabled={confirming || (!!nextStep && !nextRole)}
                         className="bg-emerald-600 hover:bg-emerald-700 gap-2"
                     >
                         {confirming
-                            ? <><Loader2 className="w-4 h-4 animate-spin" /> Finalisation…</>
-                            : <><CheckCheck className="w-4 h-4" /> Confirmer et transférer</>
+                            ? <><Loader2 className="w-4 h-4 animate-spin" /> Transfert…</>
+                            : <><CheckCheck className="w-4 h-4" /> Confirmer le transfert</>
                         }
                     </Button>
                 </DialogFooter>
@@ -299,7 +302,7 @@ const HandoffDialog = ({ open, currentStep, nextStep, onConfirm, onCancel, confi
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export const AnimatedTimeline = React.forwardRef<HTMLDivElement, AnimatedTimelineProps>(
-    ({ steps, onCompleteStep, onJustifyStep, canAdvance = false }, ref) => {
+    ({ steps, onCompleteStep, onConfirmReception, onJustifyStep, canAdvance = false, userRoles = [] }, ref) => {
         const sorted = [...steps].sort((a, b) => a.step_order - b.step_order);
         const completedCount = sorted.filter(s => s.status === "completed").length;
         const progressPct = sorted.length > 0 ? (completedCount / sorted.length) * 100 : 0;
@@ -318,11 +321,11 @@ export const AnimatedTimeline = React.forwardRef<HTMLDivElement, AnimatedTimelin
             ? sorted.find(s => s.step_order === pendingStep.step_order + 1) ?? null
             : null;
 
-        const handleConfirmHandoff = async (deadlineDays: number | null) => {
+        const handleConfirmHandoff = async (nextRole: string | null) => {
             if (!pendingStepId || !onCompleteStep) return;
             setConfirming(true);
             try {
-                await onCompleteStep(pendingStepId, deadlineDays);
+                await onCompleteStep(pendingStepId, nextRole);
             } finally {
                 setConfirming(false);
                 setPendingStepId(null);
@@ -518,38 +521,58 @@ export const AnimatedTimeline = React.forwardRef<HTMLDivElement, AnimatedTimelin
 
                                     {/* Bottom row: status badge + actions */}
                                     <div className="flex items-center justify-between mt-3 flex-wrap gap-2">
-                                        <span className={cn(
-                                            "inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold",
-                                            badge.cls
-                                        )}>
-                                            {badge.label}
-                                        </span>
+                                        <div className="flex items-center gap-2">
+                                            <span className={cn(
+                                                "inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold",
+                                                badge.cls
+                                            )}>
+                                                {badge.label}
+                                            </span>
+                                            {isInProgress && !step.deadline_set_at && (
+                                                <Badge variant="outline" className="text-[10px] border-amber-200 bg-amber-50 text-amber-700">
+                                                    En attente de réception
+                                                </Badge>
+                                            )}
+                                        </div>
 
-                                        {(isInProgress || isDelayed) && (
-                                            <div className="flex gap-2 flex-wrap">
-                                                {canAdvance && isInProgress && onCompleteStep && (
-                                                    <Button
-                                                        size="sm"
-                                                        className="bg-emerald-600 hover:bg-emerald-700 gap-1.5 h-7 text-xs px-3"
-                                                        onClick={() => setPendingStepId(step.id)}
-                                                    >
-                                                        <Play className="w-3 h-3" />
-                                                        Marquer terminée
-                                                    </Button>
-                                                )}
-                                                {isDelayed && onJustifyStep && (
-                                                    <Button
-                                                        size="sm"
-                                                        variant="destructive"
-                                                        className="gap-1.5 h-7 text-xs px-3"
-                                                        onClick={() => onJustifyStep(step.id)}
-                                                    >
-                                                        <MessageSquare className="w-3 h-3" />
-                                                        Justifier le retard
-                                                    </Button>
-                                                )}
-                                            </div>
-                                        )}
+                                        <div className="flex gap-2 flex-wrap">
+                                            {/* Action for Receiver: Confirm Reception */}
+                                            {isInProgress && !step.deadline_set_at && onConfirmReception && (
+                                                <Button
+                                                    size="sm"
+                                                    className="bg-amber-500 hover:bg-amber-600 gap-1.5 h-7 text-xs px-3 text-white"
+                                                    onClick={() => onConfirmReception(step.id)}
+                                                    disabled={step.responsible_role && userRoles.length > 0 && !userRoles.includes(step.responsible_role)}
+                                                >
+                                                    <CheckCheck className="w-3 h-3" />
+                                                    Confirmer Réception
+                                                </Button>
+                                            )}
+
+                                            {/* Action for Sender: Mark as Complete */}
+                                            {canAdvance && isInProgress && (step.deadline_set_at || step.step_name === 'creation_commande') && onCompleteStep && (
+                                                <Button
+                                                    size="sm"
+                                                    className="bg-emerald-600 hover:bg-emerald-700 gap-1.5 h-7 text-xs px-3"
+                                                    onClick={() => setPendingStepId(step.id)}
+                                                >
+                                                    <Play className="w-3 h-3" />
+                                                    Marquer terminée
+                                                </Button>
+                                            )}
+
+                                            {isDelayed && onJustifyStep && (
+                                                <Button
+                                                    size="sm"
+                                                    variant="destructive"
+                                                    className="gap-1.5 h-7 text-xs px-3"
+                                                    onClick={() => onJustifyStep(step.id)}
+                                                >
+                                                    <MessageSquare className="w-3 h-3" />
+                                                    Justifier le retard
+                                                </Button>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             </motion.div>
@@ -601,7 +624,7 @@ export const AnimatedTimeline = React.forwardRef<HTMLDivElement, AnimatedTimelin
                     open={!!pendingStepId}
                     currentStep={pendingStep}
                     nextStep={nextStep}
-                    onConfirm={(days) => handleConfirmHandoff(days)}
+                    onConfirm={(role) => handleConfirmHandoff(role)}
                     onCancel={() => { setPendingStepId(null); }}
                     confirming={confirming}
                 />
