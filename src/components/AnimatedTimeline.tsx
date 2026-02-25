@@ -170,7 +170,6 @@ export interface WorkflowStep {
     deadline_set_at?: string | null;
     delay_cause?: string | null;
     blamed_service?: string | null;
-    responsible_role?: string | null;
 }
 
 interface AnimatedTimelineProps {
