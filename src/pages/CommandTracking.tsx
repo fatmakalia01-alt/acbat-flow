@@ -12,6 +12,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { JustificationDialog } from "@/components/JustificationDialog";
+import { DelayReportDialog } from "@/components/DelayReportDialog";
+import { useDeadlineMonitor } from "@/hooks/useDeadlineMonitor";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -544,7 +546,10 @@ export default function CommandTracking() {
                                             steps={steps}
                                             canAdvance={canAdvance}
                                             onCompleteStep={handleCompleteStep}
-                                            onJustifyStep={setSelectedStepForJustify}
+                                            onJustifyStep={(stepId) => {
+                                                const step = steps.find(s => s.id === stepId);
+                                                if (step) setSelectedStepForDelay(step);
+                                            }}
                                         />
                                     )}
                                 </CardContent>
@@ -644,13 +649,26 @@ export default function CommandTracking() {
                 </AnimatePresence>
             </div>
 
-            {/* ── Justification dialog ── */}
+            {/* Justification dialog */}
             <JustificationDialog
                 isOpen={!!selectedStepForJustify}
                 onClose={() => setSelectedStepForJustify(null)}
                 stepId={selectedStepForJustify || ""}
                 onSuccess={() => selectedOrderId && fetchDetail(selectedOrderId)}
             />
+
+            {/* Delay Report Dialog */}
+            {selectedStepForDelay && (
+                <DelayReportDialog
+                    open={!!selectedStepForDelay}
+                    onClose={() => setSelectedStepForDelay(null)}
+                    stepId={selectedStepForDelay.id}
+                    orderId={selectedStepForDelay.order_id}
+                    orderRef={selectedOrder?.reference || ""}
+                    stepLabel={selectedStepForDelay.step_name.replace(/_/g, " ")}
+                    onSuccess={() => selectedOrderId && fetchDetail(selectedOrderId)}
+                />
+            )}
         </div>
     );
 }
