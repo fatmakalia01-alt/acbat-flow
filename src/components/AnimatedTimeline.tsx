@@ -140,6 +140,7 @@ const STEP_CONFIG: Record<string, {
 // ─── Types ────────────────────────────────────────────────────────────────────
 export interface WorkflowStep {
     id: string;
+    order_id: string;
     step_name: string;
     step_order: number;
     status: "pending" | "in_progress" | "completed" | "delayed" | "blocked" | string;
@@ -149,6 +150,10 @@ export interface WorkflowStep {
     delay_days?: number;
     notes?: string | null;
     responsible_role?: string | null;
+    estimated_duration_days?: number | null;
+    deadline_set_at?: string | null;
+    delay_cause?: string | null;
+    blamed_service?: string | null;
 }
 
 interface AnimatedTimelineProps {
