@@ -9,16 +9,76 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
 
-const stepConfig: Record<string, { icon: any; label: string; daysStandard: number; color: string }> = {
-    creation_commande: { icon: ShoppingCart, label: "Création commande", daysStandard: 1, color: "bg-blue-500" },
-    validation_commerciale: { icon: CheckCircle, label: "Validation commerciale", daysStandard: 2, color: "bg-purple-500" },
-    commande_fournisseur: { icon: Package, label: "Cmd fournisseur", daysStandard: 7, color: "bg-indigo-500" },
-    reception_marchandises: { icon: Warehouse, label: "Réception marchandises", daysStandard: 14, color: "bg-cyan-500" },
-    preparation_technique: { icon: Wrench, label: "Préparation technique", daysStandard: 3, color: "bg-amber-500" },
-    livraison_installation: { icon: Truck, label: "Livraison / Installation", daysStandard: 2, color: "bg-orange-500" },
-    validation_client: { icon: ClipboardCheck, label: "Validation client", daysStandard: 1, color: "bg-teal-500" },
-    facturation_paiement: { icon: CreditCard, label: "Facturation / Paiement", daysStandard: 7, color: "bg-green-500" },
-    cloture_archivage: { icon: Archive, label: "Clôture & Archivage", daysStandard: 1, color: "bg-gray-500" },
+const stepConfig: Record<string, {
+    icon: any;
+    label: string;
+    daysStandard: number;
+    color: string;
+    responsible: string[];
+}> = {
+    creation_commande: {
+        icon: ShoppingCart,
+        label: "Création",
+        daysStandard: 1,
+        color: "bg-blue-500",
+        responsible: ["Responsable Commercial"],
+    },
+    validation_commerciale: {
+        icon: CheckCircle,
+        label: "Validation",
+        daysStandard: 2,
+        color: "bg-purple-500",
+        responsible: ["Responsable Logistique", "Responsable Technique"],
+    },
+    commande_fournisseur: {
+        icon: Package,
+        label: "Fournisseur",
+        daysStandard: 7,
+        color: "bg-indigo-500",
+        responsible: ["Responsable Achat"],
+    },
+    reception_marchandises: {
+        icon: Warehouse,
+        label: "Réception",
+        daysStandard: 14,
+        color: "bg-cyan-500",
+        responsible: ["Responsable Logistique"],
+    },
+    preparation_technique: {
+        icon: Wrench,
+        label: "Préparation",
+        daysStandard: 3,
+        color: "bg-amber-500",
+        responsible: ["Responsable Technique"],
+    },
+    livraison_installation: {
+        icon: Truck,
+        label: "Livraison",
+        daysStandard: 2,
+        color: "bg-orange-500",
+        responsible: ["Responsable Logistique", "Technicien Montage"],
+    },
+    validation_client: {
+        icon: ClipboardCheck,
+        label: "Validation",
+        daysStandard: 1,
+        color: "bg-teal-500",
+        responsible: ["Responsable SAV", "Commercial"],
+    },
+    facturation_paiement: {
+        icon: CreditCard,
+        label: "Facturation",
+        daysStandard: 7,
+        color: "bg-green-500",
+        responsible: ["Responsable Comptabilité"],
+    },
+    cloture_archivage: {
+        icon: Archive,
+        label: "Clôture",
+        daysStandard: 1,
+        color: "bg-gray-500",
+        responsible: ["Manager", "Responsable Commercial"],
+    },
 };
 
 const statusStyles: Record<string, { ring: string; dot: string; badge: string }> = {
@@ -126,8 +186,9 @@ const WorkflowTimeline = React.forwardRef<HTMLDivElement, WorkflowTimelineProps>
 
                                     {/* Content */}
                                     <div className="flex-1 min-w-0">
+                                        {/* Step label + status badge */}
                                         <div className="flex items-center gap-2 flex-wrap">
-                                            <span className={cn("text-sm font-medium", step.status === "pending" && "text-muted-foreground")}>
+                                            <span className={cn("text-sm font-semibold", step.status === "pending" && "text-muted-foreground")}>
                                                 {config?.label || step.step_name}
                                             </span>
                                             <Badge className={cn("text-xs px-1.5 py-0.5", style.badge)}>
@@ -139,6 +200,22 @@ const WorkflowTimeline = React.forwardRef<HTMLDivElement, WorkflowTimelineProps>
                                                 </Badge>
                                             )}
                                         </div>
+
+                                        {/* Responsible services */}
+                                        {config?.responsible && config.responsible.length > 0 && (
+                                            <div className="flex items-center gap-1 mt-0.5 flex-wrap">
+                                                {config.responsible.map((r, idx) => (
+                                                    <span
+                                                        key={idx}
+                                                        className="text-[11px] font-medium text-muted-foreground bg-muted/60 rounded px-1.5 py-0.5 leading-tight"
+                                                    >
+                                                        {r}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        {/* Dates */}
                                         <div className="flex gap-3 mt-0.5 text-xs text-muted-foreground">
                                             {config?.daysStandard && (
                                                 <span>Délai standard: {config.daysStandard}j</span>
