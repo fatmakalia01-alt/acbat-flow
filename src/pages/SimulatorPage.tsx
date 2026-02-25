@@ -301,7 +301,7 @@ async function executeAction(
                 { step_name: "cloture_archivage", step_order: 9, status: "pending" },
             ].map(s => ({ ...s, order_id: simState.orderId }));
 
-            await supabase.from("order_workflow_steps").insert(workflowSteps);
+            await supabase.from("order_workflow_steps").upsert(workflowSteps, { onConflict: "order_id,step_order", ignoreDuplicates: false });
             await supabase.from("client_orders").update({ status: "en_commande_fournisseur" }).eq("id", simState.orderId);
             addLog(`✓ Workflow démarré — État: EN COMMANDE FOURNISSEUR`, "success");
             break;
