@@ -61,7 +61,7 @@ BEGIN
   )
   SELECT
     ur.user_id,
-    p_title, p_message, p_type,
+    p_title, p_message, p_type::public.notification_type,
     p_order_id, p_step_id,
     p_action_required, p_action_type,
     FALSE
@@ -83,7 +83,7 @@ BEGIN
   INSERT INTO public.notifications (
     user_id, title, message, type, related_order_id, related_step_id, read
   )
-  SELECT ur.user_id, p_title, p_message, p_type, p_order_id, p_step_id, FALSE
+  SELECT ur.user_id, p_title, p_message, p_type::public.notification_type, p_order_id, p_step_id, FALSE
   FROM public.user_roles ur
   WHERE ur.role IN ('manager', 'directeur_exploitation');
 END;
@@ -126,5 +126,15 @@ BEGIN
 END;
 $$;
 
--- Enable Realtime for delay_reports
-ALTER PUBLICATION supabase_realtime ADD TABLE public.delay_reports;
+-- ─── Step 7: Enable Realtime for delay_reports (Idempotent) ──────────────
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables 
+    WHERE pubname = 'supabase_realtime' 
+    AND schemaname = 'public' 
+    AND tablename = 'delay_reports'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.delay_reports;
+  END IF;
+END $$;
