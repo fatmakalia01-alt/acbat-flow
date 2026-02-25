@@ -253,6 +253,11 @@ export default function CommandTracking() {
         }
     }, []);
 
+    const [selectedStepForDelay, setSelectedStepForDelay] = useState<WorkflowStep | null>(null);
+
+    // Monitoring
+    useDeadlineMonitor();
+
     // ─── Filters ──────────────────────────────────────────────────────────────
     useEffect(() => {
         let result = orders;
@@ -290,7 +295,7 @@ export default function CommandTracking() {
         else { setSelectedOrder(null); setSteps([]); setDelivery(null); }
     }, [selectedOrderId, fetchDetail]);
 
-    // ─── Actions ──────────────────────────────────────────────────────────────
+    // ─── Actions ──────────────────────────────────────────────────────────
     const handleLaunch = async () => {
         if (!selectedOrder) return;
         const { error } = await supabase.from("client_orders").update({ status: "en_validation" }).eq("id", selectedOrder.id);
@@ -305,19 +310,82 @@ export default function CommandTracking() {
         toast.success("Commande validée !");
     };
 
-    const handleCompleteStep = async (stepId: string) => {
+    const handleCompleteStep = async (stepId: string, deadlineDays?: number | null) => {
         const step = steps.find(s => s.id === stepId);
         if (!step) return;
+
+        // Step 1: Mark current step as completed
         const { error } = await supabase.from("order_workflow_steps")
             .update({ status: "completed", completed_at: new Date().toISOString() }).eq("id", stepId);
         if (error) { toast.error("Erreur lors de la mise à jour de l'étape"); return; }
+
+        // Step 2: Activate next step + set deadline if provided
         const nextStep = steps.find(s => s.step_order === step.step_order + 1 && s.status === "pending");
         if (nextStep) {
-            await supabase.from("order_workflow_steps")
-                .update({ status: "in_progress", started_at: new Date().toISOString() }).eq("id", nextStep.id);
-            toast.success(`Étape terminée — "${nextStep.step_name.replace(/_/g, ' ')}" démarre`);
+            const now = new Date();
+            const dueDate = deadlineDays
+                ? new Date(now.getTime() + deadlineDays * 86_400_000).toISOString()
+                : null;
+
+            await supabase.from("order_workflow_steps").update({
+                status: "in_progress",
+                started_at: now.toISOString(),
+                ...(deadlineDays && { estimated_duration_days: deadlineDays }),
+                ...(dueDate && { due_date: dueDate }),
+                ...(deadlineDays && { deadline_set_at: now.toISOString() }),
+            } as any).eq("id", nextStep.id);
+
+            // Step 3: Notify the next step's responsible role
+            // Derive the role from step name mapping
+            const STEP_ROLE_MAP: Record<string, string> = {
+                creation_commande: "responsable_commercial",
+                validation_commerciale: "responsable_logistique",
+                commande_fournisseur: "responsable_achat",
+                reception_marchandises: "responsable_logistique",
+                preparation_technique: "responsable_technique",
+                livraison_installation: "responsable_logistique",
+                validation_client: "responsable_sav",
+                facturation_paiement: "responsable_comptabilite",
+                cloture_archivage: "manager",
+            };
+            const nextRole = STEP_ROLE_MAP[nextStep.step_name];
+            const orderRef = selectedOrder?.reference || "?";
+            const nextLabel = nextStep.step_name.replace(/_/g, " ");
+            const delayText = deadlineDays ? ` — Délai accordé : ${deadlineDays} jour(s)` : "";
+
+            if (nextRole) {
+                await supabase.rpc("notify_users_by_role" as any, {
+                    p_role: nextRole,
+                    p_title: `📦 Nouvelle étape à traiter — ${orderRef}`,
+                    p_message: `L'étape "${nextLabel}" vous a été transmise pour la commande ${orderRef}.${delayText}`,
+                    p_type: "transition",
+                    p_order_id: nextStep.order_id,
+                    p_step_id: nextStep.id,
+                    p_action_required: false,
+                    p_action_type: null,
+                });
+            }
+
+            // Step 4: Notify manager + directeur of the transfer
+            await supabase.rpc("notify_management" as any, {
+                p_title: `🔄 Transfert commande — ${orderRef}`,
+                p_message: `Étape "${step.step_name.replace(/_/g, " ")}" terminée. Passage à "${nextLabel}"${deadlineDays ? ` (délai : ${deadlineDays}j)` : ""}.`,
+                p_type: "transition",
+                p_order_id: step.order_id,
+                p_step_id: nextStep.id,
+            });
+
+            toast.success(`Étape terminée — "${nextLabel}" démarre${deadlineDays ? ` (${deadlineDays}j)` : ""}`);
         } else {
-            toast.success("Étape marquée comme terminée !");
+            // Last step completed — notify management
+            await supabase.rpc("notify_management" as any, {
+                p_title: `✅ Workflow terminé — ${selectedOrder?.reference || ""}`,
+                p_message: `Toutes les étapes de la commande ${selectedOrder?.reference || ""} ont été complétées.`,
+                p_type: "info",
+                p_order_id: step.order_id,
+                p_step_id: stepId,
+            });
+            toast.success("Toutes les étapes sont terminées !");
         }
     };
 
