@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { JustificationDialog } from "@/components/JustificationDialog";
 import { DelayReportDialog } from "@/components/DelayReportDialog";
+import { ReceptionDialog } from "@/components/ReceptionDialog";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -254,6 +255,7 @@ export default function CommandTracking() {
         }
     }, []);
 
+    const [selectedStepForReception, setSelectedStepForReception] = useState<WorkflowStep | null>(null);
     const [selectedStepForDelay, setSelectedStepForDelay] = useState<WorkflowStep | null>(null);
 
     // ─── URL Params Actions ───────────────────────────────────────────────────
@@ -329,7 +331,7 @@ export default function CommandTracking() {
         toast.success("Commande validée !");
     };
 
-    const handleCompleteStep = async (stepId: string, deadlineDays?: number | null) => {
+    const handleCompleteStep = async (stepId: string, nextRole?: string | null) => {
         const step = steps.find(s => s.id === stepId);
         if (!step) return;
 
@@ -338,76 +340,46 @@ export default function CommandTracking() {
             .update({ status: "completed", completed_at: new Date().toISOString() }).eq("id", stepId);
         if (error) { toast.error("Erreur lors de la mise à jour de l'étape"); return; }
 
-        // Step 2: Activate next step + set deadline if provided
+        // Step 2: Activate next step + set responsible role if provided
         const nextStep = steps.find(s => s.step_order === step.step_order + 1 && s.status === "pending");
         if (nextStep) {
             const now = new Date();
-            const dueDate = deadlineDays
-                ? new Date(now.getTime() + deadlineDays * 86_400_000).toISOString()
-                : null;
 
             await supabase.from("order_workflow_steps").update({
                 status: "in_progress",
                 started_at: now.toISOString(),
-                ...(deadlineDays && { estimated_duration_days: deadlineDays }),
-                ...(dueDate && { due_date: dueDate }),
-                ...(deadlineDays && { deadline_set_at: now.toISOString() }),
+                responsible_role: nextRole || null,
+                deadline_set_at: null, // Ensure deadline is null until receiver validates
+                due_date: null,
             } as any).eq("id", nextStep.id);
 
-            // Step 3: Notify the next step's responsible role
-            // Derive the role from step name mapping
-            const STEP_ROLE_MAP: Record<string, string> = {
-                creation_commande: "responsable_commercial",
-                validation_commerciale: "responsable_logistique",
-                commande_fournisseur: "responsable_achat",
-                reception_marchandises: "responsable_logistique",
-                preparation_technique: "responsable_technique",
-                livraison_installation: "responsable_logistique",
-                validation_client: "responsable_sav",
-                facturation_paiement: "responsable_comptabilite",
-                cloture_archivage: "manager",
-            };
-            const nextRole = STEP_ROLE_MAP[nextStep.step_name];
             const orderRef = selectedOrder?.reference || "?";
             const nextLabel = nextStep.step_name.replace(/_/g, " ");
-            const delayText = deadlineDays ? ` — Délai accordé : ${deadlineDays} jour(s)` : "";
 
+            // Step 3: Notify the next step's responsible role (the one selected)
             if (nextRole) {
                 await supabase.rpc("notify_users_by_role" as any, {
                     p_role: nextRole,
                     p_title: `📦 Nouvelle étape à traiter — ${orderRef}`,
-                    p_message: `L'étape "${nextLabel}" vous a été transmise pour la commande ${orderRef}.${delayText}`,
+                    p_message: `L'étape "${nextLabel}" vous a été transmise pour la commande ${orderRef}. Veuillez confirmer la réception et fixer votre délai.`,
                     p_type: "transition",
                     p_order_id: nextStep.order_id,
                     p_step_id: nextStep.id,
-                    p_action_required: false,
-                    p_action_type: null,
+                    p_action_required: true,
+                    p_action_type: "set_deadline",
                 });
             }
 
             // Step 4: Notify manager + directeur of the transfer
             await supabase.rpc("notify_management" as any, {
                 p_title: `🔄 Transfert commande — ${orderRef}`,
-                p_message: `Étape "${step.step_name.replace(/_/g, " ")}" terminée. Passage à "${nextLabel}"${deadlineDays ? ` (délai : ${deadlineDays}j)` : ""}.`,
+                p_message: `Étape "${step.step_name.replace(/_/g, " ")}" terminée. Passage à "${nextLabel}"${nextRole ? ` (transmis à : ${nextRole})` : ""}.`,
                 p_type: "transition",
                 p_order_id: step.order_id,
                 p_step_id: nextStep.id,
             });
 
-            // Step 5: Notify the service that just finished (confirmation of handoff)
-            const prevRole = STEP_ROLE_MAP[step.step_name];
-            if (prevRole) {
-                await supabase.rpc("notify_users_by_role" as any, {
-                    p_role: prevRole,
-                    p_title: `✅ Transfert confirmé — ${orderRef}`,
-                    p_message: `Votre étape est terminée. La commande a été transmise à "${nextLabel}"${deadlineDays ? ` avec un délai de ${deadlineDays}j` : ""}.`,
-                    p_type: "info",
-                    p_order_id: step.order_id,
-                    p_step_id: step.id,
-                });
-            }
-
-            toast.success(`Étape terminée — "${nextLabel}" démarre${deadlineDays ? ` (${deadlineDays}j)` : ""}`);
+            toast.success(`Étape terminée — Transmise à "${nextLabel}"`);
         } else {
             // Last step completed — notify management
             await supabase.rpc("notify_management" as any, {
@@ -575,7 +547,12 @@ export default function CommandTracking() {
                                         <AnimatedTimeline
                                             steps={steps}
                                             canAdvance={canAdvance}
+                                            userRoles={roles}
                                             onCompleteStep={handleCompleteStep}
+                                            onConfirmReception={(stepId) => {
+                                                const step = steps.find(s => s.id === stepId);
+                                                if (step) setSelectedStepForReception(step);
+                                            }}
                                             onJustifyStep={(stepId) => {
                                                 const step = steps.find(s => s.id === stepId);
                                                 if (step) setSelectedStepForDelay(step);
@@ -686,6 +663,18 @@ export default function CommandTracking() {
                 stepId={selectedStepForJustify || ""}
                 onSuccess={() => selectedOrderId && fetchDetail(selectedOrderId)}
             />
+
+            {/* Reception Dialog */}
+            {selectedStepForReception && (
+                <ReceptionDialog
+                    open={!!selectedStepForReception}
+                    onClose={() => setSelectedStepForReception(null)}
+                    stepId={selectedStepForReception.id}
+                    orderRef={selectedOrder?.reference || ""}
+                    stepLabel={selectedStepForReception.step_name.replace(/_/g, " ")}
+                    onSuccess={() => selectedOrderId && fetchDetail(selectedOrderId)}
+                />
+            )}
 
             {/* Delay Report Dialog */}
             {selectedStepForDelay && (
