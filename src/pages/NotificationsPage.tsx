@@ -131,6 +131,16 @@ const NotificationsPage = () => {
                                                 {n.alert_level && (
                                                     <Badge variant="outline" className="text-xs">{n.alert_level}</Badge>
                                                 )}
+                                                {n.action_required && n.action_type === "report_delay" && (
+                                                    <Button variant="default" size="sm" className="bg-amber-600 hover:bg-amber-700 h-7 text-xs px-2"
+                                                        onClick={() => {
+                                                            // For now, redirect to tracking or open dialog if order_id is available
+                                                            // Ideally, we'd have a global dialog manager or navigate with state
+                                                            window.location.href = `/command-tracking?orderId=${n.related_order_id}&reportStepId=${n.related_step_id}`;
+                                                        }}>
+                                                        Signaler le retard
+                                                    </Button>
+                                                )}
                                                 {!n.read && (
                                                     <Button variant="ghost" size="icon" className="h-7 w-7"
                                                         onClick={() => markRead.mutate(n.id)}>
