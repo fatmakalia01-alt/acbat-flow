@@ -25,7 +25,7 @@
       window.WebSocket.prototype = OriginalWebSocket.prototype;
       window.WebSocket.CONNECTING = 0; window.WebSocket.OPEN = 1; window.WebSocket.CLOSING = 2; window.WebSocket.CLOSED = 3;
 
-      // 2. Early Console Suppression (Log, Warn, Info, Error)
+      // 2. Early Console Suppression (Log, Warn, Info, Error, Debug)
       const suppressPatterns = [
         "Unrecognized feature",
         "allow-scripts and allow-same-origin",
@@ -35,23 +35,28 @@
         "lovable.dev",
         "vr",
         "battery",
-        "ambient-light-sensor"
+        "ambient-light-sensor",
+        "third-party cookies",
+        "osano",
+        "sandbox attribute can escape"
       ];
       const suppress = (method) => {
         const original = console[method];
         console[method] = (...args) => {
           const combined = args.map(arg => {
             try {
-              return typeof arg === 'string' ? arg : JSON.stringify(arg);
+              if (typeof arg === 'string') return arg;
+              if (arg instanceof Error) return arg.message;
+              return JSON.stringify(arg);
             } catch (e) {
               return String(arg);
             }
-          }).join(" ");
-          if (suppressPatterns.some(p => combined.includes(p))) return;
+          }).join(" ").toLowerCase();
+          if (suppressPatterns.some(p => combined.includes(p.toLowerCase()))) return;
           original.apply(console, args);
         };
       };
-      ['log', 'warn', 'info', 'error'].forEach(suppress);
+      ['log', 'warn', 'info', 'error', 'debug'].forEach(suppress);
 
       // 3. Early Lovable Element Removal Pattern
       const removeWatermark = () => {
