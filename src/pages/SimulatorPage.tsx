@@ -597,14 +597,28 @@ export default function SimulatorPage() {
         try {
             addLog("Purge des données simulateur en cours...", "warning");
 
-            // Delete in order of dependency
+            // Delete in dependency order — guard against empty IDs
+            // 1. Find all SIMU orders first
+            const { data: simuOrders } = await supabase.from("client_orders").select("id").ilike("reference", "%SIMU%");
+            const simuOrderIds = (simuOrders || []).map(o => o.id);
+
+            // 2. Find SIMU invoices for payment cleanup
+            const { data: simuInvoices } = await supabase.from("invoices").select("id").ilike("reference", "%SIMU%");
+            const simuInvoiceIds = (simuInvoices || []).map(i => i.id);
+
+            // 3. Delete leaf tables first (no FK references to them)
             await supabase.from("supplier_orders").delete().ilike("reference", "%SIMU%");
-            await supabase.from("deliveries").delete().eq("order_id", simState.orderId); // Might need a better filter
+            if (simuInvoiceIds.length > 0) {
+                await supabase.from("payments").delete().in("invoice_id", simuInvoiceIds);
+            }
+            if (simuOrderIds.length > 0) {
+                await supabase.from("deliveries").delete().in("order_id", simuOrderIds);
+                await supabase.from("order_items").delete().in("order_id", simuOrderIds);
+                await supabase.from("order_workflow_steps").delete().in("order_id", simuOrderIds);
+            }
             await supabase.from("chantiers").delete().ilike("reference", "%SIMU%");
             await supabase.from("invoices").delete().ilike("reference", "%SIMU%");
             await supabase.from("sav_tickets").delete().ilike("subject", "%SIMU%");
-            await supabase.from("order_items").delete().eq("order_id", simState.orderId);
-            await supabase.from("order_workflow_steps").delete().eq("order_id", simState.orderId);
             await supabase.from("client_orders").delete().ilike("reference", "%SIMU%");
             await supabase.from("clients").delete().ilike("email", "%acbat-test%");
 
