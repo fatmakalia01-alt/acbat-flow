@@ -26,6 +26,7 @@ const STATUS_LABELS: Record<string, string> = {
 
 interface WorkflowStep {
   id: string;
+  order_id: string;
   step_name: string;
   step_order: number;
   status: string;

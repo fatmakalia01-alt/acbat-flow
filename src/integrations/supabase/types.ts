@@ -182,6 +182,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           id: string
+          initial_delay_days: number | null
           notes: string | null
           reference: string
           site_id: string | null
@@ -198,6 +199,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
+          initial_delay_days?: number | null
           notes?: string | null
           reference?: string
           site_id?: string | null
@@ -214,6 +216,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
+          initial_delay_days?: number | null
           notes?: string | null
           reference?: string
           site_id?: string | null
@@ -297,6 +300,51 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      delay_reports: {
+        Row: {
+          blamed_role: string | null
+          cause_text: string
+          created_at: string | null
+          id: string
+          order_id: string | null
+          reported_by: string | null
+          step_id: string | null
+        }
+        Insert: {
+          blamed_role?: string | null
+          cause_text: string
+          created_at?: string | null
+          id?: string
+          order_id?: string | null
+          reported_by?: string | null
+          step_id?: string | null
+        }
+        Update: {
+          blamed_role?: string | null
+          cause_text?: string
+          created_at?: string | null
+          id?: string
+          order_id?: string | null
+          reported_by?: string | null
+          step_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delay_reports_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "client_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delay_reports_step_id_fkey"
+            columns: ["step_id"]
+            isOneToOne: false
+            referencedRelation: "order_workflow_steps"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       delegations: {
         Row: {
@@ -495,6 +543,8 @@ export type Database = {
       }
       notifications: {
         Row: {
+          action_required: boolean | null
+          action_type: string | null
           alert_level: Database["public"]["Enums"]["alert_level"] | null
           created_at: string
           id: string
@@ -502,11 +552,14 @@ export type Database = {
           read: boolean | null
           read_at: string | null
           related_order_id: string | null
+          related_step_id: string | null
           title: string
           type: Database["public"]["Enums"]["notification_type"]
           user_id: string
         }
         Insert: {
+          action_required?: boolean | null
+          action_type?: string | null
           alert_level?: Database["public"]["Enums"]["alert_level"] | null
           created_at?: string
           id?: string
@@ -514,11 +567,14 @@ export type Database = {
           read?: boolean | null
           read_at?: string | null
           related_order_id?: string | null
+          related_step_id?: string | null
           title: string
           type?: Database["public"]["Enums"]["notification_type"]
           user_id: string
         }
         Update: {
+          action_required?: boolean | null
+          action_type?: string | null
           alert_level?: Database["public"]["Enums"]["alert_level"] | null
           created_at?: string
           id?: string
@@ -526,6 +582,7 @@ export type Database = {
           read?: boolean | null
           read_at?: string | null
           related_order_id?: string | null
+          related_step_id?: string | null
           title?: string
           type?: Database["public"]["Enums"]["notification_type"]
           user_id?: string
@@ -536,6 +593,13 @@ export type Database = {
             columns: ["related_order_id"]
             isOneToOne: false
             referencedRelation: "client_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_related_step_id_fkey"
+            columns: ["related_step_id"]
+            isOneToOne: false
+            referencedRelation: "order_workflow_steps"
             referencedColumns: ["id"]
           },
         ]
@@ -597,13 +661,17 @@ export type Database = {
       order_workflow_steps: {
         Row: {
           assigned_to: string | null
+          blamed_service: string | null
           completed_at: string | null
           created_at: string
+          deadline_set_at: string | null
+          delay_cause: string | null
           delay_days: number | null
           delay_justified_at: string | null
           delay_justified_by: string | null
           delay_reason: string | null
           due_date: string | null
+          estimated_duration_days: number | null
           id: string
           notes: string | null
           order_id: string
@@ -616,13 +684,17 @@ export type Database = {
         }
         Insert: {
           assigned_to?: string | null
+          blamed_service?: string | null
           completed_at?: string | null
           created_at?: string
+          deadline_set_at?: string | null
+          delay_cause?: string | null
           delay_days?: number | null
           delay_justified_at?: string | null
           delay_justified_by?: string | null
           delay_reason?: string | null
           due_date?: string | null
+          estimated_duration_days?: number | null
           id?: string
           notes?: string | null
           order_id: string
@@ -635,13 +707,17 @@ export type Database = {
         }
         Update: {
           assigned_to?: string | null
+          blamed_service?: string | null
           completed_at?: string | null
           created_at?: string
+          deadline_set_at?: string | null
+          delay_cause?: string | null
           delay_days?: number | null
           delay_justified_at?: string | null
           delay_justified_by?: string | null
           delay_reason?: string | null
           due_date?: string | null
+          estimated_duration_days?: number | null
           id?: string
           notes?: string | null
           order_id?: string
@@ -757,6 +833,7 @@ export type Database = {
           sku: string | null
           supplier_id: string | null
           tva_rate: number | null
+          unit: string | null
           updated_at: string
         }
         Insert: {
@@ -772,6 +849,7 @@ export type Database = {
           sku?: string | null
           supplier_id?: string | null
           tva_rate?: number | null
+          unit?: string | null
           updated_at?: string
         }
         Update: {
@@ -787,6 +865,7 @@ export type Database = {
           sku?: string | null
           supplier_id?: string | null
           tva_rate?: number | null
+          unit?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -1466,6 +1545,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_overdue_workflow_steps: { Args: never; Returns: number }
       check_workflow_deadlines: { Args: never; Returns: undefined }
       current_user_has_role: { Args: { _role: string }; Returns: boolean }
       get_ca_evolution_12months: {
@@ -1502,13 +1582,37 @@ export type Database = {
       is_manager: { Args: { _user_id: string }; Returns: boolean }
       is_manager_absent: { Args: never; Returns: boolean }
       is_staff: { Args: { _user_id: string }; Returns: boolean }
-      notify_management: {
+      notify_management:
+        | {
+            Args: {
+              p_alert_level?: Database["public"]["Enums"]["alert_level"]
+              p_message: string
+              p_order_id: string
+              p_title: string
+              p_type?: Database["public"]["Enums"]["notification_type"]
+            }
+            Returns: undefined
+          }
+        | {
+            Args: {
+              p_message: string
+              p_order_id?: string
+              p_step_id?: string
+              p_title: string
+              p_type: string
+            }
+            Returns: undefined
+          }
+      notify_users_by_role: {
         Args: {
-          p_alert_level?: Database["public"]["Enums"]["alert_level"]
+          p_action_required?: boolean
+          p_action_type?: string
           p_message: string
-          p_order_id: string
+          p_order_id?: string
+          p_role: string
+          p_step_id?: string
           p_title: string
-          p_type?: Database["public"]["Enums"]["notification_type"]
+          p_type: string
         }
         Returns: undefined
       }
@@ -1561,13 +1665,15 @@ export type Database = {
         | "payee"
         | "cloturee"
         | "annulee"
+        | "en_cours"
+        | "terminee"
       payment_method:
         | "especes"
         | "cheque"
         | "virement"
         | "carte_bancaire"
         | "traite_bancaire"
-      payment_status: "en_attente" | "confirme" | "rejete"
+      payment_status: "en_attente" | "confirme" | "rejete" | "complete"
       purchase_order_status:
         | "brouillon"
         | "en_commande"
@@ -1777,6 +1883,8 @@ export const Constants = {
         "payee",
         "cloturee",
         "annulee",
+        "en_cours",
+        "terminee",
       ],
       payment_method: [
         "especes",
@@ -1785,7 +1893,7 @@ export const Constants = {
         "carte_bancaire",
         "traite_bancaire",
       ],
-      payment_status: ["en_attente", "confirme", "rejete"],
+      payment_status: ["en_attente", "confirme", "rejete", "complete"],
       purchase_order_status: [
         "brouillon",
         "en_commande",
