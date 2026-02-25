@@ -47,7 +47,7 @@ const OrdersManagement = React.forwardRef<HTMLDivElement, {}>(
     const [selectedOrder, setSelectedOrder] = useState<any>(null);
     const [detailOpen, setDetailOpen] = useState(false);
 
-    const [newOrder, setNewOrder] = useState({ client_id: "", notes: "", site_id: "" });
+    const [newOrder, setNewOrder] = useState({ client_id: "", notes: "", site_id: "", initial_delay_days: 2 });
     const [newItem, setNewItem] = useState({ product_id: "", quantity: 1 });
 
     const { data: sites = [] } = useQuery({
@@ -173,6 +173,7 @@ const OrdersManagement = React.forwardRef<HTMLDivElement, {}>(
           client_id: newOrder.client_id,
           notes: newOrder.notes || null,
           site_id: newOrder.site_id || null,
+          initial_delay_days: newOrder.initial_delay_days,
           created_by: user?.id,
         }).select("*, clients(full_name, company_name), sites(name)").single();
         if (error) throw error;
@@ -180,7 +181,7 @@ const OrdersManagement = React.forwardRef<HTMLDivElement, {}>(
       },
       onSuccess: (data) => {
         queryClient.invalidateQueries({ queryKey: ["orders"] });
-        setNewOrder({ client_id: "", notes: "", site_id: "" });
+        setNewOrder({ client_id: "", notes: "", site_id: "", initial_delay_days: 2 });
         setDialogOpen(false);
         setSelectedOrder(data);
         setDetailOpen(true);
@@ -260,6 +261,18 @@ const OrdersManagement = React.forwardRef<HTMLDivElement, {}>(
                 <div>
                   <Label>Notes</Label>
                   <Textarea value={newOrder.notes} onChange={e => setNewOrder(p => ({ ...p, notes: e.target.value }))} />
+                </div>
+                <div>
+                  <Label>Délai de traitement initial (jours)</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    value={newOrder.initial_delay_days}
+                    onChange={e => setNewOrder(p => ({ ...p, initial_delay_days: parseInt(e.target.value) || 1 }))}
+                  />
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    Ce délai sera appliqué à la première étape ("Création de commande").
+                  </p>
                 </div>
                 <Button onClick={() => createOrder.mutate()} disabled={!newOrder.client_id || createOrder.isPending} className="w-full">
                   Créer
