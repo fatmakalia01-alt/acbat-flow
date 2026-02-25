@@ -143,10 +143,6 @@ export default function CommandTracking() {
         if (!user) return;
         setListLoading(true);
         try {
-            let query = supabase
-                .from("client_orders")
-                .select("id, reference, status, total_ht, created_at, clients!inner(id, full_name, company_name, user_id, commercial_id)");
-
             // Apply role-based filtering
             const isManagerOrAdmin = roles.some(r => [
                 "manager", "directeur_exploitation", "responsable_achat",
@@ -155,35 +151,66 @@ export default function CommandTracking() {
                 "responsable_showroom", "responsable_commercial"
             ].includes(r));
 
-            if (!isManagerOrAdmin) {
-                if (roles.includes("client")) {
-                    query = query.eq("clients.user_id", user.id);
-                } else if (roles.includes("commercial")) {
-                    query = query.eq("clients.commercial_id", user.id);
-                } else if (roles.includes("technicien_montage") || roles.includes("livraison")) {
-                    // Filter orders that have an associated delivery assigned to this user
-                    const { data: deliveryOrders } = await supabase
-                        .from("deliveries")
-                        .select("order_id")
-                        .eq("technician_id", user.id);
+            let data: any[] = [];
 
-                    const orderIds = (deliveryOrders || []).map(d => d.order_id);
-                    if (orderIds.length > 0) {
-                        query = query.in("id", orderIds);
-                    } else {
-                        // Return empty if no assignments
-                        setOrders([]);
-                        setListLoading(false);
-                        return;
-                    }
+            if (isManagerOrAdmin) {
+                // Managers see all orders
+                const { data: d, error } = await supabase
+                    .from("client_orders")
+                    .select("id, reference, status, total_ht, created_at, clients(id, full_name, company_name, user_id, commercial_id)")
+                    .order("created_at", { ascending: false });
+                if (error) throw error;
+                data = d || [];
+            } else if (roles.includes("client")) {
+                const { data: d, error } = await supabase
+                    .from("client_orders")
+                    .select("id, reference, status, total_ht, created_at, clients!inner(id, full_name, company_name, user_id, commercial_id)")
+                    .eq("clients.user_id", user.id)
+                    .order("created_at", { ascending: false });
+                if (error) throw error;
+                data = d || [];
+            } else if (roles.includes("commercial")) {
+                // Commercial sees orders where: (1) their client has commercial_id = them, OR (2) they created the order
+                const [byCommercial, byCreator] = await Promise.all([
+                    supabase
+                        .from("client_orders")
+                        .select("id, reference, status, total_ht, created_at, clients!inner(id, full_name, company_name, user_id, commercial_id)")
+                        .eq("clients.commercial_id", user.id)
+                        .order("created_at", { ascending: false }),
+                    supabase
+                        .from("client_orders")
+                        .select("id, reference, status, total_ht, created_at, clients(id, full_name, company_name, user_id, commercial_id)")
+                        .eq("created_by", user.id)
+                        .order("created_at", { ascending: false }),
+                ]);
+                if (byCommercial.error) throw byCommercial.error;
+                // Merge + deduplicate by id
+                const seen = new Set<string>();
+                const merged: any[] = [];
+                for (const row of [...(byCommercial.data || []), ...(byCreator.data || [])]) {
+                    if (!seen.has(row.id)) { seen.add(row.id); merged.push(row); }
                 }
+                data = merged.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+            } else if (roles.includes("technicien_montage") || roles.includes("livraison")) {
+                const { data: deliveryOrders } = await supabase
+                    .from("deliveries")
+                    .select("order_id")
+                    .eq("technician_id", user.id);
+                const orderIds = (deliveryOrders || []).map(d => d.order_id);
+                if (orderIds.length > 0) {
+                    const { data: d, error } = await supabase
+                        .from("client_orders")
+                        .select("id, reference, status, total_ht, created_at, clients(id, full_name, company_name, user_id, commercial_id)")
+                        .in("id", orderIds)
+                        .order("created_at", { ascending: false });
+                    if (error) throw error;
+                    data = d || [];
+                }
+                // else stays empty
             }
 
-            const { data, error } = await query.order("created_at", { ascending: false });
-            if (error) throw error;
-
             const withProgress: OrderSummary[] = await Promise.all(
-                (data || []).map(async (o: any) => {
+                data.map(async (o: any) => {
                     const { data: stepData } = await supabase
                         .from("order_workflow_steps").select("status").eq("order_id", o.id);
                     return {
