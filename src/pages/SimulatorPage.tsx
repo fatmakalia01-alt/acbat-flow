@@ -646,6 +646,65 @@ export default function SimulatorPage() {
         }
     };
 
+    const purgeAllData = async () => {
+        if (!confirm("⚠️ ATTENTION: Ceci va supprimer TOUTES les données de l'application (commandes, clients, factures, produits, stock, etc.). Cette action est IRRÉVERSIBLE. Continuer ?")) return;
+        if (!confirm("🔴 DERNIÈRE CONFIRMATION: Êtes-vous absolument sûr de vouloir tout supprimer ?")) return;
+        try {
+            addLog("🔴 PURGE TOTALE en cours...", "warning");
+
+            // 1. Leaf tables (no FK references to them)
+            await supabase.from("notifications").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+            await supabase.from("audit_log").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+            await supabase.from("workflow_justifications").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+            await supabase.from("delay_reports").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+            await supabase.from("sav_comments").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+            await supabase.from("stock_movements").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+
+            // 2. Tables referencing orders/invoices
+            await supabase.from("payments").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+            await supabase.from("deliveries").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+            await supabase.from("order_items").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+            await supabase.from("order_workflow_steps").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+            await supabase.from("chantiers").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+            await supabase.from("sav_tickets").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+            await supabase.from("invoices").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+
+            // 3. Quote items before quotes
+            await supabase.from("quote_items").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+            await supabase.from("quotes").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+
+            // 4. Orders (after all FK deps removed)
+            await supabase.from("client_orders").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+
+            // 5. Supplier order items before supplier orders
+            await supabase.from("purchase_order_items").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+            await supabase.from("supplier_orders").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+            await supabase.from("purchase_orders").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+
+            // 6. Stock
+            await supabase.from("stock").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+
+            // 7. Products (after order_items, stock, purchase_order_items removed)
+            await supabase.from("products").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+            await supabase.from("product_categories").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+            await supabase.from("brands").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+            await supabase.from("suppliers").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+
+            // 8. Clients (after orders, sav, chantiers removed)
+            await supabase.from("clients").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+
+            // 9. Delegations & sites
+            await supabase.from("delegations").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+            await supabase.from("sites").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+
+            toast.success("🔴 TOUTES les données ont été supprimées.");
+            addLog("🔴 Purge totale terminée — toutes les tables vidées", "warning");
+        } catch (e: any) {
+            toast.error("Erreur purge totale: " + e.message);
+            addLog("❌ Erreur purge totale: " + e.message, "error");
+        }
+    };
+
     const progress = activeScenario
         ? Math.round(((currentStepIdx + 1) / activeScenario.steps.length) * 100)
         : 0;
@@ -688,7 +747,15 @@ export default function SimulatorPage() {
                             onClick={cleanSimData}
                             className="gap-2 border-red-500/30 text-red-400 hover:bg-red-500/10 bg-transparent"
                         >
-                            <Trash2 className="h-4 w-4" /> Purger données
+                            <Trash2 className="h-4 w-4" /> Purger simu
+                        </Button>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={purgeAllData}
+                            className="gap-2 border-destructive/50 text-destructive hover:bg-destructive/10 bg-transparent font-bold"
+                        >
+                            <Trash2 className="h-4 w-4" /> 🔴 Purger TOUT
                         </Button>
                     </div>
                 </div>
