@@ -182,6 +182,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           id: string
+          initial_delay_days: number | null
           notes: string | null
           reference: string
           site_id: string | null
@@ -198,6 +199,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
+          initial_delay_days?: number | null
           notes?: string | null
           reference?: string
           site_id?: string | null
@@ -214,6 +216,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
+          initial_delay_days?: number | null
           notes?: string | null
           reference?: string
           site_id?: string | null
@@ -297,6 +300,58 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      delay_reports: {
+        Row: {
+          id: string
+          step_id: string | null
+          order_id: string | null
+          reported_by: string | null
+          cause_text: string
+          blamed_role: string | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          step_id?: string | null
+          order_id?: string | null
+          reported_by?: string | null
+          cause_text: string
+          blamed_role?: string | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          step_id?: string | null
+          order_id?: string | null
+          reported_by?: string | null
+          cause_text?: string
+          blamed_role?: string | null
+          created_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delay_reports_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "client_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delay_reports_reported_by_fkey"
+            columns: ["reported_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "delay_reports_step_id_fkey"
+            columns: ["step_id"]
+            isOneToOne: false
+            referencedRelation: "order_workflow_steps"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       delegations: {
         Row: {
@@ -502,6 +557,9 @@ export type Database = {
           read: boolean | null
           read_at: string | null
           related_order_id: string | null
+          related_step_id: string | null
+          action_required: boolean | null
+          action_type: string | null
           title: string
           type: Database["public"]["Enums"]["notification_type"]
           user_id: string
@@ -514,6 +572,9 @@ export type Database = {
           read?: boolean | null
           read_at?: string | null
           related_order_id?: string | null
+          related_step_id?: string | null
+          action_required?: boolean | null
+          action_type?: string | null
           title: string
           type?: Database["public"]["Enums"]["notification_type"]
           user_id: string
@@ -526,6 +587,9 @@ export type Database = {
           read?: boolean | null
           read_at?: string | null
           related_order_id?: string | null
+          related_step_id?: string | null
+          action_required?: boolean | null
+          action_type?: string | null
           title?: string
           type?: Database["public"]["Enums"]["notification_type"]
           user_id?: string
@@ -613,6 +677,10 @@ export type Database = {
           step_name: Database["public"]["Enums"]["workflow_step_name"]
           step_order: number
           updated_at: string
+          estimated_duration_days: number | null
+          deadline_set_at: string | null
+          delay_cause: string | null
+          blamed_service: string | null
         }
         Insert: {
           assigned_to?: string | null
@@ -632,6 +700,10 @@ export type Database = {
           step_name: Database["public"]["Enums"]["workflow_step_name"]
           step_order: number
           updated_at?: string
+          estimated_duration_days?: number | null
+          deadline_set_at?: string | null
+          delay_cause?: string | null
+          blamed_service?: string | null
         }
         Update: {
           assigned_to?: string | null
@@ -651,6 +723,10 @@ export type Database = {
           step_name?: Database["public"]["Enums"]["workflow_step_name"]
           step_order?: number
           updated_at?: string
+          estimated_duration_days?: number | null
+          deadline_set_at?: string | null
+          delay_cause?: string | null
+          blamed_service?: string | null
         }
         Relationships: [
           {
@@ -1516,89 +1592,89 @@ export type Database = {
     Enums: {
       alert_level: "jaune" | "rouge" | "bleue" | "rouge_clignotant"
       app_role:
-        | "manager"
-        | "directeur_exploitation"
-        | "responsable_achat"
-        | "responsable_logistique"
-        | "responsable_commercial"
-        | "commercial"
-        | "responsable_technique"
-        | "technicien_montage"
-        | "responsable_sav"
-        | "responsable_comptabilite"
-        | "client"
-        | "responsable_showroom"
-        | "livraison"
+      | "manager"
+      | "directeur_exploitation"
+      | "responsable_achat"
+      | "responsable_logistique"
+      | "responsable_commercial"
+      | "commercial"
+      | "responsable_technique"
+      | "technicien_montage"
+      | "responsable_sav"
+      | "responsable_comptabilite"
+      | "client"
+      | "responsable_showroom"
+      | "livraison"
       chantier_status:
-        | "planifie"
-        | "en_cours"
-        | "en_attente"
-        | "termine"
-        | "annule"
+      | "planifie"
+      | "en_cours"
+      | "en_attente"
+      | "termine"
+      | "annule"
       invoice_status:
-        | "brouillon"
-        | "emise"
-        | "payee_partiel"
-        | "payee"
-        | "impayee"
-        | "annulee"
+      | "brouillon"
+      | "emise"
+      | "payee_partiel"
+      | "payee"
+      | "impayee"
+      | "annulee"
       notification_type:
-        | "info"
-        | "alerte_delai"
-        | "depassement"
-        | "transition"
-        | "urgente"
+      | "info"
+      | "alerte_delai"
+      | "depassement"
+      | "transition"
+      | "urgente"
       order_status:
-        | "brouillon"
-        | "en_validation"
-        | "validee"
-        | "en_commande_fournisseur"
-        | "en_reception"
-        | "en_preparation"
-        | "en_livraison"
-        | "livree"
-        | "en_facturation"
-        | "payee"
-        | "cloturee"
-        | "annulee"
+      | "brouillon"
+      | "en_validation"
+      | "validee"
+      | "en_commande_fournisseur"
+      | "en_reception"
+      | "en_preparation"
+      | "en_livraison"
+      | "livree"
+      | "en_facturation"
+      | "payee"
+      | "cloturee"
+      | "annulee"
       payment_method:
-        | "especes"
-        | "cheque"
-        | "virement"
-        | "carte_bancaire"
-        | "traite_bancaire"
+      | "especes"
+      | "cheque"
+      | "virement"
+      | "carte_bancaire"
+      | "traite_bancaire"
       payment_status: "en_attente" | "confirme" | "rejete"
       purchase_order_status:
-        | "brouillon"
-        | "en_commande"
-        | "en_transit"
-        | "en_douane"
-        | "receptionne"
-        | "annule"
+      | "brouillon"
+      | "en_commande"
+      | "en_transit"
+      | "en_douane"
+      | "receptionne"
+      | "annule"
       quote_status:
-        | "brouillon"
-        | "en_validation"
-        | "accepte"
-        | "refuse"
-        | "expire"
+      | "brouillon"
+      | "en_validation"
+      | "accepte"
+      | "refuse"
+      | "expire"
       sav_status: "ouvert" | "en_cours" | "resolu" | "ferme"
       stock_movement_type: "in" | "out" | "adjustment"
       workflow_step_name:
-        | "creation_commande"
-        | "validation_commerciale"
-        | "commande_fournisseur"
-        | "reception_marchandises"
-        | "preparation_technique"
-        | "livraison_installation"
-        | "validation_client"
-        | "facturation_paiement"
-        | "cloture_archivage"
+      | "creation_commande"
+      | "validation_commerciale"
+      | "commande_fournisseur"
+      | "reception_marchandises"
+      | "preparation_technique"
+      | "livraison_installation"
+      | "validation_client"
+      | "facturation_paiement"
+      | "cloture_archivage"
       workflow_step_status:
-        | "pending"
-        | "in_progress"
-        | "completed"
-        | "delayed"
-        | "blocked"
+      | "pending"
+      | "in_progress"
+      | "completed"
+      | "delayed"
+      | "blocked"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1612,116 +1688,116 @@ type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
-    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    | { schema: keyof DatabaseWithoutInternals },
+  | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+  | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+  ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+    DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+  : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+    DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
-    ? R
-    : never
+  ? R
+  : never
   : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
-        Row: infer R
-      }
-      ? R
-      : never
-    : never
+    DefaultSchema["Views"])
+  ? (DefaultSchema["Tables"] &
+    DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+      Row: infer R
+    }
+  ? R
+  : never
+  : never
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
+  | keyof DefaultSchema["Tables"]
+  | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+  ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+  : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Insert: infer I
-    }
-    ? I
-    : never
+    Insert: infer I
+  }
+  ? I
+  : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Insert: infer I
-      }
-      ? I
-      : never
-    : never
+  ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+    Insert: infer I
+  }
+  ? I
+  : never
+  : never
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
+  | keyof DefaultSchema["Tables"]
+  | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+  ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+  : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Update: infer U
-    }
-    ? U
-    : never
+    Update: infer U
+  }
+  ? U
+  : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Update: infer U
-      }
-      ? U
-      : never
-    : never
+  ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+    Update: infer U
+  }
+  ? U
+  : never
+  : never
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema["Enums"]
-    | { schema: keyof DatabaseWithoutInternals },
+  | keyof DefaultSchema["Enums"]
+  | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+  ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+  : never = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
-    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
-    : never
+  ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+  : never
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof DatabaseWithoutInternals },
+  | keyof DefaultSchema["CompositeTypes"]
+  | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+  ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+  : never = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
-    : never
+  ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+  : never
 
 export const Constants = {
   public: {
