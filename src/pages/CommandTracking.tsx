@@ -148,7 +148,8 @@ export default function CommandTracking() {
                 "manager", "directeur_exploitation", "responsable_achat",
                 "responsable_logistique", "responsable_technique",
                 "responsable_sav", "responsable_comptabilite",
-                "responsable_showroom", "responsable_commercial"
+                "responsable_showroom", "responsable_commercial",
+                "commercial"
             ].includes(r));
 
             let data: any[] = [];
