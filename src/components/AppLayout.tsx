@@ -7,11 +7,15 @@ import { Button } from "@/components/ui/button";
 import { Menu, Bell } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useDeadlineMonitor } from "@/hooks/useDeadlineMonitor";
 
 const AppLayout = React.forwardRef<HTMLDivElement, {}>(
   (_, ref) => {
     const { session, loading, user } = useAuth();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+    // Call the deadline monitor globally
+    useDeadlineMonitor();
 
     const { data: unreadCount = 0 } = useQuery({
       queryKey: ["unread-notifications", user?.id],
