@@ -4,13 +4,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <!-- Block Lovable WebSocket connections -->
+  <!-- Consolidated Early Suppression & Connection Blocking -->
   <script>
     (function () {
+      // 1. Block Lovable WebSocket connections immediately
       var OriginalWebSocket = window.WebSocket;
       window.WebSocket = function (url, protocols) {
         if (typeof url === 'string' && url.includes('lovableproject.com')) {
-          // Silently discard - return a dummy non-connecting socket
           var dummy = Object.create(OriginalWebSocket.prototype);
           Object.defineProperty(dummy, 'readyState', { get: function () { return 3; } }); // CLOSED
           Object.defineProperty(dummy, 'url', { get: function () { return url; } });
@@ -23,13 +23,41 @@
         return protocols ? new OriginalWebSocket(url, protocols) : new OriginalWebSocket(url);
       };
       window.WebSocket.prototype = OriginalWebSocket.prototype;
-      window.WebSocket.CONNECTING = 0;
-      window.WebSocket.OPEN = 1;
-      window.WebSocket.CLOSING = 2;
-      window.WebSocket.CLOSED = 3;
+      window.WebSocket.CONNECTING = 0; window.WebSocket.OPEN = 1; window.WebSocket.CLOSING = 2; window.WebSocket.CLOSED = 3;
+
+      // 2. Early Console Suppression (Log, Warn, Info, Error)
+      const suppressPatterns = [
+        "Unrecognized feature",
+        "allow-scripts and allow-same-origin",
+        "RudderStack",
+        "Initializing RudderStack",
+        "We're hiring",
+        "lovable.dev"
+      ];
+      const suppress = (method) => {
+        const original = console[method];
+        console[method] = (...args) => {
+          const combined = args.join(" ");
+          if (suppressPatterns.some(p => combined.includes(p))) return;
+          original.apply(console, args);
+        };
+      };
+      ['log', 'warn', 'info', 'error'].forEach(suppress);
+
+      // 3. Early Lovable Element Removal Pattern
+      const removeWatermark = () => {
+        const selectors = ['#lovable-badge', '.lovable-badge', '[data-lovable-tag]', 'div[style*="z-index: 9999"]'];
+        selectors.forEach(s => {
+          document.querySelectorAll(s).forEach(el => {
+            if (el.innerText?.toLowerCase().includes('lovable') || el.id === 'lovable-badge') el.remove();
+          });
+        });
+      };
+      const obs = new MutationObserver(removeWatermark);
+      obs.observe(document.documentElement, { childList: true, subtree: true });
+      window.addEventListener('DOMContentLoaded', removeWatermark);
     })();
   </script>
-  <!-- TODO: Set the document title to the name of your application -->
   <title>ACBAT Flow</title>
   <meta name="description" content="Application de gestion ACBAT Flow">
   <meta name="author" content="ACBAT" />
@@ -49,46 +77,6 @@
   <div id="root"></div>
   <script type="module" src="/src/main.tsx"></script>
   <script>
-    // Suppress unavoidable platform/sandboxing console warnings
-    const originalWarn = console.warn;
-    console.warn = (...args) => {
-      const msg = args[0]?.toString() || "";
-      if (
-        msg.includes("Unrecognized feature") ||
-        msg.includes("iframe which has both allow-scripts and allow-same-origin") ||
-        msg.includes("RudderStack")
-      ) {
-        return;
-      }
-      originalWarn.apply(console, args);
-    };
-
-    // Aggressively remove Lovable watermark/badge
-    const removeWatermark = () => {
-      const selectors = [
-        '#lovable-badge',
-        '.lovable-badge',
-        '[data-lovable-tag]',
-        'div[style*="z-index: 9999"]',
-        'div[style*="lovable"]'
-      ];
-      selectors.forEach(selector => {
-        document.querySelectorAll(selector).forEach(el => {
-          if (el.innerText?.toLowerCase().includes('lovable') || el.id === 'lovable-badge') {
-            el.remove();
-          }
-        });
-      });
-    };
-
-    // Use MutationObserver for late-injected elements
-    const observer = new MutationObserver(removeWatermark);
-    observer.observe(document.documentElement, { childList: true, subtree: true });
-
-    // Initial cleanup
-    window.addEventListener('DOMContentLoaded', removeWatermark);
-    window.addEventListener('load', removeWatermark);
-
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js');
