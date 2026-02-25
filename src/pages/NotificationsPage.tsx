@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -28,6 +29,7 @@ const typeColors: Record<string, string> = {
 
 const NotificationsPage = () => {
     const { user } = useAuth();
+    const navigate = useNavigate();
     const queryClient = useQueryClient();
 
     const { data: notifications = [], isLoading } = useQuery({
@@ -117,41 +119,59 @@ const NotificationsPage = () => {
                         const iconColor = typeColors[n.type] || "text-blue-500";
                         return (
                             <Card key={n.id} className={cn("transition-all", !n.read && "border-primary/30 bg-primary/5")}>
-                                <CardContent className="p-4 flex items-start gap-4">
-                                    <div className={cn("mt-0.5 flex-shrink-0", iconColor)}>
-                                        <Icon className="h-5 w-5" />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-start justify-between gap-2">
-                                            <div>
-                                                <p className={cn("text-sm font-medium", !n.read && "font-semibold")}>{n.title}</p>
-                                                <p className="text-sm text-muted-foreground mt-0.5">{n.message}</p>
-                                            </div>
-                                            <div className="flex items-center gap-2 flex-shrink-0">
-                                                {n.alert_level && (
-                                                    <Badge variant="outline" className="text-xs">{n.alert_level}</Badge>
-                                                )}
-                                                {n.action_required && n.action_type === "report_delay" && (
-                                                    <Button variant="default" size="sm" className="bg-amber-600 hover:bg-amber-700 h-7 text-xs px-2"
-                                                        onClick={() => {
-                                                            // For now, redirect to tracking or open dialog if order_id is available
-                                                            // Ideally, we'd have a global dialog manager or navigate with state
-                                                            window.location.href = `/command-tracking?orderId=${n.related_order_id}&reportStepId=${n.related_step_id}`;
-                                                        }}>
-                                                        Signaler le retard
-                                                    </Button>
-                                                )}
-                                                {!n.read && (
-                                                    <Button variant="ghost" size="icon" className="h-7 w-7"
-                                                        onClick={() => markRead.mutate(n.id)}>
-                                                        <Check className="h-3.5 w-3.5" />
-                                                    </Button>
-                                                )}
-                                            </div>
+                                <CardContent className="p-4">
+                                    <div className="flex items-start gap-4">
+                                        <div className={cn("mt-0.5 flex-shrink-0", iconColor)}>
+                                            <Icon className="h-5 w-5" />
                                         </div>
-                                        <p className="text-xs text-muted-foreground mt-2">
-                                            {format(new Date(n.created_at), "dd MMM yyyy à HH:mm", { locale: fr })}
-                                        </p>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-start justify-between gap-2">
+                                                <div>
+                                                    <p className={cn("text-sm font-medium", !n.read && "font-semibold")}>{n.title}</p>
+                                                    <p className="text-sm text-muted-foreground mt-0.5">{n.message}</p>
+                                                </div>
+                                                <div className="flex items-center gap-1 flex-shrink-0">
+                                                    {n.alert_level && (
+                                                        <Badge variant="outline" className="text-[10px] h-5">{n.alert_level}</Badge>
+                                                    )}
+                                                    {!n.read && (
+                                                        <Button variant="ghost" size="icon" className="h-7 w-7"
+                                                            onClick={() => markRead.mutate(n.id)}>
+                                                            <Check className="h-3.5 w-3.5" />
+                                                        </Button>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* Action Buttons */}
+                                            {n.action_required && !n.read && (
+                                                <div className="flex gap-2 mt-3">
+                                                    {n.action_type === "report_delay" && (
+                                                        <Button
+                                                            size="sm"
+                                                            variant="outline"
+                                                            className="h-8 gap-1.5 border-orange-200 text-orange-700 hover:bg-orange-50 text-xs px-3"
+                                                            onClick={() => navigate(`/command-tracking?orderId=${n.related_order_id}&reportStepId=${n.related_step_id}`)}
+                                                        >
+                                                            Signaler le retard
+                                                        </Button>
+                                                    )}
+                                                    {n.action_type === "set_deadline" && (
+                                                        <Button
+                                                            size="sm"
+                                                            className="h-8 gap-1.5 bg-blue-600 hover:bg-blue-700 text-xs px-3 text-white"
+                                                            onClick={() => navigate(`/command-tracking?orderId=${n.related_order_id}`)}
+                                                        >
+                                                            Confirmer la réception
+                                                        </Button>
+                                                    )}
+                                                </div>
+                                            )}
+
+                                            <p className="text-[10px] text-muted-foreground mt-2">
+                                                {format(new Date(n.created_at), "dd MMM yyyy à HH:mm", { locale: fr })}
+                                            </p>
+                                        </div>
                                     </div>
                                 </CardContent>
                             </Card>
