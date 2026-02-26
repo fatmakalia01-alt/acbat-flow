@@ -303,7 +303,6 @@ export type Database = {
       }
       delay_reports: {
         Row: {
-<<<<<<< HEAD
           id: string
           step_id: string | null
           order_id: string | null
@@ -329,33 +328,6 @@ export type Database = {
           cause_text?: string
           blamed_role?: string | null
           created_at?: string | null
-=======
-          blamed_role: string | null
-          cause_text: string
-          created_at: string | null
-          id: string
-          order_id: string | null
-          reported_by: string | null
-          step_id: string | null
-        }
-        Insert: {
-          blamed_role?: string | null
-          cause_text: string
-          created_at?: string | null
-          id?: string
-          order_id?: string | null
-          reported_by?: string | null
-          step_id?: string | null
-        }
-        Update: {
-          blamed_role?: string | null
-          cause_text?: string
-          created_at?: string | null
-          id?: string
-          order_id?: string | null
-          reported_by?: string | null
-          step_id?: string | null
->>>>>>> 5c8621455a4b4de9195e2e3e942de50ee8f150f1
         }
         Relationships: [
           {
@@ -366,16 +338,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-<<<<<<< HEAD
-            foreignKeyName: "delay_reports_reported_by_fkey"
-            columns: ["reported_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["user_id"]
-          },
-          {
-=======
->>>>>>> 5c8621455a4b4de9195e2e3e942de50ee8f150f1
             foreignKeyName: "delay_reports_step_id_fkey"
             columns: ["step_id"]
             isOneToOne: false
@@ -591,11 +553,6 @@ export type Database = {
           read_at: string | null
           related_order_id: string | null
           related_step_id: string | null
-<<<<<<< HEAD
-          action_required: boolean | null
-          action_type: string | null
-=======
->>>>>>> 5c8621455a4b4de9195e2e3e942de50ee8f150f1
           title: string
           type: Database["public"]["Enums"]["notification_type"]
           user_id: string
@@ -611,11 +568,6 @@ export type Database = {
           read_at?: string | null
           related_order_id?: string | null
           related_step_id?: string | null
-<<<<<<< HEAD
-          action_required?: boolean | null
-          action_type?: string | null
-=======
->>>>>>> 5c8621455a4b4de9195e2e3e942de50ee8f150f1
           title: string
           type?: Database["public"]["Enums"]["notification_type"]
           user_id: string
@@ -631,11 +583,6 @@ export type Database = {
           read_at?: string | null
           related_order_id?: string | null
           related_step_id?: string | null
-<<<<<<< HEAD
-          action_required?: boolean | null
-          action_type?: string | null
-=======
->>>>>>> 5c8621455a4b4de9195e2e3e942de50ee8f150f1
           title?: string
           type?: Database["public"]["Enums"]["notification_type"]
           user_id?: string
@@ -1718,7 +1665,6 @@ export type Database = {
       | "transition"
       | "urgente"
       order_status:
-<<<<<<< HEAD
       | "brouillon"
       | "en_validation"
       | "validee"
@@ -1738,29 +1684,6 @@ export type Database = {
       | "carte_bancaire"
       | "traite_bancaire"
       payment_status: "en_attente" | "confirme" | "rejete"
-=======
-        | "brouillon"
-        | "en_validation"
-        | "validee"
-        | "en_commande_fournisseur"
-        | "en_reception"
-        | "en_preparation"
-        | "en_livraison"
-        | "livree"
-        | "en_facturation"
-        | "payee"
-        | "cloturee"
-        | "annulee"
-        | "en_cours"
-        | "terminee"
-      payment_method:
-        | "especes"
-        | "cheque"
-        | "virement"
-        | "carte_bancaire"
-        | "traite_bancaire"
-      payment_status: "en_attente" | "confirme" | "rejete" | "complete"
->>>>>>> 5c8621455a4b4de9195e2e3e942de50ee8f150f1
       purchase_order_status:
       | "brouillon"
       | "en_commande"
